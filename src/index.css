@@ -129,6 +129,21 @@
     }
 }
 /* Rhythm notation (VexFlow draws with currentColor, see render-score.ts). */
-.rhythm-score .vf-active {
+.rhythm-score .vf-stave path {
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+.rhythm-score .vf-onTime {
   color: var(--color-emerald-500);
+}
+.rhythm-score .vf-early,
+.rhythm-score .vf-late {
+  color: var(--color-amber-500);
+}
+.rhythm-score .vf-missed {
+  color: var(--color-red-500);
+}
+/* Last, so the note being played wins over a result colour. */
+.rhythm-score .vf-active {
+  color: var(--color-sky-500);
 }

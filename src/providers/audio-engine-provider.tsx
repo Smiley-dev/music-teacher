@@ -2,13 +2,26 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import * as engine from "@/lib/engine";
-import type { EngineEvent, EngineSnapshot, Frame, PracticeState } from "@/lib/engine";
+import type { EngineEvent, EngineSnapshot, Frame } from "@/lib/engine";
 import {
   EngineContext,
   type EngineContextValue,
   FrameContext,
   PracticeContext,
+  type PracticeContextValue,
 } from "./audio-engine-context";
+
+/** Practice state plus the judgements collected for the current session. */
+function applyPracticeEvent(p: PracticeContextValue, event: EngineEvent): PracticeContextValue {
+  if (event.type === "practiceJudged") {
+    return { ...p, judgements: [...p.judgements, ...event.judgements] };
+  }
+  if (event.type !== "practice") return p;
+  const next = event.practice;
+  if (next.phase === "finished") return { state: next, judgements: next.report.judgements };
+  const starting = next.phase === "running" && p.state.phase !== "running";
+  return { state: next, judgements: starting ? [] : p.judgements };
+}
 
 /** Rarely changing state; frames and practice progress live separately. */
 type State = Omit<EngineSnapshot, "subscriptionId" | "practice">;
@@ -23,6 +36,7 @@ function applyEvent(state: State, event: EngineEvent): State {
       return { ...state, calibration: event.calibration };
     case "frame":
     case "practice":
+    case "practiceJudged":
       return state;
   }
 }
@@ -35,7 +49,10 @@ function applyEvent(state: State, event: EngineEvent): State {
 export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State | null>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
-  const [practice, setPractice] = useState<PracticeState>({ phase: "idle" });
+  const [practice, setPractice] = useState<PracticeContextValue>({
+    state: { phase: "idle" },
+    judgements: [],
+  });
   const [connectError, setConnectError] = useState<string | null>(null);
   // Events that arrive before the snapshot are replayed on top of it.
   const pending = useRef<EngineEvent[]>([]);
@@ -56,8 +73,8 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         pending.current.push(event);
         return;
       }
-      if (event.type === "practice") {
-        setPractice(event.practice);
+      if (event.type === "practice" || event.type === "practiceJudged") {
+        setPractice((p) => applyPracticeEvent(p, event));
         return;
       }
       setState((s) => (s ? applyEvent(s, event) : s));
@@ -75,12 +92,11 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         const queued = pending.current;
         pending.current = [];
         setState(queued.reduce(applyEvent, snapshot));
-        setPractice(
-          queued.reduce<PracticeState>(
-            (p, e) => (e.type === "practice" ? e.practice : p),
-            initialPractice,
-          ),
-        );
+        const initial: PracticeContextValue = {
+          state: initialPractice,
+          judgements: initialPractice.phase === "finished" ? initialPractice.report.judgements : [],
+        };
+        setPractice(queued.reduce(applyPracticeEvent, initial));
       })
       .catch((e) => active && setConnectError(String(e)));
 

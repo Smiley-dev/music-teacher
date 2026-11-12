@@ -6,6 +6,7 @@ import type {
   EngineStatus,
   Exercise,
   Frame,
+  Judgement,
   PracticeState,
   RhythmPracticeSettings,
   Settings,
@@ -31,8 +32,17 @@ export const EngineContext = createContext<EngineContextValue | null>(null);
 /** Latest analysis frame (~30 updates/s); kept separate so only components
  * that draw live data re-render that often. */
 export const FrameContext = createContext<Frame | null>(null);
+export type PracticeContextValue = {
+  state: PracticeState;
+  /** Notes judged in the current (or last finished) session, in order. */
+  judgements: Judgement[];
+};
+
 /** Practice session state; updates ~30 times/s while a session runs. */
-export const PracticeContext = createContext<PracticeState>({ phase: "idle" });
+export const PracticeContext = createContext<PracticeContextValue>({
+  state: { phase: "idle" },
+  judgements: [],
+});
 
 export function useEngine(): EngineContextValue {
   const value = useContext(EngineContext);
@@ -47,7 +57,12 @@ export function useFrame(): Frame | null {
 
 /** The current practice session state (position on the audio clock). */
 export function usePractice(): PracticeState {
-  return useContext(PracticeContext);
+  return useContext(PracticeContext).state;
+}
+
+/** Timing judgements of the current or last session, live while playing. */
+export function usePracticeJudgements(): Judgement[] {
+  return useContext(PracticeContext).judgements;
 }
 
 export function useSettings(): Settings {

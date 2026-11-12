@@ -70,9 +70,41 @@ beat, dots and rests of every length, time signature on the first bar and a
 final bar line. The number of bars per line follows the window width, and the
 score scrolls to keep the highlighted note's line visible.
 
-### Not yet
+Staff lines are drawn thin and faded (`.vf-stave` in `src/index.css`) so the
+notes stand out.
 
-- Judging the user's timing (onsets vs. notes, corrected with the saved
-  latency from `useLatency()` / `AudioEngine::latency()`). The session
-  already runs on the same audio clock as the input, so this plugs into
-  `RhythmSession` without UI contract changes.
+### Timing judgement (ADR 0008)
+
+While you play, the engine detects each note you strike on the input
+(`OnsetDetector`, energy rise; pitch is ignored) and `rhythm::TimingJudge`
+matches it to the exercise:
+
+| Result | Rule | Colour in the score |
+| --- | --- | --- |
+| On time | within ±40 ms of the note | green |
+| Early / late | inside the note's window, more than 40 ms off | amber |
+| Missed | no onset inside the window | red |
+| Extra | an onset matching no note (double hit, playing in a rest) | counted |
+
+- A note's window is `min(150 ms, half the gap to its neighbouring note)`.
+- Onset times are corrected by the saved latency calibration
+  (`settings.latency`); without one the screen warns that results include
+  the setup's latency.
+- Rests are not judged. The note being played is highlighted in blue.
+- Live counters (on time / early / late / missed) update while playing.
+
+### Analysis (after the last bar)
+
+- **Accuracy**: % of notes on time. **Notes played**: % of notes hit at all.
+- **Average offset**: mean of the hit offsets; below −15 ms is "rushing",
+  above +15 ms "dragging".
+- **Consistency**: standard deviation of the offsets (lower is steadier).
+- **Extra hits** count.
+- **Chart**: each note's offset in order (late up, early down), the ±40 ms
+  band shaded green, missed notes as red crosses, bar boundaries as faint
+  lines.
+- **Tips** based on the numbers (calibrate, check the level, mute between
+  notes, slow down, try a faster tempo).
+
+Stopping early discards the analysis. Generating a new exercise hides the
+previous results.

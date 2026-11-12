@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import type { Exercise } from "@/lib/engine";
+import type { Exercise, Judgement, TimingResult } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 
 import { ACTIVE_NOTE_CLASS, type RenderedScore, renderScore } from "./render-score";
@@ -9,12 +9,21 @@ type RhythmScoreProps = {
   exercise: Exercise;
   /** The symbol to highlight, or null. */
   active: { bar: number; symbol: number } | null;
+  /** Timing results to colour the notes with. */
+  judgements: Judgement[];
   className?: string;
+};
+
+const RESULT_CLASSES: Record<TimingResult, string> = {
+  onTime: "vf-onTime",
+  early: "vf-early",
+  late: "vf-late",
+  missed: "vf-missed",
 };
 
 /** The exercise in notation. Re-renders on exercise/width change only; the
  * highlight is a class toggle so 30 Hz cursor updates stay cheap. */
-export function RhythmScore({ exercise, active, className }: RhythmScoreProps) {
+export function RhythmScore({ exercise, active, judgements, className }: RhythmScoreProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendered = useRef<RenderedScore | null>(null);
   const highlighted = useRef<SVGElement | undefined>(undefined);
@@ -55,6 +64,17 @@ export function RhythmScore({ exercise, active, className }: RhythmScoreProps) {
       setError(String(e));
     }
   }, [exercise, width, fontsReady]);
+
+  // Colour judged notes. Re-applied after every re-render of the score.
+  useEffect(() => {
+    const score = rendered.current;
+    if (!score) return;
+    const all = Object.values(RESULT_CLASSES);
+    for (const bar of score.notes) for (const el of bar) el?.classList.remove(...all);
+    for (const j of judgements) {
+      score.notes[j.bar]?.[j.symbol]?.classList.add(RESULT_CLASSES[j.result]);
+    }
+  }, [judgements, exercise, width, fontsReady]);
 
   useEffect(() => {
     const score = rendered.current;

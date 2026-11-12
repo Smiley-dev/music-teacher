@@ -109,6 +109,43 @@ export type RhythmPracticeSettings = {
   bars: number;
 };
 
+export type TimingResult = "onTime" | "early" | "late" | "missed";
+
+/** Must match `ON_TIME_MS` / `MAX_WINDOW_MS` in `crates/rhythm/src/judge.rs`. */
+export const ON_TIME_MS = 40;
+export const MAX_WINDOW_MS = 150;
+
+/** Result for one played note of the exercise (rests are not judged). */
+export type Judgement = {
+  bar: number;
+  symbol: number;
+  /** Expected start, beats from the exercise start. */
+  beat: number;
+  result: TimingResult;
+  /** Played minus expected, ms (negative = early); null if missed. */
+  offsetMs: number | null;
+};
+
+export type TimingSummary = {
+  notes: number;
+  onTime: number;
+  early: number;
+  late: number;
+  missed: number;
+  extra: number;
+  accuracyPercent: number;
+  hitPercent: number;
+  /** < 0 rushing, > 0 dragging */
+  meanOffsetMs: number | null;
+  spreadMs: number | null;
+};
+
+export type TimingReport = {
+  judgements: Judgement[];
+  extraBeats: number[];
+  summary: TimingSummary;
+};
+
 export type PracticeState =
   | { phase: "idle" }
   | {
@@ -118,7 +155,7 @@ export type PracticeState =
       countInBeats: number;
       totalBeats: number;
     }
-  | { phase: "finished" }
+  | { phase: "finished"; report: TimingReport }
   | { phase: "failed"; message: string };
 
 // ---- settings ----
@@ -179,6 +216,7 @@ export type EngineEvent =
   | { type: "frame"; frame: Frame }
   | { type: "calibration"; calibration: CalibrationState }
   | { type: "practice"; practice: PracticeState }
+  | { type: "practiceJudged"; judgements: Judgement[] }
   | { type: "settings"; settings: Settings };
 
 export type EngineSnapshot = {

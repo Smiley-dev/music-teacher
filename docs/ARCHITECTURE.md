@@ -19,6 +19,7 @@ crates/
   rhythm/              Pure rhythm logic (ADR 0006). No devices, threads or Tauri.
     model.rs           NoteValue, Symbol, TimeSignature, Difficulty presets, Exercise
     generate.rs        Seeded exercise generator (exact bar filling, readability rules)
+    judge.rs           TimingJudge: onsets vs notes, timing report (ADR 0008)
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
@@ -30,7 +31,8 @@ src-tauri/src/
   engine/mod.rs        AudioEngine service: one instance, owns all audio state
   engine/analysis.rs   Per-frame analysis pipeline (gain, meters, waveform, pitch)
   engine/calibration.rs Calibration session (clicks ↔ onsets on the audio clock)
-  engine/practice.rs   Rhythm practice session (count-in, metronome, position)
+  engine/practice.rs   Rhythm practice session (count-in, metronome, position,
+                       onset detection + timing judgement)
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
   settings.rs          Settings model + JSON persistence
 src/
@@ -77,7 +79,8 @@ flowchart LR
    gain, and runs the analysis pipeline per channel.
 3. Results go to every subscribed webview as one `EngineEvent::Frame` (meters,
    waveform, note), plus `Status`, `Calibration`, `Practice` and `Settings`
-   events when those change (`Practice` every tick while a session runs).
+   events when those change (`Practice` every tick while a session runs,
+   `PracticeJudged` whenever notes are judged).
 4. `AudioEngineProvider` keeps rarely changing state (status, settings,
    calibration) and the latest frame in two separate React contexts, so only
    live views (meters, waveform, note) re-render 30 times per second.

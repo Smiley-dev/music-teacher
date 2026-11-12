@@ -5,18 +5,30 @@ import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Exercise, PracticeState } from "@/lib/engine";
-import { useEngine, usePractice } from "@/providers/audio-engine-context";
+import {
+  useEngine,
+  useLatency,
+  usePractice,
+  usePracticeJudgements,
+} from "@/providers/audio-engine-context";
 
 import { symbolAt } from "./render-score";
 import { RhythmScore } from "./rhythm-score";
 import { RhythmSettingsCard } from "./rhythm-settings-card";
+import { LiveTimingCounts, TimingAnalysis } from "./timing-analysis";
 import { useRhythmExercise } from "./use-rhythm-exercise";
 
 export function RhythmPractice() {
   const { status, settings, calibration, startRhythmPractice, stopRhythmPractice } = useEngine();
   const practice = usePractice();
+  const allJudgements = usePracticeJudgements();
+  const calibrated = useLatency() !== null;
   const rhythm = settings.practice.rhythm;
   const { exercise, error: generateError, regenerate } = useRhythmExercise(rhythm);
+  // Results belong to the exercise that was played; a new one hides them.
+  const [playedExercise, setPlayedExercise] = useState<Exercise | null>(null);
+  const showResults = playedExercise !== null && playedExercise === exercise;
+  const judgements = showResults ? allJudgements : [];
   const [startError, setStartError] = useState<string | null>(null);
 
   const running = practice.phase === "running";
@@ -28,6 +40,7 @@ export function RhythmPractice() {
   const start = () => {
     if (!exercise) return;
     setStartError(null);
+    setPlayedExercise(exercise);
     startRhythmPractice(exercise).catch((e) => setStartError(String(e)));
   };
 
@@ -64,7 +77,14 @@ export function RhythmPractice() {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <SessionStatus practice={practice} exercise={exercise} />
+          <SessionStatus practice={showResults ? practice : { phase: "idle" }} exercise={exercise} />
+          {running && <LiveTimingCounts judgements={judgements} />}
+          {!calibrated && !running && (
+            <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="size-4 shrink-0" />
+              Not calibrated yet: calibrate in Settings so your timing is judged accurately.
+            </p>
+          )}
           {status.state !== "running" && (
             <p className="text-sm text-muted-foreground">
               Practice needs a working input device (the metronome is timed on the input's audio
@@ -74,9 +94,15 @@ export function RhythmPractice() {
           {(generateError || startError) && (
             <p className="text-sm text-destructive">{generateError ?? startError}</p>
           )}
-          {exercise && <RhythmScore exercise={exercise} active={active} />}
+          {exercise && (
+            <RhythmScore exercise={exercise} active={active} judgements={judgements} />
+          )}
         </CardContent>
       </Card>
+
+      {showResults && practice.phase === "finished" && (
+        <TimingAnalysis report={practice.report} calibrated={calibrated} />
+      )}
     </div>
   );
 }
@@ -92,14 +118,16 @@ function SessionStatus({
     case "idle":
       return (
         <p className="text-sm text-muted-foreground">
-          Press Start: you'll hear {4} count-in clicks, then play the rhythm with the metronome.
+          Press Start: after 4 count-in clicks, play the rhythm with the metronome. Each note turns
+          green (on time), amber (early or late) or red (missed) as you play.
         </p>
       );
     case "finished":
       return (
         <p className="flex items-center gap-2 text-sm font-medium">
           <CheckCircle2 className="size-4 text-emerald-500" />
-          Done! Press Start to play it again or New exercise for another one.
+          Done! See your timing analysis below. Press Start to try again or New exercise for
+          another one.
         </p>
       );
     case "failed":
