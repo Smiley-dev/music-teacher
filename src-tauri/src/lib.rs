@@ -22,6 +22,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::list_input_devices,
             commands::subscribe_engine,
+            commands::unsubscribe_engine,
             commands::set_input_device,
             commands::set_gain_db,
             commands::set_latency_ms,

@@ -1,7 +1,9 @@
-import type { DisplayedNote } from "@/hooks/use-input-monitor";
+import type { StableNote } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 
+/** Within this many cents counts as in tune (green). */
 const IN_TUNE_CENTS = 5;
+/** Within this many cents counts as close (amber). */
 const CLOSE_CENTS = 15;
 
 function tuningColor(cents: number) {
@@ -16,10 +18,10 @@ function tuningLabel(cents: number) {
   return cents < 0 ? "Flat ♭ (tune up)" : "Sharp ♯ (tune down)";
 }
 
-export function NoteDisplay({ note }: { note: DisplayedNote | null }) {
+export function NoteDisplay({ note }: { note: StableNote | null }) {
   if (!note) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center gap-1 text-center">
+      <div className="flex h-56 flex-col items-center justify-center gap-1 text-center">
         <span className="text-6xl font-semibold text-muted-foreground/30">—</span>
         <p className="text-sm text-muted-foreground">Play a single note to see it here.</p>
       </div>
@@ -27,22 +29,22 @@ export function NoteDisplay({ note }: { note: DisplayedNote | null }) {
   }
 
   const cents = Math.max(-50, Math.min(50, note.cents));
-  const markerLeft = 50 + cents; // -50..+50 cents -> 0..100 %
   const color = tuningColor(cents);
+  const sharp = note.name.includes("#");
 
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-4 transition-opacity duration-300",
+        "flex h-56 flex-col items-center justify-center gap-4 transition-opacity duration-300",
         !note.active && "opacity-40",
       )}
     >
-      <div className="flex items-start">
+      <div className="flex items-start" aria-label={`${note.name}${note.octave}`}>
         <span className={cn("text-8xl leading-none font-bold tracking-tight", color)}>
           {note.name.replace("#", "")}
         </span>
-        <span className="mt-1 flex flex-col text-2xl leading-none font-semibold">
-          <span className={cn(color, !note.name.includes("#") && "invisible")}>♯</span>
+        <span className="mt-1 flex h-20 flex-col text-2xl leading-none font-semibold">
+          <span className={cn(color, !sharp && "invisible")}>♯</span>
           <span className="mt-auto text-muted-foreground">{note.octave}</span>
         </span>
       </div>
@@ -58,7 +60,7 @@ export function NoteDisplay({ note }: { note: DisplayedNote | null }) {
         <span>Input {note.channel + 1}</span>
       </div>
 
-      {/* Cents gauge: centre line = perfectly in tune. */}
+      {/* Cents gauge: centre line = exactly in tune. */}
       <div className="w-full max-w-md">
         <div className="relative h-8 rounded-md bg-muted">
           <div className="absolute inset-y-0 left-[45%] w-[10%] rounded-sm bg-emerald-500/20" />
@@ -68,14 +70,12 @@ export function NoteDisplay({ note }: { note: DisplayedNote | null }) {
               "absolute inset-y-0 w-1.5 -translate-x-1/2 rounded-full bg-current transition-[left] duration-100",
               color,
             )}
-            style={{ left: `${markerLeft}%` }}
+            style={{ left: `${50 + cents}%` }}
           />
         </div>
         <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground">
           <span>-50</span>
-          <span className={cn("font-sans text-xs font-medium", color)}>
-            {tuningLabel(cents)}
-          </span>
+          <span className={cn("font-sans text-xs font-medium", color)}>{tuningLabel(cents)}</span>
           <span>+50</span>
         </div>
       </div>

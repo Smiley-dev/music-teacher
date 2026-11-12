@@ -28,6 +28,11 @@ pub fn subscribe_engine(
 }
 
 #[tauri::command]
+pub fn unsubscribe_engine(subscription_id: u64, engine: State<'_, AudioEngine>) {
+    engine.unsubscribe(subscription_id);
+}
+
+#[tauri::command]
 pub fn set_input_device(
     device: DeviceId,
     engine: State<'_, AudioEngine>,

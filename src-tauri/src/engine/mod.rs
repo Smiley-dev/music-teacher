@@ -7,7 +7,7 @@ mod analysis;
 mod calibration;
 pub mod events;
 
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc};
 use std::time::{Duration, Instant};
 
@@ -37,7 +37,9 @@ enum Command {
 struct Shared {
     status: Mutex<EngineStatus>,
     calibration: Mutex<CalibrationState>,
-    subscribers: Mutex<Vec<Channel<EngineEvent>>>,
+    /// Subscribed webviews, keyed by subscription id.
+    subscribers: Mutex<Vec<(u64, Channel<EngineEvent>)>>,
+    next_subscriber: AtomicU64,
     /// Linear input gain as `f32` bits, read every tick.
     gain: AtomicU32,
     settings: SettingsStore,
@@ -50,7 +52,7 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
 impl Shared {
     fn broadcast(&self, event: &EngineEvent) {
         // Webviews that went away (reload, closed window) fail to receive.
-        lock(&self.subscribers).retain(|channel| channel.send(event.clone()).is_ok());
+        lock(&self.subscribers).retain(|(_, channel)| channel.send(event.clone()).is_ok());
     }
 
     fn set_status(&self, status: EngineStatus) {
@@ -104,6 +106,7 @@ impl AudioEngine {
             }),
             calibration: Mutex::new(CalibrationState::Idle),
             subscribers: Mutex::new(Vec::new()),
+            next_subscriber: AtomicU64::new(1),
             gain: AtomicU32::new(dsp::meter::db_to_gain(initial.gain_db).to_bits()),
             settings,
         });
@@ -120,12 +123,18 @@ impl AudioEngine {
 
     /// Add a subscriber and return the current state for its first render.
     pub fn subscribe(&self, channel: Channel<EngineEvent>) -> EngineSnapshot {
-        lock(&self.shared.subscribers).push(channel);
+        let id = self.shared.next_subscriber.fetch_add(1, Ordering::Relaxed);
+        lock(&self.shared.subscribers).push((id, channel));
         EngineSnapshot {
+            subscription_id: id,
             status: lock(&self.shared.status).clone(),
             settings: self.shared.settings.get(),
             calibration: lock(&self.shared.calibration).clone(),
         }
+    }
+
+    pub fn unsubscribe(&self, subscription_id: u64) {
+        lock(&self.shared.subscribers).retain(|(id, _)| *id != subscription_id);
     }
 
     /// The saved round-trip latency calibration (ADR 0003), for

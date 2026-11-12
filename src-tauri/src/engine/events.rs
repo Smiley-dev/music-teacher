@@ -82,6 +82,8 @@ pub enum CalibrationState {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineSnapshot {
+    /// Pass to `unsubscribe_engine` when the subscriber goes away.
+    pub subscription_id: u64,
     pub status: EngineStatus,
     pub settings: Settings,
     pub calibration: CalibrationState,
