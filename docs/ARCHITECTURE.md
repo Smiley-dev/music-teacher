@@ -46,7 +46,7 @@ src/
                                and practice state in three contexts
     audio-engine-context.ts    useEngine / useFrame / usePractice / useSettings / useLatency
   features/tuner/      Tuner screen, note display + cents gauge
-  features/settings/   Device, gain and calibration cards; useInputDevices
+  features/settings/   Device and gain cards (+ shared calibration card); useInputDevices
   features/practice/   Practice tabs (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
   components/          Shared: level meter, waveform canvas, engine status banner,
