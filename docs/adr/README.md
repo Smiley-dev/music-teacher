@@ -13,6 +13,8 @@ one (update the old one's status).
 | [0003](0003-latency-calibration-audio-clock.md) | Latency calibration on the audio clock | Accepted |
 | [0004](0004-settings-persistence-json.md) | Settings persisted as JSON by the Rust backend | Accepted |
 | [0005](0005-single-audio-engine.md) | One shared audio engine with a single event stream | Accepted |
+| [0006](0006-rhythm-exercises-and-practice-sessions.md) | Rhythm exercises generated in Rust, played as engine sessions | Accepted |
+| [0007](0007-notation-rendering-vexflow.md) | Music notation rendered with VexFlow | Accepted |
 
 ## Template
 

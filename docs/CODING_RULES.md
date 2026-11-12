@@ -101,6 +101,17 @@ errors. Tell the user what to do, not only what failed.
 4. Add `docs/features/<id>.md` and link it from `docs/ARCHITECTURE.md` if the
    module map changes.
 
+## Adding a Practice subsection
+
+1. Create `src/features/practice/<id>/<id>-practice.tsx` exporting the
+   component.
+2. Add an entry to `PRACTICE_SECTIONS` in
+   `src/features/practice/practice-sections.ts`.
+3. Music logic (generation, judging) goes in a Rust crate (like
+   `crates/rhythm`); timed playback goes in an engine session
+   (`src-tauri/src/engine/`), never in UI timers.
+4. Document it in `docs/features/practice.md`.
+
 ## Commits
 
 One logical step per commit, imperative subject line. Each commit builds and
