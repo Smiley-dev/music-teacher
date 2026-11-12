@@ -8,10 +8,11 @@ analysed live.
   gauge, live waveform and level meters.
 - **Settings**: input device, input gain with clip indicator, and a
   click-along latency calibration.
-- **Practice**: coming soon.
+- **Practice**: rhythm exercises (easy, medium, hard or custom) shown in
+  standard notation, with a count-in and metronome at your tempo.
 
 Built with Tauri 2, React 19, Tailwind v4 + shadcn/ui, and Rust (cpal for
-audio, McLeod pitch detection).
+audio, McLeod pitch detection, VexFlow for notation).
 
 ## Development
 

@@ -16,16 +16,21 @@ crates/
     waveform.rs        Min/max reduction of samples for drawing
     onset.rs           OnsetDetector: energy-rise note onsets with sample positions
     calibration.rs     Latency estimate from click/onset times (+ constants)
+  rhythm/              Pure rhythm logic (ADR 0006). No devices, threads or Tauri.
+    model.rs           NoteValue, Symbol, TimeSignature, Difficulty presets, Exercise
+    generate.rs        Seeded exercise generator (exact bar filling, readability rules)
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
-    output.rs          ClickPlayer: sample-accurate metronome clicks + playback timestamps
+    output.rs          ClickPlayer/ClickTrack: sample-accurate clicks with accents
+                       + playback timestamps
 src-tauri/src/
   lib.rs               Tauri builder: plugins, state, command registration
   commands.rs          Thin #[tauri::command] wrappers around the engine/settings
   engine/mod.rs        AudioEngine service: one instance, owns all audio state
   engine/analysis.rs   Per-frame analysis pipeline (gain, meters, waveform, pitch)
   engine/calibration.rs Calibration session (clicks ↔ onsets on the audio clock)
+  engine/practice.rs   Rhythm practice session (count-in, metronome, position)
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
   settings.rs          Settings model + JSON persistence
 src/
@@ -34,11 +39,13 @@ src/
   sections.ts          Registry of menu sections (SECTIONS)
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
   providers/
-    audio-engine-provider.tsx  Subscribes once; holds engine state + latest frame
-    audio-engine-context.ts    useEngine / useFrame / useSettings / useLatency
+    audio-engine-provider.tsx  Subscribes once; holds engine state, latest frame
+                               and practice state in three contexts
+    audio-engine-context.ts    useEngine / useFrame / usePractice / useSettings / useLatency
   features/tuner/      Tuner screen, note display + cents gauge
   features/settings/   Device, gain and calibration cards; useInputDevices
-  features/practice/   Placeholder screen
+  features/practice/   Practice tabs (PRACTICE_SECTIONS)
+    rhythm/            Rhythm practice: settings, VexFlow score, transport
   components/          Shared: level meter, waveform canvas, engine status banner
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
@@ -69,8 +76,8 @@ flowchart LR
 2. The engine thread wakes every ~33 ms, drains both rings, applies the input
    gain, and runs the analysis pipeline per channel.
 3. Results go to every subscribed webview as one `EngineEvent::Frame` (meters,
-   waveform, note), plus `Status`, `Calibration` and `Settings` events when
-   those change.
+   waveform, note), plus `Status`, `Calibration`, `Practice` and `Settings`
+   events when those change (`Practice` every tick while a session runs).
 4. `AudioEngineProvider` keeps rarely changing state (status, settings,
    calibration) and the latest frame in two separate React contexts, so only
    live views (meters, waveform, note) re-render 30 times per second.
@@ -83,7 +90,7 @@ flowchart LR
 | cpal input callback | cpal | Copy samples + timestamps into rings (real-time) |
 | `audio-input` | `InputStream` | Owns the cpal input stream (streams are not `Send` everywhere) |
 | cpal output callback | cpal | Render clicks, record their playback instants (real-time) |
-| `click-output` | `ClickPlayer` | Owns the cpal output stream during calibration |
+| `click-output` | `ClickPlayer` | Owns the cpal output stream during calibration or practice |
 | `audio-engine` | `AudioEngine` | Commands, reconnects, analysis, calibration, events |
 | main / webview | Tauri | Commands from the UI and rendering |
 
@@ -96,7 +103,8 @@ flowchart LR
   that arrive before the snapshot are replayed on top of it. The provider
   calls `unsubscribe_engine(id)` on unmount; channels that fail to receive
   (reloaded or closed webview) are dropped automatically.
-- **Settings** (`Settings`: input device, gain in dB, latency calibration) are
+- **Settings** (`Settings`: input device, gain in dB, latency calibration,
+  `practice.rhythm` tempo/difficulty/custom/time signature/bars) are
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
   Windows) whenever they change. See ADR 0004.

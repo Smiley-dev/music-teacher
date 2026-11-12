@@ -54,12 +54,21 @@ exercise**.
    output device.
 2. During the count-in the screen counts 1–4; then the note being played is
    highlighted in the score and the bar/beat is shown.
-3. The session ends one beat after the last bar, or with **Stop**.
+3. The session ends when the last bar is over, or with **Stop**. Settings
+   are locked while it runs.
 
 Timing uses the audio clock (ADR 0003, ADR 0006): the cursor position is the
 latest input capture time minus the first click's playback time. Practice
 therefore needs a running input device; the Start button is disabled
 otherwise. Calibration and practice cannot run at the same time.
+
+### Notation
+
+Drawn with VexFlow (ADR 0007) in `features/practice/rhythm/render-score.ts`:
+percussion clef, all notes on the middle line, stems up, beams grouped per
+beat, dots and rests of every length, time signature on the first bar and a
+final bar line. The number of bars per line follows the window width, and the
+score scrolls to keep the highlighted note's line visible.
 
 ### Not yet
 

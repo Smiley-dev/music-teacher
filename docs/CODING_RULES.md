@@ -16,8 +16,9 @@ add an ADR if it affects architecture) instead of silently breaking it.
   input, call the engine or settings, map errors to `String`.
 - Only `src/lib/engine.ts` calls `invoke` or creates Tauri `Channel`s. Screens
   use the hooks from `src/providers/audio-engine-context.ts` (`useEngine`,
-  `useFrame`, `useSettings`, `useLatency`). Only components that draw live
-  data call `useFrame`.
+  `useFrame`, `usePractice`, `useSettings`, `useLatency`). Only components
+  that draw live data call `useFrame` / `usePractice`.
+- `crates/rhythm` follows the same rules as `crates/dsp`: pure and tested.
 
 ## Real-time audio rules
 
