@@ -127,6 +127,36 @@ matches it to the exercise:
 - Rests are not judged. The note being played is highlighted in blue.
 - Live counters (on time / early / late / missed) update while playing.
 
+### Accuracy and warnings
+
+Measured on synthetic plucked strings (`cargo run -p dsp --example
+onset_accuracy --release`, ADR 0010), sixteenths at 60–200 BPM:
+
+| Notes | Detected | Timing error |
+| --- | --- | --- |
+| High (E4, A4) | 88–100 % | 1–5 ms |
+| Low (E2–D3) | 56–100 % | 5–20 ms |
+
+The judge adds a limit: a note's window is half the gap to its neighbour, so
+below 80 ms between notes (sixteenths above ~188 BPM) the window is narrower
+than the ±40 ms on-time zone and early/late cannot be told apart.
+
+The Rhythm screen therefore uses the exercise's shortest gap between played
+notes (`Exercise::min_note_gap_beats`, converted with the tempo):
+
+- **< 100 ms** (`FAST_NOTE_GAP_MS`, e.g. sixteenths above 150 BPM): amber
+  "Fast notes: results are less reliable", advising higher, clearly picked
+  notes or a lower tempo.
+- **< 80 ms** (`MIN_JUDGEABLE_GAP_MS`): red "Too fast to judge early or
+  late"; results mostly show hit or missed.
+
+The warning updates live with the tempo slider, and the analysis repeats it
+as a tip. A collapsible **Tips for accurate results** box recommends playing
+higher notes (G/B/high E string or above the 5th fret on guitar, above middle
+C on keys), picking clearly and muting between notes, calibrating with the
+same kind of note, and headphones with a microphone. The "many notes missed"
+tip also suggests higher notes.
+
 ### Analysis (after the last bar)
 
 - **Accuracy**: % of notes on time. **Notes played**: % of notes hit at all.

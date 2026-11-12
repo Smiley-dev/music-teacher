@@ -10,7 +10,7 @@ pub const MAX_WRITTEN_SYMBOLS: usize = 1024;
 
 /// A written rhythm laid out into bars. The last bar may be incomplete
 /// while the user is still writing.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExerciseDraft {
     pub exercise: Exercise,
@@ -19,12 +19,15 @@ pub struct ExerciseDraft {
     /// True when the exercise can be played: at least one bar, all full,
     /// and at least one note (not only rests).
     pub complete: bool,
+    /// `Exercise::min_note_gap_beats`, for tempo-dependent accuracy warnings.
+    pub min_note_gap_beats: Option<f64>,
 }
 
 impl ExerciseDraft {
     /// A finished, generated exercise.
     pub fn from_complete(exercise: Exercise) -> Self {
         Self {
+            min_note_gap_beats: exercise.min_note_gap_beats(),
             exercise,
             remaining: 0,
             complete: true,
@@ -79,13 +82,15 @@ pub fn layout(
         bar_len - pos
     };
     let has_note = symbols.iter().any(|s| !s.rest);
+    let exercise = Exercise {
+        time_signature,
+        bars,
+    };
     Ok(ExerciseDraft {
-        complete: !bars.is_empty() && remaining == 0 && has_note,
+        complete: !exercise.bars.is_empty() && remaining == 0 && has_note,
+        min_note_gap_beats: exercise.min_note_gap_beats(),
         remaining,
-        exercise: Exercise {
-            time_signature,
-            bars,
-        },
+        exercise,
     })
 }
 
@@ -195,5 +200,6 @@ mod tests {
         assert_eq!(v["remaining"], 4);
         assert_eq!(v["complete"], false);
         assert_eq!(v["exercise"]["timeSignature"]["beatsPerBar"], 2);
+        assert!(v["minNoteGapBeats"].is_null());
     }
 }

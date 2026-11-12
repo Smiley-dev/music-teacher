@@ -3,7 +3,9 @@ import { AlertTriangle, Lightbulb } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   type Judgement,
+  FAST_NOTE_GAP_MS,
   MAX_WINDOW_MS,
+  MIN_JUDGEABLE_GAP_MS,
   ON_TIME_MS,
   type TimingReport,
   type TimingResult,
@@ -64,8 +66,17 @@ function tendency(mean: number | null) {
   return "centred on the beat";
 }
 
-function tips(s: TimingSummary, calibrated: boolean): string[] {
+function tips(s: TimingSummary, calibrated: boolean, minGapMs: number | null): string[] {
   const out: string[] = [];
+  if (minGapMs !== null && minGapMs < MIN_JUDGEABLE_GAP_MS) {
+    out.push(
+      `This exercise was very fast (notes ${Math.round(minGapMs)} ms apart): early/late could not be judged reliably. Lower the tempo for meaningful timing results.`,
+    );
+  } else if (minGapMs !== null && minGapMs < FAST_NOTE_GAP_MS) {
+    out.push(
+      `Fast notes (${Math.round(minGapMs)} ms apart) are detected less reliably, especially low ones. Higher notes give more accurate results.`,
+    );
+  }
   if (!calibrated) {
     out.push(
       "Calibrate your instrument in Settings: without it, every note looks late by your setup's latency.",
@@ -73,7 +84,7 @@ function tips(s: TimingSummary, calibrated: boolean): string[] {
   }
   if (s.notes > 0 && s.missed / s.notes > 0.2) {
     out.push(
-      "Many notes were not detected. Pick each note clearly, check the input level in Settings, or raise the gain.",
+      "Many notes were not detected. Pick each note clearly, play higher notes (they are detected more reliably than low ones), check the input level in Settings, or raise the gain.",
     );
   }
   if (s.notes > 0 && s.extra / s.notes > 0.15) {
@@ -175,9 +186,12 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
 export function TimingAnalysis({
   report,
   calibrated,
+  minGapMs,
 }: {
   report: TimingReport;
   calibrated: boolean;
+  /** Shortest gap between notes of the played exercise, ms. */
+  minGapMs: number | null;
 }) {
   const s = report.summary;
   return (
@@ -218,7 +232,7 @@ export function TimingAnalysis({
         )}
         <OffsetChart judgements={report.judgements} />
         <ul className="flex flex-col gap-2">
-          {tips(s, calibrated).map((t) => (
+          {tips(s, calibrated, minGapMs).map((t) => (
             <li key={t} className="flex items-start gap-2 text-sm">
               <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-500" />
               {t}

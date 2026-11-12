@@ -15,6 +15,7 @@ import {
 import { symbolAt } from "./render-score";
 import { RhythmScore } from "./rhythm-score";
 import { RhythmSettingsCard } from "./rhythm-settings-card";
+import { AccuracyTips, FastNotesWarning, minGapMs } from "./accuracy-notice";
 import { LatencyStatus } from "./latency-status";
 import { LiveTimingCounts, TimingAnalysis } from "./timing-analysis";
 import { useRhythmExercise } from "./use-rhythm-exercise";
@@ -30,6 +31,7 @@ export function RhythmPractice() {
   const writing = rhythm.difficulty === "custom" && rhythm.customMode === "written";
   // Only a complete exercise can be played; a written draft is still shown.
   const exercise = draft?.complete ? draft.exercise : null;
+  const gapMs = minGapMs(draft?.minNoteGapBeats ?? null, rhythm.bpm);
   const shownExercise = draft && draft.exercise.bars.length > 0 ? draft.exercise : null;
   // Results belong to the exercise that was played; a new one hides them.
   const [playedExercise, setPlayedExercise] = useState<Exercise | null>(null);
@@ -105,6 +107,8 @@ export function RhythmPractice() {
           <SessionStatus practice={showResults ? practice : { phase: "idle" }} exercise={exercise} />
           {running && !listening && <LiveTimingCounts judgements={judgements} />}
           {!running && <LatencyStatus disabled={status.state !== "running"} />}
+          <FastNotesWarning gapMs={gapMs} />
+          {!running && <AccuracyTips />}
           {status.state !== "running" && (
             <p className="text-sm text-muted-foreground">
               Practice needs a working input device (the metronome is timed on the input's audio
@@ -130,7 +134,7 @@ export function RhythmPractice() {
       </Card>
 
       {showResults && practice.phase === "finished" && (
-        <TimingAnalysis report={practice.report} calibrated={calibrated} />
+        <TimingAnalysis report={practice.report} calibrated={calibrated} minGapMs={gapMs} />
       )}
     </div>
   );

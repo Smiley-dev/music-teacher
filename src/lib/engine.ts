@@ -114,6 +114,8 @@ export type ExerciseDraft = {
   remaining: number;
   /** Playable: at least one bar, all full, at least one note. */
   complete: boolean;
+  /** Shortest distance between two played notes, beats (null if < 2 notes). */
+  minNoteGapBeats: number | null;
 };
 
 export type RhythmOptions = {
@@ -146,6 +148,9 @@ export type TimingResult = "onTime" | "early" | "late" | "missed";
 /** Must match `ON_TIME_MS` / `MAX_WINDOW_MS` in `crates/rhythm/src/judge.rs`. */
 export const ON_TIME_MS = 40;
 export const MAX_WINDOW_MS = 150;
+/** Must match `FAST_NOTE_GAP_MS` / `MIN_JUDGEABLE_GAP_MS` in `judge.rs`. */
+export const FAST_NOTE_GAP_MS = 100;
+export const MIN_JUDGEABLE_GAP_MS = 2 * ON_TIME_MS;
 
 /** Result for one played note of the exercise (rests are not judged). */
 export type Judgement = {

@@ -15,6 +15,12 @@ pub const MAX_WINDOW_MS: f64 = 150.0;
 /// ...and never more than this fraction of the gap to a neighbouring note,
 /// so fast passages do not steal each other's hits.
 pub const WINDOW_GAP_FRACTION: f64 = 0.5;
+/// Notes closer together than this (ms) are detected less reliably,
+/// especially low notes (measured, ADR 0010).
+pub const FAST_NOTE_GAP_MS: f64 = 100.0;
+/// Below this gap (ms) a note's window (half the gap) is narrower than the
+/// on-time zone, so early and late cannot be told apart.
+pub const MIN_JUDGEABLE_GAP_MS: f64 = 2.0 * ON_TIME_MS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]

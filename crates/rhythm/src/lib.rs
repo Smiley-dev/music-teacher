@@ -12,7 +12,8 @@ mod written;
 
 pub use generate::generate;
 pub use judge::{
-    Judgement, MAX_WINDOW_MS, ON_TIME_MS, TimingJudge, TimingReport, TimingResult, TimingSummary,
+    FAST_NOTE_GAP_MS, Judgement, MAX_WINDOW_MS, MIN_JUDGEABLE_GAP_MS, ON_TIME_MS, TimingJudge,
+    TimingReport, TimingResult, TimingSummary,
 };
 pub use model::{
     Bar, CustomMode, Difficulty, Exercise, MAX_BARS, MIN_BARS, NoteValue, PlacedSymbol,

@@ -203,6 +203,29 @@ impl Exercise {
         self.bars.len() as u32 * self.time_signature.beats_per_bar
     }
 
+    /// Shortest distance between the starts of two consecutive played notes
+    /// (rests in between count towards the distance), in beats. `None` with
+    /// fewer than two notes.
+    pub fn min_note_gap_beats(&self) -> Option<f64> {
+        let bar_len = self.time_signature.bar_sixteenths();
+        let starts: Vec<u32> = self
+            .bars
+            .iter()
+            .enumerate()
+            .flat_map(|(b, bar)| {
+                bar.symbols
+                    .iter()
+                    .filter(|s| !s.symbol.rest)
+                    .map(move |s| b as u32 * bar_len + s.start)
+            })
+            .collect();
+        starts
+            .windows(2)
+            .map(|w| w[1] - w[0])
+            .min()
+            .map(|gap| gap as f64 / SIXTEENTHS_PER_BEAT as f64)
+    }
+
     /// Check an exercise received from outside (e.g. the UI): supported
     /// time signature, bar count in range, and every bar filled exactly by
     /// consecutive valid symbols.
@@ -289,6 +312,54 @@ mod tests {
         // 5 notes + 4 dotted notes, and the same as rests.
         assert_eq!(symbols.len(), 18);
         assert!(symbols.iter().all(Symbol::is_valid));
+    }
+
+    #[test]
+    fn min_note_gap() {
+        let placed = |value, rest, start| {
+            let symbol = Symbol {
+                value,
+                dotted: false,
+                rest,
+            };
+            PlacedSymbol {
+                symbol,
+                start,
+                duration: symbol.duration(),
+            }
+        };
+        let exercise = |symbols: Vec<PlacedSymbol>| Exercise {
+            time_signature: TimeSignature::default(),
+            bars: vec![Bar { symbols }],
+        };
+        // half, eighth, sixteenth rest, sixteenth, quarter
+        let e = exercise(vec![
+            placed(Half, false, 0),
+            placed(Eighth, false, 8),
+            placed(Sixteenth, true, 10),
+            placed(Sixteenth, false, 11),
+            placed(Quarter, false, 12),
+        ]);
+        assert_eq!(e.min_note_gap_beats(), Some(0.25)); // 11 -> 12
+        let single = exercise(vec![placed(Whole, false, 0)]);
+        assert_eq!(single.min_note_gap_beats(), None);
+        // Across a bar line: quarter at beat 3 of bar 1, then bar 2 beat 1.
+        let two = Exercise {
+            time_signature: TimeSignature::default(),
+            bars: vec![
+                Bar {
+                    symbols: vec![
+                        placed(Half, true, 0),
+                        placed(Quarter, true, 8),
+                        placed(Quarter, false, 12),
+                    ],
+                },
+                Bar {
+                    symbols: vec![placed(Whole, false, 0)],
+                },
+            ],
+        };
+        assert_eq!(two.min_note_gap_beats(), Some(1.0));
     }
 
     #[test]
