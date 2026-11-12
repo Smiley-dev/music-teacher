@@ -7,9 +7,9 @@
 
 use std::time::{Duration, Instant};
 
-use audio_engine::{ClickPlayer, ClickSchedule, ClickTimestamp, StreamInstant, signed_secs};
+use audio_engine::{ClickPlayer, ClickSchedule, ClickTimestamp, StreamInstant, Tone, signed_secs};
 use dsp::OnsetDetector;
-use rhythm::{Exercise, Judgement, MAX_WINDOW_MS, TimingJudge, TimingReport};
+use rhythm::{Exercise, Judgement, MAX_WINDOW_MS, SIXTEENTHS_PER_BEAT, TimingJudge, TimingReport};
 
 use super::analysis::Analyzer;
 
@@ -27,6 +27,27 @@ fn accents(beats_per_bar: u32, bars: u32) -> Vec<bool> {
     count_in.chain(exercise).collect()
 }
 
+/// The exercise's notes as tones, after the count-in (rests are silent).
+fn exercise_tones(exercise: &Exercise, beat_secs: f64, frequency: f32) -> Vec<Tone> {
+    let bar_beats = exercise.time_signature.beats_per_bar as f64;
+    let per_beat = SIXTEENTHS_PER_BEAT as f64;
+    exercise
+        .bars
+        .iter()
+        .enumerate()
+        .flat_map(|(bar, b)| {
+            b.symbols.iter().filter(|s| !s.symbol.rest).map(move |s| {
+                let beat = bar as f64 * bar_beats + s.start as f64 / per_beat;
+                Tone {
+                    start_secs: LEAD_IN_SECS + (COUNT_IN_CLICKS as f64 + beat) * beat_secs,
+                    duration_secs: s.duration as f64 / per_beat * beat_secs,
+                    frequency,
+                }
+            })
+        })
+        .collect()
+}
+
 pub enum Progress {
     Running {
         /// Beats from the start of the exercise; negative during the
@@ -35,7 +56,8 @@ pub enum Progress {
         /// Notes judged during this tick (hits and misses).
         judged: Vec<Judgement>,
     },
-    Finished(TimingReport),
+    /// Played to the end; the timing report (`None` when only listening).
+    Finished(Option<TimingReport>),
     Failed(String),
 }
 
@@ -56,11 +78,15 @@ pub struct RhythmSession {
 impl RhythmSession {
     /// Start the metronome and listen to `analyzer`'s input from its next
     /// frame. `latency_ms` is the saved calibration (`None` = 0).
+    ///
+    /// With `listen_frequency`, the exercise is played back as tones at that
+    /// pitch instead of being judged.
     pub fn start(
         exercise: &Exercise,
         bpm: u32,
         latency_ms: Option<f64>,
         analyzer: &Analyzer,
+        listen_frequency: Option<f32>,
     ) -> Result<Self, String> {
         let beats_per_bar = exercise.time_signature.beats_per_bar;
         let bars = exercise.bars.len() as u32;
@@ -69,6 +95,9 @@ impl RhythmSession {
             lead_in_secs: LEAD_IN_SECS,
             interval_secs: beat_secs,
             accents: accents(beats_per_bar, bars),
+            tones: listen_frequency
+                .map(|hz| exercise_tones(exercise, beat_secs, hz))
+                .unwrap_or_default(),
         })
         .map_err(|e| format!("could not play the metronome: {e}"))?;
         let total_beats = exercise.total_beats();
@@ -80,7 +109,9 @@ impl RhythmSession {
         Ok(Self {
             player,
             detector: OnsetDetector::new(analyzer.info.sample_rate, analyzer.frames()),
-            judge: Some(TimingJudge::new(exercise, bpm as f64)),
+            judge: listen_frequency
+                .is_none()
+                .then(|| TimingJudge::new(exercise, bpm as f64)),
             beat_secs,
             latency_beats: latency_secs / beat_secs,
             total_beats,
@@ -129,18 +160,25 @@ impl RhythmSession {
         let to_beats = |instant: &StreamInstant| {
             signed_secs(instant, &first) / self.beat_secs - COUNT_IN_CLICKS as f64
         };
+        let mut judged = Vec::new();
+        let position_beats = analyzer.latest_instant().map(|now| to_beats(&now));
         let Some(judge) = self.judge.as_mut() else {
-            return Progress::Failed("practice session already finished".into());
+            // Listening only: done once the last bar has been heard.
+            return match position_beats {
+                Some(p) if p >= self.total_beats as f64 => Progress::Finished(None),
+                _ => Progress::Running {
+                    position_beats,
+                    judged,
+                },
+            };
         };
 
-        let mut judged = Vec::new();
         for &frame in &self.onset_frames {
             if let Some(instant) = analyzer.frame_instant(frame) {
                 judged.extend(judge.onset(to_beats(&instant) - self.latency_beats));
             }
         }
 
-        let position_beats = analyzer.latest_instant().map(|now| to_beats(&now));
         if let Some(position) = position_beats {
             // A note played on time arrives `latency` later, so only give up
             // on it once that much more audio has been heard.
@@ -150,7 +188,7 @@ impl RhythmSession {
             if position >= done
                 && let Some(judge) = self.judge.take()
             {
-                return Progress::Finished(judge.report());
+                return Progress::Finished(Some(judge.report()));
             }
         }
         Progress::Running {
@@ -163,6 +201,39 @@ impl RhythmSession {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tones_follow_the_notes_after_the_count_in() {
+        use rhythm::{Bar, NoteValue, PlacedSymbol, Symbol, TimeSignature};
+        let sym = |value, rest, start| {
+            let symbol = Symbol {
+                value,
+                dotted: false,
+                rest,
+            };
+            PlacedSymbol {
+                symbol,
+                start,
+                duration: symbol.duration(),
+            }
+        };
+        let exercise = Exercise {
+            time_signature: TimeSignature { beats_per_bar: 2 },
+            bars: vec![Bar {
+                symbols: vec![
+                    sym(NoteValue::Quarter, true, 0),
+                    sym(NoteValue::Eighth, false, 4),
+                    sym(NoteValue::Eighth, false, 6),
+                ],
+            }],
+        };
+        // 120 BPM: beat = 0.5 s. Count-in = 4 beats = 2 s after the lead-in.
+        let tones = exercise_tones(&exercise, 0.5, 220.0);
+        assert_eq!(tones.len(), 2, "rests are silent");
+        assert!((tones[0].start_secs - (LEAD_IN_SECS + 2.0 + 0.5)).abs() < 1e-9);
+        assert!((tones[0].duration_secs - 0.25).abs() < 1e-9);
+        assert!((tones[1].start_secs - (LEAD_IN_SECS + 2.75)).abs() < 1e-9);
+    }
 
     #[test]
     fn count_in_then_bar_accents() {

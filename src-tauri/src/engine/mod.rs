@@ -25,7 +25,7 @@ use analysis::Analyzer;
 use calibration::{CalibrationSession, Failure, Progress};
 use events::{
     CalibrationState, EngineError, EngineEvent, EngineSnapshot, EngineState, EngineStatus,
-    PracticeState,
+    PracticeState, SessionMode,
 };
 use practice::{COUNT_IN_CLICKS, RhythmSession};
 
@@ -42,6 +42,9 @@ enum Command {
     StartRhythm {
         exercise: Exercise,
         bpm: u32,
+        mode: SessionMode,
+        /// Tone pitch when listening.
+        listen_frequency: Option<f32>,
     },
     StopRhythm,
 }
@@ -256,13 +259,55 @@ impl AudioEngine {
             return Err("Wait for the calibration to finish first.".into());
         }
         let bpm = self.shared.settings.get().practice.rhythm.bpm;
-        let _ = self.commands.send(Command::StartRhythm { exercise, bpm });
+        let _ = self.commands.send(Command::StartRhythm {
+            exercise,
+            bpm,
+            mode: SessionMode::Practice,
+            listen_frequency: None,
+        });
+        Ok(())
+    }
+
+    /// Play `exercise` back (count-in, metronome and each note as a tone on a
+    /// random pitch) so the user can hear how it should sound.
+    pub fn listen_to_rhythm(&self, exercise: Exercise) -> Result<(), String> {
+        exercise.validate().map_err(|e| e.to_string())?;
+        if lock(&self.shared.status).state != EngineState::Running {
+            return Err("Select a working input device first.".into());
+        }
+        if self.shared.calibration_running() {
+            return Err("Wait for the calibration to finish first.".into());
+        }
+        let bpm = self.shared.settings.get().practice.rhythm.bpm;
+        let midi = random_listen_note();
+        let frequency = dsp::note::midi_to_frequency(midi);
+        let note = dsp::Note::from_frequency(frequency)
+            .map(|n| format!("{}{}", n.name, n.octave))
+            .unwrap_or_default();
+        let _ = self.commands.send(Command::StartRhythm {
+            exercise,
+            bpm,
+            mode: SessionMode::Listen { note },
+            listen_frequency: Some(frequency),
+        });
         Ok(())
     }
 
     pub fn stop_rhythm_practice(&self) {
         let _ = self.commands.send(Command::StopRhythm);
     }
+}
+
+/// Lowest and highest MIDI note for listening (A2..A4: comfortable on most
+/// speakers and in the range of guitar, bass and voice).
+const LISTEN_MIDI_MIN: i32 = 45;
+const LISTEN_MIDI_MAX: i32 = 69;
+
+fn random_listen_note() -> i32 {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.subsec_nanos());
+    LISTEN_MIDI_MIN + (nanos % (LISTEN_MIDI_MAX - LISTEN_MIDI_MIN + 1) as u32) as i32
 }
 
 /// State owned by the engine thread.
@@ -273,6 +318,8 @@ struct Runner {
     input: Option<(InputStream, Analyzer)>,
     calibration: Option<CalibrationSession>,
     practice: Option<RhythmSession>,
+    /// Mode of the running rhythm session.
+    mode: SessionMode,
     next_attempt: Instant,
     /// Whether the last stream ended by failing (vs. never opened).
     was_running: bool,
@@ -286,6 +333,7 @@ fn run(shared: Arc<Shared>, commands: mpsc::Receiver<Command>, wanted: Option<De
         input: None,
         calibration: None,
         practice: None,
+        mode: SessionMode::Practice,
         next_attempt: Instant::now(),
         was_running: false,
         clock: Instant::now(),
@@ -345,7 +393,12 @@ impl Runner {
                 }
             }
             Command::CancelCalibration => self.stop_calibration(None),
-            Command::StartRhythm { exercise, bpm } => {
+            Command::StartRhythm {
+                exercise,
+                bpm,
+                mode,
+                listen_frequency,
+            } => {
                 let Some((_, analyzer)) = &self.input else {
                     return self.shared.set_practice(PracticeState::Failed {
                         message: "No input device is running.".into(),
@@ -359,9 +412,11 @@ impl Runner {
                 // Restarting replaces the previous session (and its clicks).
                 self.practice = None;
                 let latency_ms = self.shared.settings.get().latency.map(|l| l.ms);
-                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer) {
+                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer, listen_frequency) {
                     Ok(session) => {
+                        self.mode = mode.clone();
                         self.shared.set_practice(PracticeState::Running {
+                            mode,
                             position_beats: None,
                             count_in_beats: COUNT_IN_CLICKS,
                             total_beats: session.total_beats(),
@@ -448,12 +503,14 @@ impl Runner {
                             .broadcast(&EngineEvent::PracticeJudged { judgements: judged });
                     }
                     PracticeState::Running {
+                        mode: self.mode.clone(),
                         position_beats,
                         count_in_beats: COUNT_IN_CLICKS,
                         total_beats: session.total_beats(),
                     }
                 }
-                practice::Progress::Finished(report) => PracticeState::Finished { report },
+                practice::Progress::Finished(Some(report)) => PracticeState::Finished { report },
+                practice::Progress::Finished(None) => PracticeState::Idle,
                 practice::Progress::Failed(message) => PracticeState::Failed { message },
             };
             if !matches!(state, PracticeState::Running { .. }) {

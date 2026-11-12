@@ -24,7 +24,7 @@ crates/
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
     output.rs          ClickPlayer/ClickTrack: sample-accurate clicks with accents
-                       + playback timestamps
+                       + playback timestamps, optional tones (exercise playback)
 src-tauri/src/
   lib.rs               Tauri builder: plugins, state, command registration
   commands.rs          Thin #[tauri::command] wrappers around the engine/settings

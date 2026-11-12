@@ -1,5 +1,6 @@
-//! Metronome click output with sample-accurate scheduling. Each click's
-//! playback time is reported on the audio clock.
+//! Metronome click output with sample-accurate scheduling, plus optional
+//! pitched tones (to play an exercise back). Each click's playback time is
+//! reported on the audio clock.
 
 use std::f32::consts::TAU;
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
@@ -20,6 +21,24 @@ const NORMAL_HZ: f32 = 1000.0;
 const CLICK_AMPLITUDE: f32 = 0.5;
 /// Fade-in length in seconds, short enough to keep the attack sharp.
 const ATTACK_SECS: f32 = 0.0005;
+/// Peak amplitude of a tone (linear); quieter than clicks so both are heard.
+const TONE_AMPLITUDE: f32 = 0.3;
+/// Tones sound for this fraction of their length, so repeated notes are
+/// heard as separate notes.
+const TONE_GATE: f64 = 0.9;
+/// Tone attack and release, in seconds (avoid clicks at the edges).
+const TONE_ATTACK_SECS: f32 = 0.005;
+const TONE_RELEASE_SECS: f32 = 0.02;
+/// Decay time constant of the plucked-like tone, in seconds.
+const TONE_DECAY_SECS: f32 = 0.6;
+
+/// A pitched note to play, relative to the start of the output stream.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Tone {
+    pub start_secs: f64,
+    pub duration_secs: f64,
+    pub frequency: f32,
+}
 
 /// When to play clicks, relative to the start of the output stream.
 #[derive(Debug, Clone)]
@@ -30,6 +49,9 @@ pub struct ClickSchedule {
     pub interval_secs: f64,
     /// One entry per click: `true` = accented (higher pitch).
     pub accents: Vec<bool>,
+    /// Tones to play alongside the clicks, sorted by start and not
+    /// overlapping. Empty for a plain metronome.
+    pub tones: Vec<Tone>,
 }
 
 impl ClickSchedule {
@@ -41,6 +63,7 @@ impl ClickSchedule {
             accents: (0..count)
                 .map(|k| k.is_multiple_of(accent_every.max(1)))
                 .collect(),
+            tones: Vec::new(),
         }
     }
 }
@@ -54,6 +77,12 @@ struct ClickTrack {
     normal: Vec<f32>,
     /// First click that has not finished sounding.
     next: usize,
+    tone_starts: Vec<u64>,
+    /// Index into `tone_sounds` per tone.
+    tone_sound: Vec<usize>,
+    /// Rendered tones, one per distinct (frequency, length).
+    tone_sounds: Vec<Vec<f32>>,
+    tone_next: usize,
     frame: u64,
 }
 
@@ -71,7 +100,48 @@ impl ClickTrack {
             accent: click_sound(sample_rate, ACCENT_HZ),
             normal: click_sound(sample_rate, NORMAL_HZ),
             next: 0,
+            tone_starts: Vec::new(),
+            tone_sound: Vec::new(),
+            tone_sounds: Vec::new(),
+            tone_next: 0,
             frame: 0,
+        }
+        .with_tones(&schedule.tones, sample_rate)
+    }
+
+    fn with_tones(mut self, tones: &[Tone], sample_rate: u32) -> Self {
+        let sr = sample_rate as f64;
+        let mut keys: Vec<(u32, usize)> = Vec::new();
+        for tone in tones {
+            let frames = (tone.duration_secs * TONE_GATE * sr).round() as usize;
+            let key = (tone.frequency.to_bits(), frames);
+            let index = keys.iter().position(|k| *k == key).unwrap_or_else(|| {
+                keys.push(key);
+                self.tone_sounds
+                    .push(tone_sound(sample_rate, tone.frequency, frames));
+                keys.len() - 1
+            });
+            self.tone_starts.push((tone.start_secs * sr).round() as u64);
+            self.tone_sound.push(index);
+        }
+        self
+    }
+
+    /// The tone sample at absolute frame `f` (0 when no tone sounds).
+    fn tone_at(&mut self, f: u64) -> f32 {
+        while let Some(&start) = self.tone_starts.get(self.tone_next) {
+            let len = self.tone_sounds[self.tone_sound[self.tone_next]].len() as u64;
+            if f < start + len {
+                break;
+            }
+            self.tone_next += 1;
+        }
+        match self.tone_starts.get(self.tone_next) {
+            Some(&start) if f >= start => {
+                let sound = &self.tone_sounds[self.tone_sound[self.tone_next]];
+                sound.get((f - start) as usize).copied().unwrap_or(0.0)
+            }
+            _ => 0.0,
         }
     }
 
@@ -103,6 +173,7 @@ impl ClickTrack {
                 };
                 value = sound.get((f - start) as usize).copied().unwrap_or(0.0);
             }
+            value += self.tone_at(f);
             write(i, value);
         }
         self.frame += frames as u64;
@@ -187,6 +258,27 @@ fn click_sound(sample_rate: u32, hz: f32) -> Vec<f32> {
             let t = i as f32 / sample_rate as f32;
             let envelope = (i as f32 / attack).min(1.0) * (-t / (CLICK_SECS / 5.0)).exp();
             CLICK_AMPLITUDE * envelope * (TAU * hz * t).sin()
+        })
+        .collect()
+}
+
+/// A soft plucked tone of `frames` samples: a few harmonics with a fast
+/// attack, exponential decay and a short release at the end.
+fn tone_sound(sample_rate: u32, hz: f32, frames: usize) -> Vec<f32> {
+    let sr = sample_rate as f32;
+    let attack = (sr * TONE_ATTACK_SECS).max(1.0);
+    let release = (sr * TONE_RELEASE_SECS).max(1.0).min(frames as f32 / 2.0);
+    (0..frames)
+        .map(|i| {
+            let t = i as f32 / sr;
+            let left = (frames - i) as f32;
+            let envelope = (i as f32 / attack).min(1.0)
+                * (-t / TONE_DECAY_SECS).exp()
+                * (left / release).min(1.0);
+            let wave = (TAU * hz * t).sin()
+                + 0.4 * (TAU * 2.0 * hz * t).sin()
+                + 0.15 * (TAU * 3.0 * hz * t).sin();
+            TONE_AMPLITUDE * envelope * wave / 1.55
         })
         .collect()
 }
@@ -314,11 +406,36 @@ mod tests {
             lead_in_secs: 0.0,
             interval_secs: 0.5,
             accents: vec![true, false],
+            tones: Vec::new(),
         };
         let (samples, _) = render_all(&s, SR as usize);
         let accent = click_sound(SR, ACCENT_HZ);
         let normal = click_sound(SR, NORMAL_HZ);
         assert_eq!(&samples[..accent.len()], &accent[..]);
         assert_eq!(&samples[24_000..24_000 + normal.len()], &normal[..]);
+    }
+
+    #[test]
+    fn tones_play_at_their_start_and_leave_a_gap() {
+        let tone = |start_secs| Tone {
+            start_secs,
+            duration_secs: 0.5,
+            frequency: 220.0,
+        };
+        let s = ClickSchedule {
+            lead_in_secs: 0.0,
+            interval_secs: 1.0,
+            accents: vec![],
+            tones: vec![tone(0.25), tone(0.75)],
+        };
+        let (samples, starts) = render_all(&s, SR as usize * 2);
+        assert!(starts.is_empty(), "tones are not reported as clicks");
+        let loud = |range: std::ops::Range<usize>| samples[range].iter().any(|v| v.abs() > 0.05);
+        assert!(samples[..12_000].iter().all(|&v| v == 0.0), "silent before");
+        assert!(loud(12_100..13_000), "first tone");
+        // 90% gate: the first tone ends at 0.25 + 0.45 s = frame 33 600.
+        assert!(samples[33_700..35_900].iter().all(|&v| v == 0.0), "gap");
+        assert!(loud(36_100..37_000), "second tone");
+        assert!(samples[..].iter().all(|v| v.abs() <= TONE_AMPLITUDE + 1e-6));
     }
 }

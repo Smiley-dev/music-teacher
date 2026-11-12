@@ -31,6 +31,7 @@ pub fn run() {
             commands::set_rhythm_settings,
             commands::generate_rhythm_exercise,
             commands::start_rhythm_practice,
+            commands::listen_to_rhythm,
             commands::stop_rhythm_practice,
             commands::open_microphone_privacy_settings,
         ])

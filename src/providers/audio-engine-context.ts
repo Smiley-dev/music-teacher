@@ -24,6 +24,8 @@ export type EngineContextValue = {
   cancelCalibration: () => Promise<void>;
   setRhythmSettings: (rhythm: RhythmPracticeSettings) => Promise<void>;
   startRhythmPractice: (exercise: Exercise) => Promise<void>;
+  /** Play the exercise back so the user can hear it. */
+  listenToRhythm: (exercise: Exercise) => Promise<void>;
   stopRhythmPractice: () => Promise<void>;
 };
 

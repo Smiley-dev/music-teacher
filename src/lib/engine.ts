@@ -146,10 +146,14 @@ export type TimingReport = {
   summary: TimingSummary;
 };
 
+/** What a rhythm session does: judge the user, or play the exercise back. */
+export type SessionMode = { kind: "practice" } | { kind: "listen"; note: string };
+
 export type PracticeState =
   | { phase: "idle" }
   | {
       phase: "running";
+      mode: SessionMode;
       /** Beats from the exercise start; negative during the count-in, null before the first click. */
       positionBeats: number | null;
       countInBeats: number;
@@ -263,6 +267,10 @@ export const generateRhythmExercise = () => invoke<Exercise>("generate_rhythm_ex
 
 export const startRhythmPractice = (exercise: Exercise) =>
   invoke<void>("start_rhythm_practice", { exercise });
+
+/** Play the exercise back as tones on a random note (with count-in and metronome). */
+export const listenToRhythm = (exercise: Exercise) =>
+  invoke<void>("listen_to_rhythm", { exercise });
 
 export const stopRhythmPractice = () => invoke<void>("stop_rhythm_practice");
 

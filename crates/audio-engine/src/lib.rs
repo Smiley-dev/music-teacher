@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 pub use cpal::StreamInstant;
 pub use input::{BufferTimestamp, InputStream, StreamInfo};
-pub use output::{ClickPlayer, ClickSchedule, ClickTimestamp};
+pub use output::{ClickPlayer, ClickSchedule, ClickTimestamp, Tone};
 
 /// Identifies an input device across restarts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

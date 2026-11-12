@@ -100,6 +100,20 @@ pub enum CalibrationState {
     },
 }
 
+/// What a rhythm session does.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SessionMode {
+    /// The user plays along and is judged.
+    Practice,
+    /// The exercise is played back as tones on `note` (e.g. "E3").
+    Listen { note: String },
+}
+
 /// Rhythm practice session state, sent every engine tick while running.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(
@@ -110,6 +124,7 @@ pub enum CalibrationState {
 pub enum PracticeState {
     Idle,
     Running {
+        mode: SessionMode,
         /// Beats from the start of the exercise on the audio clock; negative
         /// during the count-in, `None` until the first click is scheduled.
         position_beats: Option<f64>,
@@ -192,13 +207,15 @@ mod tests {
     #[test]
     fn practice_state_fields_are_camel_case() {
         let running = PracticeState::Running {
+            mode: SessionMode::Listen { note: "E3".into() },
             position_beats: Some(-2.5),
             count_in_beats: 4,
             total_beats: 64,
         };
         assert_eq!(
             serde_json::to_value(&running).unwrap(),
-            json!({"phase": "running", "positionBeats": -2.5, "countInBeats": 4, "totalBeats": 64})
+            json!({"phase": "running", "mode": {"kind": "listen", "note": "E3"},
+                "positionBeats": -2.5, "countInBeats": 4, "totalBeats": 64})
         );
         assert_eq!(
             serde_json::to_value(PracticeState::Failed {

@@ -121,6 +121,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       cancelCalibration: () => run(engine.cancelCalibration()),
       setRhythmSettings: (rhythm) => run(engine.setRhythmSettings(rhythm)),
       startRhythmPractice: (exercise) => run(engine.startRhythmPractice(exercise)),
+      listenToRhythm: (exercise) => run(engine.listenToRhythm(exercise)),
       stopRhythmPractice: () => run(engine.stopRhythmPractice()),
     };
   }, [state]);

@@ -46,6 +46,17 @@ backtracking search:
 A new exercise is generated whenever a setting changes, or with **New
 exercise**.
 
+### Listening
+
+**Listen** plays the exercise back before practicing it: the same count-in
+and metronome, plus every note as a soft plucked tone (a few harmonics,
+decaying) on one random pitch between A2 and A4, chosen anew each time and
+shown on screen ("Listening on E3"). Tones sound for 90% of their length so
+repeated notes are distinct; rests are silent. The score cursor follows the
+playback. Nothing is judged and no analysis is shown; Stop ends it. It is the
+same engine session as practice (`SessionMode::Listen`), so it also needs a
+running input device for its clock.
+
 ### Playing
 
 1. Press **Start**. The engine plays 4 count-in clicks (always four, in any

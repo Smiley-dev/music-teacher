@@ -87,6 +87,13 @@ pub fn start_rhythm_practice(
     engine.start_rhythm_practice(exercise)
 }
 
+/// Play `exercise` back as tones on a random note, with count-in and
+/// metronome; progress arrives as events.
+#[tauri::command]
+pub fn listen_to_rhythm(exercise: Exercise, engine: State<'_, AudioEngine>) -> Result<(), String> {
+    engine.listen_to_rhythm(exercise)
+}
+
 #[tauri::command]
 pub fn stop_rhythm_practice(engine: State<'_, AudioEngine>) {
     engine.stop_rhythm_practice();
