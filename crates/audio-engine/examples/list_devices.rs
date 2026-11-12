@@ -6,8 +6,8 @@ fn main() {
             for d in devices {
                 println!(
                     "[{}] {}{} — {:?} ch, {:?} Hz, {:?}",
-                    d.host,
-                    d.name,
+                    d.id.host,
+                    d.id.name,
                     if d.is_default { " (default)" } else { "" },
                     d.channels,
                     d.sample_rate,
@@ -15,6 +15,6 @@ fn main() {
                 );
             }
         }
-        Err(e) => eprintln!("Error: {e}"),
+        Err(e) => eprintln!("Error: {e} ({:?})", e.kind()),
     }
 }
