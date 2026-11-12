@@ -16,7 +16,7 @@ use audio_engine::{AudioError, DeviceId, InputStream};
 use dsp::calibration::{BEATS_PER_BAR, CLICK_COUNT};
 use tauri::ipc::Channel;
 
-use rhythm::Exercise;
+use rhythm::{CustomMode, Difficulty, Exercise, ExerciseDraft};
 
 use crate::settings::{
     LatencyCalibration, LatencySource, RhythmPracticeSettings, Settings, SettingsStore,
@@ -239,13 +239,19 @@ impl AudioEngine {
         self.shared.update_settings(|s| s.practice.rhythm = rhythm)
     }
 
-    /// A new random exercise from the saved rhythm settings.
-    pub fn generate_rhythm_exercise(&self) -> Result<Exercise, String> {
+    /// The exercise for the saved rhythm settings: a new random one, or the
+    /// user's written rhythm (possibly unfinished) in Custom → Written mode.
+    pub fn generate_rhythm_exercise(&self) -> Result<ExerciseDraft, String> {
         let rhythm = self.shared.settings.get().practice.rhythm;
+        if rhythm.difficulty == Difficulty::Custom && rhythm.custom_mode == CustomMode::Written {
+            return rhythm::layout(&rhythm.written, rhythm.time_signature)
+                .map_err(|e| e.to_string());
+        }
         let seed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_nanos() as u64);
         rhythm::generate(&rhythm.options(), rhythm.time_signature, rhythm.bars, seed)
+            .map(ExerciseDraft::from_complete)
             .map_err(|e| e.to_string())
     }
 

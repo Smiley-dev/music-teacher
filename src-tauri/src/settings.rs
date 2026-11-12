@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
 use audio_engine::DeviceId;
-use rhythm::{Difficulty, NoteValue, RhythmOptions, TimeSignature};
+use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
 
 /// Allowed input gain range in dB.
@@ -48,6 +48,11 @@ pub struct RhythmPracticeSettings {
     pub difficulty: Difficulty,
     /// Used when `difficulty` is `Custom`.
     pub custom: RhythmOptions,
+    /// Custom: generate randomly from `custom`, or play `written`.
+    pub custom_mode: CustomMode,
+    /// The user's own rhythm, in order (laid out into bars by the time
+    /// signature, ADR 0009).
+    pub written: Vec<Symbol>,
     pub time_signature: TimeSignature,
     pub bars: u32,
 }
@@ -62,6 +67,8 @@ impl Default for RhythmPracticeSettings {
                 dotted: false,
                 rests: false,
             }),
+            custom_mode: CustomMode::Random,
+            written: Vec::new(),
             time_signature: TimeSignature::default(),
             bars: DEFAULT_BARS,
         }
@@ -156,6 +163,8 @@ fn sanitize(mut s: Settings) -> Settings {
     }
     rhythm.custom.values.sort();
     rhythm.custom.values.dedup();
+    rhythm.written.retain(Symbol::is_valid);
+    rhythm.written.truncate(rhythm::MAX_WRITTEN_SYMBOLS);
     s
 }
 
@@ -235,6 +244,16 @@ mod tests {
         assert_eq!((rhythm.bpm, rhythm.bars), (MAX_BPM, 1));
         assert_eq!(rhythm.time_signature, TimeSignature::default());
         assert_eq!(rhythm.options().values, vec![NoteValue::Eighth]);
+        assert_eq!(rhythm.custom_mode, CustomMode::Random);
+        assert!(rhythm.written.is_empty());
+
+        let raw = r#"{"practice": {"rhythm": {"customMode": "written", "written": [
+            {"value": "quarter", "dotted": false, "rest": false},
+            {"value": "sixteenth", "dotted": true, "rest": false}]}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let rhythm = SettingsStore::load(path.clone()).get().practice.rhythm;
+        assert_eq!(rhythm.custom_mode, CustomMode::Written);
+        assert_eq!(rhythm.written.len(), 1, "dotted sixteenth dropped");
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

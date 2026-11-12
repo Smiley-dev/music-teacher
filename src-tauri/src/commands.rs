@@ -9,7 +9,7 @@ use tauri_plugin_opener::OpenerExt;
 use crate::engine::AudioEngine;
 use crate::engine::events::{EngineEvent, EngineSnapshot};
 use crate::settings::{RhythmPracticeSettings, Settings};
-use rhythm::Exercise;
+use rhythm::{Exercise, ExerciseDraft};
 
 /// Windows Settings page that controls microphone access for desktop apps.
 const MICROPHONE_PRIVACY_URL: &str = "ms-settings:privacy-microphone";
@@ -72,9 +72,9 @@ pub fn set_rhythm_settings(
     engine.set_rhythm_settings(rhythm)
 }
 
-/// A new random exercise from the saved rhythm settings.
+/// The exercise for the saved rhythm settings (random, or the written one).
 #[tauri::command]
-pub fn generate_rhythm_exercise(engine: State<'_, AudioEngine>) -> Result<Exercise, String> {
+pub fn generate_rhythm_exercise(engine: State<'_, AudioEngine>) -> Result<ExerciseDraft, String> {
     engine.generate_rhythm_exercise()
 }
 

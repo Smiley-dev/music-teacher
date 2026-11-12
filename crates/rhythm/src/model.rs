@@ -123,6 +123,17 @@ impl RhythmOptions {
     }
 }
 
+/// How a custom exercise is made.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CustomMode {
+    /// Randomly generated from the selected note values.
+    #[default]
+    Random,
+    /// Written note by note by the user.
+    Written,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Difficulty {
@@ -233,6 +244,10 @@ pub enum RhythmError {
     CannotFillBar,
     #[error("bar {0} is malformed")]
     MalformedBar(usize),
+    #[error("symbol {} does not fit in its bar (it would cross the bar line)", .0 + 1)]
+    DoesNotFit(usize),
+    #[error("symbol {} is not a valid note length", .0 + 1)]
+    InvalidSymbol(usize),
 }
 
 #[cfg(test)]
