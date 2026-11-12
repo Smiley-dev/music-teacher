@@ -118,8 +118,12 @@ matches it to the exercise:
 
 - A note's window is `min(150 ms, half the gap to its neighbouring note)`.
 - Onset times are corrected by the saved latency calibration
-  (`settings.latency`); without one the screen warns that results include
-  the setup's latency.
+  (`settings.latency`). Above the score a line shows the latency in use
+  (value and whether it was measured or entered) with a **Recalibrate**
+  button, or a warning with **Calibrate now** when there is none. The button
+  opens the same calibration as in Settings in a dialog (closing it while the
+  clicks play cancels the calibration). A new value applies from the next
+  session; calibration is unavailable while a session runs.
 - Rests are not judged. The note being played is highlighted in blue.
 - Live counters (on time / early / late / missed) update while playing.
 

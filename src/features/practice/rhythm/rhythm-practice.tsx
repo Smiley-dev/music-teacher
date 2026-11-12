@@ -15,6 +15,7 @@ import {
 import { symbolAt } from "./render-score";
 import { RhythmScore } from "./rhythm-score";
 import { RhythmSettingsCard } from "./rhythm-settings-card";
+import { LatencyStatus } from "./latency-status";
 import { LiveTimingCounts, TimingAnalysis } from "./timing-analysis";
 import { useRhythmExercise } from "./use-rhythm-exercise";
 
@@ -103,12 +104,7 @@ export function RhythmPractice() {
         <CardContent className="flex flex-col gap-4">
           <SessionStatus practice={showResults ? practice : { phase: "idle" }} exercise={exercise} />
           {running && !listening && <LiveTimingCounts judgements={judgements} />}
-          {!calibrated && !running && (
-            <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-4 shrink-0" />
-              Not calibrated yet: calibrate in Settings so your timing is judged accurately.
-            </p>
-          )}
+          {!running && <LatencyStatus disabled={status.state !== "running"} />}
           {status.state !== "running" && (
             <p className="text-sm text-muted-foreground">
               Practice needs a working input device (the metronome is timed on the input's audio

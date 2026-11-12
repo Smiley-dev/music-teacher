@@ -49,7 +49,8 @@ src/
   features/settings/   Device, gain and calibration cards; useInputDevices
   features/practice/   Practice tabs (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
-  components/          Shared: level meter, waveform canvas, engine status banner
+  components/          Shared: level meter, waveform canvas, engine status banner,
+                       calibration panel/card/dialog (Settings + Practice)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
 

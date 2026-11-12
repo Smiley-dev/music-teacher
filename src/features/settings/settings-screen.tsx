@@ -1,4 +1,4 @@
-import { CalibrationCard } from "./calibration-card";
+import { CalibrationCard } from "@/components/calibration-card";
 import { InputDeviceCard } from "./input-device-card";
 import { InputGainCard } from "./input-gain-card";
 

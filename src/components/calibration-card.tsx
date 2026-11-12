@@ -7,10 +7,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type CalibrationState, type LatencyCalibration, MAX_ABS_LATENCY_MS } from "@/lib/engine";
 import { cn } from "@/lib/utils";
-import { useEngine } from "@/providers/audio-engine-context";
+import { useEngine, usePractice } from "@/providers/audio-engine-context";
 
+export const CALIBRATION_TITLE = "Instrument calibration";
+export const CALIBRATION_DESCRIPTION =
+  "Measures how late your playing reaches the app (round-trip latency: output, input and your reaction), so Practice can correct your timing.";
+
+/** Calibration in a card, for the Settings screen. */
 export function CalibrationCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{CALIBRATION_TITLE}</CardTitle>
+        <CardDescription>{CALIBRATION_DESCRIPTION}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CalibrationPanel />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The calibration procedure, result and manual latency editor. Shared by
+ * Settings and the Practice screens (in a dialog). */
+export function CalibrationPanel() {
   const { status, settings, calibration, startCalibration, cancelCalibration } = useEngine();
+  const practicing = usePractice().phase === "running";
   const [error, setError] = useState<string | null>(null);
   const running = calibration.phase === "running";
 
@@ -20,15 +42,7 @@ export function CalibrationCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Instrument calibration</CardTitle>
-        <CardDescription>
-          Measures how late your playing reaches the app (round-trip latency: output, input and
-          your reaction), so Practice can correct your timing.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
         {running ? (
           <BeatCounter calibration={calibration} onCancel={() => cancelCalibration()} />
         ) : (
@@ -48,7 +62,7 @@ export function CalibrationCard() {
             <Button
               className="self-start"
               onClick={start}
-              disabled={status.state !== "running"}
+              disabled={status.state !== "running" || practicing}
             >
               <Play />
               {calibration.phase === "failed" ? "Try again" : "Start calibration"}
@@ -58,6 +72,11 @@ export function CalibrationCard() {
                 Calibration needs a working input device.
               </p>
             )}
+            {practicing && (
+              <p className="text-sm text-muted-foreground">
+                Stop the practice session to calibrate.
+              </p>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
           </>
         )}
@@ -65,8 +84,7 @@ export function CalibrationCard() {
         <div className="border-t pt-5">
           <LatencyEditor latency={settings.latency} disabled={running} />
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 
@@ -154,7 +172,8 @@ function CalibrationResult({ calibration }: { calibration: CalibrationState }) {
   return null;
 }
 
-function describe(latency: LatencyCalibration | null) {
+/** One line about the saved latency, e.g. "Measured, 15 of 16 clicks matched." */
+export function describeLatency(latency: LatencyCalibration | null) {
   if (!latency) return "Not calibrated yet.";
   if (latency.source === "manual") return "Entered manually.";
   return `Measured, ${latency.matched} of ${latency.totalClicks} clicks matched.`;
@@ -223,7 +242,7 @@ function LatencyEditor({
       <p className="text-sm text-muted-foreground">
         {text.trim() !== "" && !valid
           ? `Enter a number between -${MAX_ABS_LATENCY_MS} and ${MAX_ABS_LATENCY_MS}.`
-          : describe(latency)}
+          : describeLatency(latency)}
       </p>
       {error && <p className="text-sm text-destructive">{error}</p>}
     </form>
