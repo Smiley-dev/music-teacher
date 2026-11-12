@@ -2,6 +2,7 @@
 
 use audio_engine::{DeviceId, ErrorKind, StreamInfo};
 use dsp::{MeterReading, StableNote};
+use rhythm::{Judgement, TimingReport};
 use serde::Serialize;
 
 use crate::settings::{LatencyCalibration, Settings};
@@ -9,11 +10,25 @@ use crate::settings::{LatencyCalibration, Settings};
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum EngineEvent {
-    Status { status: EngineStatus },
-    Frame { frame: Frame },
-    Calibration { calibration: CalibrationState },
-    Practice { practice: PracticeState },
-    Settings { settings: Settings },
+    Status {
+        status: EngineStatus,
+    },
+    Frame {
+        frame: Frame,
+    },
+    Calibration {
+        calibration: CalibrationState,
+    },
+    Practice {
+        practice: PracticeState,
+    },
+    /// Notes judged since the last event while a practice session runs.
+    PracticeJudged {
+        judgements: Vec<Judgement>,
+    },
+    Settings {
+        settings: Settings,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -101,7 +116,10 @@ pub enum PracticeState {
         count_in_beats: u32,
         total_beats: u32,
     },
-    Finished,
+    /// The session played to the end; the timing analysis.
+    Finished {
+        report: TimingReport,
+    },
     Failed {
         message: String,
     },
@@ -189,12 +207,40 @@ mod tests {
             .unwrap(),
             json!({"phase": "failed", "message": "x"})
         );
+        let exercise = rhythm::generate(
+            &rhythm::Difficulty::Easy.preset().unwrap(),
+            rhythm::TimeSignature::default(),
+            1,
+            1,
+        )
+        .unwrap();
+        let report = rhythm::TimingJudge::new(&exercise, 60.0).report();
+        let finished = serde_json::to_value(EngineEvent::Practice {
+            practice: PracticeState::Finished { report },
+        })
+        .unwrap();
+        assert_eq!(finished["type"], "practice");
+        assert_eq!(finished["practice"]["phase"], "finished");
+        let summary = &finished["practice"]["report"]["summary"];
+        for key in [
+            "onTime",
+            "accuracyPercent",
+            "hitPercent",
+            "meanOffsetMs",
+            "spreadMs",
+        ] {
+            assert!(summary.get(key).is_some(), "missing {key}");
+        }
+        assert!(finished["practice"]["report"]["extraBeats"].is_array());
         assert_eq!(
-            serde_json::to_value(EngineEvent::Practice {
-                practice: PracticeState::Finished
-            })
-            .unwrap(),
-            json!({"type": "practice", "practice": {"phase": "finished"}})
+            finished["practice"]["report"]["judgements"][0]["result"],
+            "missed"
+        );
+
+        let judged = serde_json::to_value(EngineEvent::PracticeJudged { judgements: vec![] });
+        assert_eq!(
+            judged.unwrap(),
+            json!({"type": "practiceJudged", "judgements": []})
         );
     }
 

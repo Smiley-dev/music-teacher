@@ -346,11 +346,11 @@ impl Runner {
             }
             Command::CancelCalibration => self.stop_calibration(None),
             Command::StartRhythm { exercise, bpm } => {
-                if self.input.is_none() {
+                let Some((_, analyzer)) = &self.input else {
                     return self.shared.set_practice(PracticeState::Failed {
                         message: "No input device is running.".into(),
                     });
-                }
+                };
                 if self.calibration.is_some() {
                     return self.shared.set_practice(PracticeState::Failed {
                         message: "Wait for the calibration to finish first.".into(),
@@ -358,7 +358,8 @@ impl Runner {
                 }
                 // Restarting replaces the previous session (and its clicks).
                 self.practice = None;
-                match RhythmSession::start(&exercise, bpm) {
+                let latency_ms = self.shared.settings.get().latency.map(|l| l.ms);
+                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer) {
                     Ok(session) => {
                         self.shared.set_practice(PracticeState::Running {
                             position_beats: None,
@@ -438,12 +439,21 @@ impl Runner {
 
         if let Some(session) = &mut self.practice {
             let state = match session.tick(analyzer) {
-                practice::Progress::Running { position_beats } => PracticeState::Running {
+                practice::Progress::Running {
                     position_beats,
-                    count_in_beats: COUNT_IN_CLICKS,
-                    total_beats: session.total_beats(),
-                },
-                practice::Progress::Finished => PracticeState::Finished,
+                    judged,
+                } => {
+                    if !judged.is_empty() {
+                        self.shared
+                            .broadcast(&EngineEvent::PracticeJudged { judgements: judged });
+                    }
+                    PracticeState::Running {
+                        position_beats,
+                        count_in_beats: COUNT_IN_CLICKS,
+                        total_beats: session.total_beats(),
+                    }
+                }
+                practice::Progress::Finished(report) => PracticeState::Finished { report },
                 practice::Progress::Failed(message) => PracticeState::Failed { message },
             };
             if !matches!(state, PracticeState::Running { .. }) {

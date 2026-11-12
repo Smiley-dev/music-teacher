@@ -15,6 +15,7 @@ one (update the old one's status).
 | [0005](0005-single-audio-engine.md) | One shared audio engine with a single event stream | Accepted |
 | [0006](0006-rhythm-exercises-and-practice-sessions.md) | Rhythm exercises generated in Rust, played as engine sessions | Accepted |
 | [0007](0007-notation-rendering-vexflow.md) | Music notation rendered with VexFlow | Accepted |
+| [0008](0008-rhythm-timing-judgement.md) | Judging rhythm practice timing from input onsets | Accepted |
 
 ## Template
 
