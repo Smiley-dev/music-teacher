@@ -1,0 +1,16 @@
+[package]
+name = "audio-engine"
+version.workspace = true
+edition.workspace = true
+description = "Audio device handling and capture (no UI code here)"
+
+[dependencies]
+cpal = "0.16"
+rtrb = "0.4.1"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[features]
+# Low-latency ASIO driver support on Windows. Requires the Steinberg ASIO SDK
+# (CPAL_ASIO_DIR env var) and LLVM/clang installed.
+asio = ["cpal/asio"]
