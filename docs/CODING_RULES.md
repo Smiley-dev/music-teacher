@@ -15,8 +15,9 @@ add an ADR if it affects architecture) instead of silently breaking it.
 - `src-tauri` glues the two together. `commands.rs` stays thin: validate
   input, call the engine or settings, map errors to `String`.
 - Only `src/lib/engine.ts` calls `invoke` or creates Tauri `Channel`s. Screens
-  use the hooks from `src/providers/` (`useEngine`, `useSettings`,
-  `useLatency`).
+  use the hooks from `src/providers/audio-engine-context.ts` (`useEngine`,
+  `useFrame`, `useSettings`, `useLatency`). Only components that draw live
+  data call `useFrame`.
 
 ## Real-time audio rules
 
@@ -48,7 +49,9 @@ Timing that matters (calibration, later Practice) uses the audio clock: cpal
 ## TypeScript / React
 
 - Files and folders are `kebab-case` (`level-meter.tsx`); components are
-  `PascalCase`; hooks are `use-*.ts` exporting `useSomething`.
+  `PascalCase`; a standalone hook lives in `use-*.ts` exporting
+  `useSomething`. Context hooks live next to their context
+  (`providers/*-context.ts`), separate from the provider component.
 - Imports use the `@/` alias. No relative `../../`.
 - Feature code lives in `src/features/<section>/`. A component used by more
   than one feature moves to `src/components/`.

@@ -9,8 +9,10 @@ are persisted by the backend (ADR 0004) and restored at startup.
   grouped by host. The Windows default is marked.
 - Choosing a device saves it and makes the engine release the old stream
   before opening the new one.
-- On startup the saved device is reopened; if it is missing, the default
-  device is used until the saved one appears.
+- On startup the saved device is reopened. With no saved device (first run)
+  the Windows default input is used. If the saved device is missing, it is
+  shown as "(not connected)" and reopened as soon as it is plugged in; pick
+  another device to switch.
 - States shown to the user:
   - **No devices**: "No input devices found", with a refresh button. The
     engine retries automatically.
@@ -24,9 +26,10 @@ are persisted by the backend (ADR 0004) and restored at startup.
 
 ## Input volume
 
-- Gain slider, −24 dB to +24 dB (default 0 dB), applied to the samples before
-  any analysis (meters, waveform, pitch, onsets). Changes apply instantly
-  without restarting the stream.
+- Gain slider, −24 dB to +24 dB in 0.5 dB steps (default 0 dB, with a reset
+  button), applied on the engine thread to the samples before any analysis
+  (meters, waveform, pitch, onsets). Changes apply instantly without
+  restarting the stream and are saved.
 - Live level meter per channel next to it, with peak hold and a clip
   indicator. **Clip** lights if the raw input reaches −0.5 dBFS (the
   interface itself is clipping: turn its gain knob down) or the signal after
@@ -38,6 +41,9 @@ Measures how late the user's playing reaches the app, so Practice can correct
 timing.
 
 ### Procedure
+
+Requires a running input device (the button is disabled otherwise).
+Changing the device or losing it during calibration stops the session.
 
 1. Press **Start calibration**. Use headphones if you use a microphone, so
    the click does not leak into the input.
@@ -61,6 +67,10 @@ timing.
 - Offsets `onset − click` → median `m`, MAD → keep offsets within
   `max(3 × 1.4826 × MAD, 15 ms)` of `m` → latency = mean of kept offsets.
 - Fewer than 8 kept matches: "Couldn't calibrate, try again" with the count.
+- Onsets are detected on the gained mono signal (per frame, the sample with
+  the largest magnitude across channels), so any input channel works.
+- A wall-clock timeout (planned duration + 5 s) only guards against a stalled
+  stream; it is never used for timing.
 
 The value is **round-trip latency**: output latency + input latency + the
 user's reaction offset. That is intended; it is the correction Practice

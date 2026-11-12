@@ -18,8 +18,10 @@ view.
   `audio-engine` thread. Other code talks to it through methods that send
   commands to that thread.
 - The UI subscribes once with `subscribe_engine(channel)` from
-  `AudioEngineProvider`, mounted at the root. Events are a tagged union:
-  `status`, `frame` (levels, waveform, note) and `calibration`.
+  `AudioEngineProvider`, mounted at the root, and gets a snapshot back.
+  Events are a tagged union: `status`, `frame` (meters, waveform, note),
+  `calibration` and `settings`. `unsubscribe_engine(id)` removes a
+  subscriber.
 - Screens read from React context (`useEngine`, `useSettings`, `useLatency`)
   and never call device commands on mount/unmount.
 

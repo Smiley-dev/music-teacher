@@ -31,13 +31,15 @@ src-tauri/src/
 src/
   main.tsx             Entry; theme; mounts <AudioEngineProvider>
   App.tsx              App shell: main menu + active section
-  sections.ts          Registry of menu sections
+  sections.ts          Registry of menu sections (SECTIONS)
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
-  providers/           AudioEngineProvider + useEngine/useSettings/useLatency
-  features/tuner/      Tuner screen and its components
-  features/settings/   Device, gain and calibration cards
+  providers/
+    audio-engine-provider.tsx  Subscribes once; holds engine state + latest frame
+    audio-engine-context.ts    useEngine / useFrame / useSettings / useLatency
+  features/tuner/      Tuner screen, note display + cents gauge
+  features/settings/   Device, gain and calibration cards; useInputDevices
   features/practice/   Placeholder screen
-  components/          Shared app components (level meter, waveform, …)
+  components/          Shared: level meter, waveform canvas, engine status banner
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
 
@@ -66,10 +68,13 @@ flowchart LR
    capture StreamInstant)` per buffer. It never allocates, locks, logs or blocks.
 2. The engine thread wakes every ~33 ms, drains both rings, applies the input
    gain, and runs the analysis pipeline per channel.
-3. Results go to every subscribed webview as one `EngineEvent::Frame` (levels,
-   waveform, note), plus `Status` and `Calibration` events when those change.
-4. Screens read engine state from React context. Switching sections never
-   starts or stops audio.
+3. Results go to every subscribed webview as one `EngineEvent::Frame` (meters,
+   waveform, note), plus `Status`, `Calibration` and `Settings` events when
+   those change.
+4. `AudioEngineProvider` keeps rarely changing state (status, settings,
+   calibration) and the latest frame in two separate React contexts, so only
+   live views (meters, waveform, note) re-render 30 times per second.
+   Switching sections never starts or stops audio.
 
 ## Threads
 
@@ -85,8 +90,12 @@ flowchart LR
 ## State and persistence
 
 - **Engine state** (status, device, stream info, calibration session) lives in
-  `AudioEngine` on the Rust side. The UI gets a snapshot with
-  `get_engine_status` and then live updates through a single `Channel`.
+  `AudioEngine` on the Rust side. `subscribe_engine(channel)` registers the
+  webview and returns an `EngineSnapshot` (status, settings, calibration,
+  subscription id); live updates then arrive through that `Channel`. Events
+  that arrive before the snapshot are replayed on top of it. The provider
+  calls `unsubscribe_engine(id)` on unmount; channels that fail to receive
+  (reloaded or closed webview) are dropped automatically.
 - **Settings** (`Settings`: input device, gain in dB, latency calibration) are
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
@@ -97,10 +106,13 @@ flowchart LR
 
 ## Error handling
 
-`audio_engine::AudioError::kind()` classifies failures as `PermissionDenied`,
-`NoDevices`, `DeviceLost` or `Other`. The engine reports them in
-`EngineStatus.error` and keeps retrying every 750 ms, so plugging a device back
-in (or granting microphone permission) recovers without user action.
+`audio_engine::AudioError::kind()` classifies failures as `PermissionDenied`
+(WASAPI `E_ACCESSDENIED`), `NoDevices`, `DeviceLost` or `Other`. The engine
+reports them in `EngineStatus.error` (state `error` if the device never opened,
+`reconnecting` if a running stream died) and keeps retrying every 750 ms, so
+plugging a device back in (or granting microphone permission) recovers without
+user action. `EngineStatusBanner` turns each case into a message with the next
+step for the user.
 
 ## Decisions
 

@@ -12,8 +12,11 @@ Shows the note being played on the selected input, live.
   ±15, red beyond, labelled "Flat (tune up)" / "Sharp (tune down)".
 - Which **input channel** the note came from (the loudest channel with a
   clear pitch).
-- Live **waveform** of the loudest channel (~43 ms) and a **level meter** per
-  channel.
+- Live **waveform** (~43 ms, 256 min/max points) of the channel the note
+  comes from, or of the loudest channel when no note is detected, and a
+  **level meter** per channel.
+- The engine status (opening, reconnecting, no devices, permission denied)
+  above the cards when the input is not running.
 
 ## How it decides
 
