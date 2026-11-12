@@ -2,10 +2,16 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import * as engine from "@/lib/engine";
-import type { EngineEvent, EngineSnapshot, Frame } from "@/lib/engine";
-import { EngineContext, type EngineContextValue, FrameContext } from "./audio-engine-context";
+import type { EngineEvent, EngineSnapshot, Frame, PracticeState } from "@/lib/engine";
+import {
+  EngineContext,
+  type EngineContextValue,
+  FrameContext,
+  PracticeContext,
+} from "./audio-engine-context";
 
-type State = Omit<EngineSnapshot, "subscriptionId">;
+/** Rarely changing state; frames and practice progress live separately. */
+type State = Omit<EngineSnapshot, "subscriptionId" | "practice">;
 
 function applyEvent(state: State, event: EngineEvent): State {
   switch (event.type) {
@@ -16,6 +22,7 @@ function applyEvent(state: State, event: EngineEvent): State {
     case "calibration":
       return { ...state, calibration: event.calibration };
     case "frame":
+    case "practice":
       return state;
   }
 }
@@ -28,6 +35,7 @@ function applyEvent(state: State, event: EngineEvent): State {
 export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State | null>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
+  const [practice, setPractice] = useState<PracticeState>({ phase: "idle" });
   const [connectError, setConnectError] = useState<string | null>(null);
   // Events that arrive before the snapshot are replayed on top of it.
   const pending = useRef<EngineEvent[]>([]);
@@ -48,20 +56,31 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         pending.current.push(event);
         return;
       }
+      if (event.type === "practice") {
+        setPractice(event.practice);
+        return;
+      }
       setState((s) => (s ? applyEvent(s, event) : s));
     };
 
     engine
       .subscribeEngine(onEvent)
-      .then(({ subscriptionId: id, ...snapshot }) => {
+      .then(({ subscriptionId: id, practice: initialPractice, ...snapshot }) => {
         subscriptionId = id;
         if (!active) {
           engine.unsubscribeEngine(id).catch(() => {});
           return;
         }
         ready = true;
-        setState(pending.current.reduce(applyEvent, snapshot));
+        const queued = pending.current;
         pending.current = [];
+        setState(queued.reduce(applyEvent, snapshot));
+        setPractice(
+          queued.reduce<PracticeState>(
+            (p, e) => (e.type === "practice" ? e.practice : p),
+            initialPractice,
+          ),
+        );
       })
       .catch((e) => active && setConnectError(String(e)));
 
@@ -84,6 +103,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       setLatencyMs: (ms) => run(engine.setLatencyMs(ms)),
       startCalibration: () => run(engine.startCalibration()),
       cancelCalibration: () => run(engine.cancelCalibration()),
+      setRhythmSettings: (rhythm) => run(engine.setRhythmSettings(rhythm)),
+      startRhythmPractice: (exercise) => run(engine.startRhythmPractice(exercise)),
+      stopRhythmPractice: () => run(engine.stopRhythmPractice()),
     };
   }, [state]);
 
@@ -107,7 +129,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
   return (
     <EngineContext.Provider value={value}>
-      <FrameContext.Provider value={frame}>{children}</FrameContext.Provider>
+      <FrameContext.Provider value={frame}>
+        <PracticeContext.Provider value={practice}>{children}</PracticeContext.Provider>
+      </FrameContext.Provider>
     </EngineContext.Provider>
   );
 }

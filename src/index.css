@@ -128,3 +128,7 @@
     @apply font-sans;
     }
 }
+/* Rhythm notation (VexFlow draws with currentColor, see render-score.ts). */
+.rhythm-score .vf-active {
+  color: var(--color-emerald-500);
+}

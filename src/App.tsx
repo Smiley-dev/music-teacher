@@ -62,7 +62,7 @@ function App() {
         })}
       </nav>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-8">
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
         <header>
           <h1 className="text-2xl font-semibold tracking-tight">{section.label}</h1>
           <p className="text-sm text-muted-foreground">{section.description}</p>

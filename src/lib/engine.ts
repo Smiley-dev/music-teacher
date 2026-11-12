@@ -52,6 +52,75 @@ export type StableNote = {
   active: boolean;
 };
 
+// ---- rhythm (crates/rhythm) ----
+
+export type NoteValue = "whole" | "half" | "quarter" | "eighth" | "sixteenth";
+
+/** Longest to shortest; must match `NoteValue::ALL`. */
+export const NOTE_VALUES: readonly NoteValue[] = [
+  "whole",
+  "half",
+  "quarter",
+  "eighth",
+  "sixteenth",
+];
+
+/** A note or rest placed in a bar. Positions and lengths are in sixteenths. */
+export type PlacedSymbol = {
+  value: NoteValue;
+  dotted: boolean;
+  rest: boolean;
+  /** Start from the beginning of the bar, in sixteenths. */
+  start: number;
+  duration: number;
+};
+
+export type TimeSignature = { beatsPerBar: number };
+
+/** Must match `TimeSignature::SUPPORTED_BEATS`. */
+export const SUPPORTED_BEATS_PER_BAR = [2, 3, 4] as const;
+
+export type Exercise = {
+  timeSignature: TimeSignature;
+  bars: { symbols: PlacedSymbol[] }[];
+};
+
+export type Difficulty = "easy" | "medium" | "hard" | "custom";
+
+export type RhythmOptions = {
+  values: NoteValue[];
+  dotted: boolean;
+  rests: boolean;
+};
+
+/** Must match `MIN_BARS` / `MAX_BARS` in `crates/rhythm`. */
+export const MIN_BARS = 1;
+export const MAX_BARS = 64;
+/** Must match `MIN_BPM` / `MAX_BPM` in `src-tauri/src/settings.rs`. */
+export const MIN_BPM = 40;
+export const MAX_BPM = 200;
+
+export type RhythmPracticeSettings = {
+  bpm: number;
+  difficulty: Difficulty;
+  /** Used when `difficulty` is "custom". */
+  custom: RhythmOptions;
+  timeSignature: TimeSignature;
+  bars: number;
+};
+
+export type PracticeState =
+  | { phase: "idle" }
+  | {
+      phase: "running";
+      /** Beats from the exercise start; negative during the count-in, null before the first click. */
+      positionBeats: number | null;
+      countInBeats: number;
+      totalBeats: number;
+    }
+  | { phase: "finished" }
+  | { phase: "failed"; message: string };
+
 // ---- settings ----
 
 /** Must match `MIN_GAIN_DB` / `MAX_GAIN_DB` in `src-tauri/src/settings.rs`. */
@@ -75,6 +144,7 @@ export type Settings = {
   inputDevice: DeviceId | null;
   gainDb: number;
   latency: LatencyCalibration | null;
+  practice: { rhythm: RhythmPracticeSettings };
 };
 
 // ---- engine ----
@@ -108,6 +178,7 @@ export type EngineEvent =
   | { type: "status"; status: EngineStatus }
   | { type: "frame"; frame: Frame }
   | { type: "calibration"; calibration: CalibrationState }
+  | { type: "practice"; practice: PracticeState }
   | { type: "settings"; settings: Settings };
 
 export type EngineSnapshot = {
@@ -115,6 +186,7 @@ export type EngineSnapshot = {
   status: EngineStatus;
   settings: Settings;
   calibration: CalibrationState;
+  practice: PracticeState;
 };
 
 // ---- commands ----
@@ -144,6 +216,17 @@ export const setLatencyMs = (ms: number | null) => invoke<Settings>("set_latency
 export const startCalibration = () => invoke<void>("start_calibration");
 
 export const cancelCalibration = () => invoke<void>("cancel_calibration");
+
+export const setRhythmSettings = (rhythm: RhythmPracticeSettings) =>
+  invoke<Settings>("set_rhythm_settings", { rhythm });
+
+/** A new random exercise from the saved rhythm settings. */
+export const generateRhythmExercise = () => invoke<Exercise>("generate_rhythm_exercise");
+
+export const startRhythmPractice = (exercise: Exercise) =>
+  invoke<void>("start_rhythm_practice", { exercise });
+
+export const stopRhythmPractice = () => invoke<void>("stop_rhythm_practice");
 
 export const openMicrophonePrivacySettings = () =>
   invoke<void>("open_microphone_privacy_settings");
