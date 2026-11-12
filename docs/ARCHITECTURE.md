@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 Music Teacher is a Tauri 2 desktop app. Audio capture, playback and all
 analysis run natively in Rust; the React frontend only renders what the engine
@@ -9,7 +9,7 @@ reports and sends user commands. Nothing is recorded or saved except settings.
 ```
 crates/
   dsp/                 Pure signal analysis. No devices, no threads, no Tauri.
-    note.rs            Frequency → note/octave/cents (A4_HZ constant)
+    note.rs            Frequency â†’ note/octave/cents (A4_HZ constant)
     pitch.rs           PitchTracker: McLeod pitch detection on a sliding window
     stabilizer.rs      NoteStabilizer: note confirmation, smoothing, hold
     meter.rs           ChannelMeter: level ballistics, peak hold, signal/clip flags
@@ -20,6 +20,7 @@ crates/
     model.rs           NoteValue, Symbol, TimeSignature, Difficulty presets, Exercise
     generate.rs        Seeded exercise generator (exact bar filling, readability rules)
     judge.rs           TimingJudge: onsets vs notes, timing report (ADR 0008)
+    written.rs         layout(): user-written symbol sequence into bars (ADR 0009)
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
@@ -30,7 +31,7 @@ src-tauri/src/
   commands.rs          Thin #[tauri::command] wrappers around the engine/settings
   engine/mod.rs        AudioEngine service: one instance, owns all audio state
   engine/analysis.rs   Per-frame analysis pipeline (gain, meters, waveform, pitch)
-  engine/calibration.rs Calibration session (clicks ↔ onsets on the audio clock)
+  engine/calibration.rs Calibration session (clicks â†” onsets on the audio clock)
   engine/practice.rs   Rhythm practice session (count-in, metronome, position,
                        onset detection + timing judgement)
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
@@ -62,13 +63,13 @@ flowchart LR
     CP[ClickPlayer output callback] -->|click playback instants| RB3[(click ring)]
   end
   subgraph Engine thread ~30 Hz
-    RB1 --> G[gain] --> M[ChannelMeter] & W[waveform] & P[PitchTracker → NoteStabilizer]
+    RB1 --> G[gain] --> M[ChannelMeter] & W[waveform] & P[PitchTracker â†’ NoteStabilizer]
     G --> O[OnsetDetector]
-    RB2 --> T[frame → audio-clock time]
+    RB2 --> T[frame â†’ audio-clock time]
     O --> T --> C[calibration math]
     RB3 --> C
   end
-  M & W & P & C -->|EngineEvent over Tauri Channel| UI[AudioEngineProvider → screens]
+  M & W & P & C -->|EngineEvent over Tauri Channel| UI[AudioEngineProvider â†’ screens]
   UI -->|commands: set device / gain / calibrate| ENGINE[AudioEngine]
 ```
 

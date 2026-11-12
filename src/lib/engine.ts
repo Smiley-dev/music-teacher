@@ -65,6 +65,23 @@ export const NOTE_VALUES: readonly NoteValue[] = [
   "sixteenth",
 ];
 
+/** A note or rest (unplaced), as stored for written rhythms. */
+export type Symbol = { value: NoteValue; dotted: boolean; rest: boolean };
+
+/** Length in sixteenths; mirrors `Symbol::duration` (used to enable buttons only,
+ * the engine validates). */
+export const SIXTEENTHS: Record<NoteValue, number> = {
+  whole: 16,
+  half: 8,
+  quarter: 4,
+  eighth: 2,
+  sixteenth: 1,
+};
+export const symbolDuration = (s: Symbol) => (s.dotted ? SIXTEENTHS[s.value] * 1.5 : SIXTEENTHS[s.value]);
+
+/** Must match `MAX_WRITTEN_SYMBOLS` in `crates/rhythm`. */
+export const MAX_WRITTEN_SYMBOLS = 1024;
+
 /** A note or rest placed in a bar. Positions and lengths are in sixteenths. */
 export type PlacedSymbol = {
   value: NoteValue;
@@ -87,6 +104,18 @@ export type Exercise = {
 
 export type Difficulty = "easy" | "medium" | "hard" | "custom";
 
+/** Custom exercises: generated from selected values, or written by the user. */
+export type CustomMode = "random" | "written";
+
+/** An exercise that may still be unfinished (written rhythms while editing). */
+export type ExerciseDraft = {
+  exercise: Exercise;
+  /** Sixteenths missing in the last bar (0 = all bars full). */
+  remaining: number;
+  /** Playable: at least one bar, all full, at least one note. */
+  complete: boolean;
+};
+
 export type RhythmOptions = {
   values: NoteValue[];
   dotted: boolean;
@@ -105,6 +134,9 @@ export type RhythmPracticeSettings = {
   difficulty: Difficulty;
   /** Used when `difficulty` is "custom". */
   custom: RhythmOptions;
+  customMode: CustomMode;
+  /** The user's own rhythm, in order. */
+  written: Symbol[];
   timeSignature: TimeSignature;
   bars: number;
 };
@@ -262,8 +294,8 @@ export const cancelCalibration = () => invoke<void>("cancel_calibration");
 export const setRhythmSettings = (rhythm: RhythmPracticeSettings) =>
   invoke<Settings>("set_rhythm_settings", { rhythm });
 
-/** A new random exercise from the saved rhythm settings. */
-export const generateRhythmExercise = () => invoke<Exercise>("generate_rhythm_exercise");
+/** The exercise for the saved settings: a new random one, or the written rhythm. */
+export const generateRhythmExercise = () => invoke<ExerciseDraft>("generate_rhythm_exercise");
 
 export const startRhythmPractice = (exercise: Exercise) =>
   invoke<void>("start_rhythm_practice", { exercise });

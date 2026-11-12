@@ -55,6 +55,8 @@ export function renderScore(container: HTMLElement, exercise: Exercise, width: n
     Math.floor((usable - CLEF_WIDTH - TIME_SIGNATURE_WIDTH) / (beats * MIN_BEAT_WIDTH)),
   );
   const rows = Math.ceil(exercise.bars.length / barsPerRow);
+  if (rows === 0) return { notes: [], barTops: [] };
+  const barLen = beats * 4;
 
   const renderer = new Renderer(container as HTMLDivElement, Renderer.Backends.SVG);
   renderer.resize(width, rows * ROW_HEIGHT + PADDING);
@@ -90,7 +92,11 @@ export function renderScore(container: HTMLElement, exercise: Exercise, width: n
       return note;
     });
 
-    const voice = new Voice({ numBeats: beats, beatValue: 4 }).addTickables(staveNotes);
+    const voice = new Voice({ numBeats: beats, beatValue: 4 });
+    // A written rhythm's last bar may still be unfinished while editing.
+    const filled = bar.symbols.reduce((sum, s) => sum + s.duration, 0);
+    if (filled < barLen) voice.setMode(Voice.Mode.SOFT);
+    voice.addTickables(staveNotes);
     const beams = Beam.generateBeams(staveNotes, {
       groups: [new Fraction(1, 4)],
       stemDirection: Stem.UP,

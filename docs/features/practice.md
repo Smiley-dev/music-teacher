@@ -15,8 +15,9 @@ ignored, so any note on any instrument works.
 | --- | --- | --- |
 | Tempo | 40–200 BPM (quarter note = beat) | 80 |
 | Time signature | 2/4, 3/4, 4/4 | 4/4 |
-| Bars | 1–64 | 16 |
+| Bars | 1–64 (not used for written rhythms) | 16 |
 | Difficulty | Easy, Medium, Hard, Custom | Easy |
+| Custom mode | Random, Write your own | Random |
 
 Difficulty presets (sixteenth is the shortest value; `crates/rhythm`):
 
@@ -25,12 +26,30 @@ Difficulty presets (sixteenth is the shortest value; `crates/rhythm`):
 | Easy | whole, half, quarter | no | no |
 | Medium | whole, half, quarter, eighth, sixteenth | no | no |
 | Hard | all of the above | yes (dotted whole, half, quarter, eighth) | yes, every length |
-| Custom | any selection of the five values | optional | optional |
+| Custom → Random | any selection of the five values | optional | optional |
+| Custom → Write your own | whatever the user writes | yes | yes |
 
 Values that do not fit the time signature are never generated (a whole note
 needs a 4/4 bar, a dotted whole never fits). If a custom selection cannot fill
 a bar (for example only half notes in 3/4) the screen says so instead of
 generating.
+
+### Writing your own rhythm (Custom → Write your own, ADR 0009)
+
+- Choose **Notes** or **Rests**, optionally **Dotted**, then click a length
+  (whole … sixteenth, shown as music glyphs) to add it at the end. Lengths
+  that do not fit in the rest of the current bar are disabled; dotted
+  sixteenths are not available. Bars fill up automatically.
+- **Undo** removes the last symbol, **Clear** removes all. The score below
+  shows the rhythm as it grows (an unfinished last bar is drawn as is).
+- The rhythm can be listened to and practised once every bar is full and it
+  contains at least one note. Its length is whatever was written; the Bars
+  setting does not apply, and **New exercise** is hidden.
+- It is saved as a sequence of symbols. Changing the time signature lays the
+  same sequence out again; if a symbol would then cross a bar line, the
+  editor says which one and offers Undo/Clear.
+- Up to 1024 symbols / 64 bars. Practice judging and the analysis work the
+  same as for generated exercises.
 
 ### Generation rules
 

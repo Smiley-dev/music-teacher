@@ -22,11 +22,20 @@ import {
   MIN_BPM,
   NOTE_VALUES,
   type NoteValue,
+  type CustomMode,
+  type ExerciseDraft,
   type RhythmPracticeSettings,
   SUPPORTED_BEATS_PER_BAR,
 } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 import { useEngine } from "@/providers/audio-engine-context";
+
+import { RhythmEditor } from "./rhythm-editor";
+
+const CUSTOM_MODES: { id: CustomMode; label: string; description: string }[] = [
+  { id: "random", label: "Random", description: "New rhythms from the lengths you select." },
+  { id: "written", label: "Write your own", description: "Add notes and rests one by one." },
+];
 
 const DIFFICULTIES: { id: Difficulty; label: string; description: string }[] = [
   { id: "easy", label: "Easy", description: "Whole, half and quarter notes." },
@@ -36,7 +45,11 @@ const DIFFICULTIES: { id: Difficulty; label: string; description: string }[] = [
     label: "Hard",
     description: "Every note length, dotted notes and rests (shortest: sixteenth).",
   },
-  { id: "custom", label: "Custom", description: "Choose exactly what to practice." },
+  {
+    id: "custom",
+    label: "Custom",
+    description: "Pick the lengths for random rhythms, or write your own.",
+  },
 ];
 
 const VALUE_LABELS: Record<NoteValue, string> = {
@@ -47,7 +60,14 @@ const VALUE_LABELS: Record<NoteValue, string> = {
   sixteenth: "Sixteenth",
 };
 
-export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
+type RhythmSettingsCardProps = {
+  disabled: boolean;
+  /** The current exercise; shown by the editor for written rhythms. */
+  draft: ExerciseDraft | null;
+  draftError: string | null;
+};
+
+export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettingsCardProps) {
   const { settings, setRhythmSettings } = useEngine();
   const rhythm = settings.practice.rhythm;
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +80,8 @@ export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
     setRhythmSettings({ ...rhythm, ...change }).catch((e) => setError(String(e)));
   };
   const bpm = bpmDrag ?? rhythm.bpm;
+  /** Written rhythms set their own length; the bar count does not apply. */
+  const writing = rhythm.difficulty === "custom" && rhythm.customMode === "written";
   const setBpm = (value: number) => update({ bpm: Math.min(MAX_BPM, Math.max(MIN_BPM, value)) });
 
   const toggleValue = (value: NoteValue, on: boolean) => {
@@ -103,6 +125,42 @@ export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
         </div>
 
         {rhythm.difficulty === "custom" && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2" role="radiogroup" aria-label="Custom mode">
+              {CUSTOM_MODES.map((m) => (
+                <Button
+                  key={m.id}
+                  role="radio"
+                  size="sm"
+                  aria-checked={rhythm.customMode === m.id}
+                  variant={rhythm.customMode === m.id ? "secondary" : "ghost"}
+                  disabled={disabled}
+                  onClick={() => update({ customMode: m.id })}
+                >
+                  {m.label}
+                </Button>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {CUSTOM_MODES.find((m) => m.id === rhythm.customMode)?.description}
+            </p>
+          </div>
+        )}
+
+        {rhythm.difficulty === "custom" && rhythm.customMode === "written" && (
+          <div className="rounded-lg border p-4">
+            <RhythmEditor
+              written={rhythm.written}
+              draft={draft}
+              error={draftError}
+              beatsPerBar={rhythm.timeSignature.beatsPerBar}
+              disabled={disabled}
+              onChange={(written) => update({ written })}
+            />
+          </div>
+        )}
+
+        {rhythm.difficulty === "custom" && rhythm.customMode === "random" && (
           <fieldset className="flex flex-col gap-3 rounded-lg border p-4" disabled={disabled}>
             <legend className="px-1 text-sm font-medium">Include</legend>
             <div className="flex flex-wrap gap-x-6 gap-y-3">
@@ -194,6 +252,7 @@ export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
             </Select>
           </div>
 
+          {!writing && (
           <div className="flex flex-col gap-3">
             <Label htmlFor="bars">Bars</Label>
             <Input
@@ -209,6 +268,7 @@ export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
               onKeyDown={(e) => e.key === "Enter" && commitBars()}
             />
           </div>
+          )}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>

@@ -25,7 +25,11 @@ export function RhythmPractice() {
   const allJudgements = usePracticeJudgements();
   const calibrated = useLatency() !== null;
   const rhythm = settings.practice.rhythm;
-  const { exercise, error: generateError, regenerate } = useRhythmExercise(rhythm);
+  const { draft, error: generateError, regenerate } = useRhythmExercise(rhythm);
+  const writing = rhythm.difficulty === "custom" && rhythm.customMode === "written";
+  // Only a complete exercise can be played; a written draft is still shown.
+  const exercise = draft?.complete ? draft.exercise : null;
+  const shownExercise = draft && draft.exercise.bars.length > 0 ? draft.exercise : null;
   // Results belong to the exercise that was played; a new one hides them.
   const [playedExercise, setPlayedExercise] = useState<Exercise | null>(null);
   const showResults = playedExercise !== null && playedExercise === exercise;
@@ -55,22 +59,28 @@ export function RhythmPractice() {
   return (
     <div className="flex flex-col gap-6">
       <EngineStatusBanner status={status} />
-      <RhythmSettingsCard disabled={running} />
+      <RhythmSettingsCard
+        disabled={running}
+        draft={draft}
+        draftError={writing ? generateError : null}
+      />
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <CardTitle>Play along</CardTitle>
             <CardDescription>
-              {rhythm.bpm} BPM · {rhythm.timeSignature.beatsPerBar}/4 · {rhythm.bars} bars. Only
-              note lengths matter; play any note.
+              {rhythm.bpm} BPM · {rhythm.timeSignature.beatsPerBar}/4 ·{" "}
+              {shownExercise?.bars.length ?? 0} bars. Only note lengths matter; play any note.
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={regenerate} disabled={running}>
-              <Dices />
-              New exercise
-            </Button>
+            {!writing && (
+              <Button variant="outline" onClick={regenerate} disabled={running}>
+                <Dices />
+                New exercise
+              </Button>
+            )}
             {running ? (
               <Button variant="destructive" onClick={() => stopRhythmPractice()}>
                 <Square />
@@ -105,11 +115,20 @@ export function RhythmPractice() {
               clock).
             </p>
           )}
-          {(generateError || startError) && (
-            <p className="text-sm text-destructive">{generateError ?? startError}</p>
+          {((generateError && !writing) || startError) && (
+            <p className="text-sm text-destructive">{startError ?? generateError}</p>
           )}
-          {exercise && (
-            <RhythmScore exercise={exercise} active={active} judgements={judgements} />
+          {writing && draft && !draft.complete && (
+            <p className="text-sm text-muted-foreground">
+              Finish your rhythm above to listen to it or practice it.
+            </p>
+          )}
+          {shownExercise ? (
+            <RhythmScore exercise={shownExercise} active={active} judgements={judgements} />
+          ) : (
+            writing && (
+              <p className="text-sm text-muted-foreground">Your rhythm will appear here.</p>
+            )
           )}
         </CardContent>
       </Card>
