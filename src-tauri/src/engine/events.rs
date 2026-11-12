@@ -12,6 +12,7 @@ pub enum EngineEvent {
     Status { status: EngineStatus },
     Frame { frame: Frame },
     Calibration { calibration: CalibrationState },
+    Practice { practice: PracticeState },
     Settings { settings: Settings },
 }
 
@@ -84,6 +85,28 @@ pub enum CalibrationState {
     },
 }
 
+/// Rhythm practice session state, sent every engine tick while running.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(
+    tag = "phase",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum PracticeState {
+    Idle,
+    Running {
+        /// Beats from the start of the exercise on the audio clock; negative
+        /// during the count-in, `None` until the first click is scheduled.
+        position_beats: Option<f64>,
+        count_in_beats: u32,
+        total_beats: u32,
+    },
+    Finished,
+    Failed {
+        message: String,
+    },
+}
+
 /// Everything a new subscriber needs to render immediately.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -93,6 +116,7 @@ pub struct EngineSnapshot {
     pub status: EngineStatus,
     pub settings: Settings,
     pub calibration: CalibrationState,
+    pub practice: PracticeState,
 }
 
 #[cfg(test)]
@@ -144,6 +168,33 @@ mod tests {
         assert_eq!(
             serde_json::to_value(CalibrationState::Idle).unwrap(),
             json!({"phase": "idle"})
+        );
+    }
+
+    #[test]
+    fn practice_state_fields_are_camel_case() {
+        let running = PracticeState::Running {
+            position_beats: Some(-2.5),
+            count_in_beats: 4,
+            total_beats: 64,
+        };
+        assert_eq!(
+            serde_json::to_value(&running).unwrap(),
+            json!({"phase": "running", "positionBeats": -2.5, "countInBeats": 4, "totalBeats": 64})
+        );
+        assert_eq!(
+            serde_json::to_value(PracticeState::Failed {
+                message: "x".into()
+            })
+            .unwrap(),
+            json!({"phase": "failed", "message": "x"})
+        );
+        assert_eq!(
+            serde_json::to_value(EngineEvent::Practice {
+                practice: PracticeState::Finished
+            })
+            .unwrap(),
+            json!({"type": "practice", "practice": {"phase": "finished"}})
         );
     }
 

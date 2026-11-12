@@ -1,11 +1,12 @@
 //! The one shared audio engine (ADR 0005). Owns the input stream, gain,
-//! device selection, reconnects, analysis and calibration on a single
-//! `audio-engine` thread, and broadcasts `EngineEvent`s to every subscribed
-//! webview.
+//! device selection, reconnects, analysis, calibration and practice sessions
+//! on a single `audio-engine` thread, and broadcasts `EngineEvent`s to every
+//! subscribed webview.
 
 mod analysis;
 mod calibration;
 pub mod events;
+mod practice;
 
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc};
@@ -15,12 +16,18 @@ use audio_engine::{AudioError, DeviceId, InputStream};
 use dsp::calibration::{BEATS_PER_BAR, CLICK_COUNT};
 use tauri::ipc::Channel;
 
-use crate::settings::{LatencyCalibration, LatencySource, Settings, SettingsStore};
+use rhythm::Exercise;
+
+use crate::settings::{
+    LatencyCalibration, LatencySource, RhythmPracticeSettings, Settings, SettingsStore,
+};
 use analysis::Analyzer;
 use calibration::{CalibrationSession, Failure, Progress};
 use events::{
     CalibrationState, EngineError, EngineEvent, EngineSnapshot, EngineState, EngineStatus,
+    PracticeState,
 };
+use practice::{COUNT_IN_CLICKS, RhythmSession};
 
 /// Engine tick: how often audio is analysed and frames are sent (~30 Hz).
 const TICK: Duration = Duration::from_millis(33);
@@ -32,11 +39,17 @@ enum Command {
     SetDevice(Option<DeviceId>),
     StartCalibration,
     CancelCalibration,
+    StartRhythm {
+        exercise: Exercise,
+        bpm: u32,
+    },
+    StopRhythm,
 }
 
 struct Shared {
     status: Mutex<EngineStatus>,
     calibration: Mutex<CalibrationState>,
+    practice: Mutex<PracticeState>,
     /// Subscribed webviews, keyed by subscription id.
     subscribers: Mutex<Vec<(u64, Channel<EngineEvent>)>>,
     next_subscriber: AtomicU64,
@@ -73,6 +86,23 @@ impl Shared {
         }
     }
 
+    fn set_practice(&self, practice: PracticeState) {
+        let mut current = lock(&self.practice);
+        if *current != practice {
+            *current = practice.clone();
+            drop(current);
+            self.broadcast(&EngineEvent::Practice { practice });
+        }
+    }
+
+    fn calibration_running(&self) -> bool {
+        matches!(*lock(&self.calibration), CalibrationState::Running { .. })
+    }
+
+    fn practice_running(&self) -> bool {
+        matches!(*lock(&self.practice), PracticeState::Running { .. })
+    }
+
     /// Persist a settings change and tell every subscriber.
     fn update_settings(&self, change: impl FnOnce(&mut Settings)) -> Result<Settings, String> {
         let result = self.settings.update(change);
@@ -105,6 +135,7 @@ impl AudioEngine {
                 error: None,
             }),
             calibration: Mutex::new(CalibrationState::Idle),
+            practice: Mutex::new(PracticeState::Idle),
             subscribers: Mutex::new(Vec::new()),
             next_subscriber: AtomicU64::new(1),
             gain: AtomicU32::new(dsp::meter::db_to_gain(initial.gain_db).to_bits()),
@@ -130,6 +161,7 @@ impl AudioEngine {
             status: lock(&self.shared.status).clone(),
             settings: self.shared.settings.get(),
             calibration: lock(&self.shared.calibration).clone(),
+            practice: lock(&self.shared.practice).clone(),
         }
     }
 
@@ -188,12 +220,48 @@ impl AudioEngine {
         if lock(&self.shared.status).state != EngineState::Running {
             return Err("Select a working input device before calibrating.".into());
         }
+        if self.shared.practice_running() {
+            return Err("Stop the practice session before calibrating.".into());
+        }
         let _ = self.commands.send(Command::StartCalibration);
         Ok(())
     }
 
     pub fn cancel_calibration(&self) {
         let _ = self.commands.send(Command::CancelCalibration);
+    }
+
+    /// Save the rhythm practice settings (clamped to valid ranges).
+    pub fn set_rhythm_settings(&self, rhythm: RhythmPracticeSettings) -> Result<Settings, String> {
+        self.shared.update_settings(|s| s.practice.rhythm = rhythm)
+    }
+
+    /// A new random exercise from the saved rhythm settings.
+    pub fn generate_rhythm_exercise(&self) -> Result<Exercise, String> {
+        let rhythm = self.shared.settings.get().practice.rhythm;
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos() as u64);
+        rhythm::generate(&rhythm.options(), rhythm.time_signature, rhythm.bars, seed)
+            .map_err(|e| e.to_string())
+    }
+
+    /// Play `exercise` with a count-in at the saved tempo.
+    pub fn start_rhythm_practice(&self, exercise: Exercise) -> Result<(), String> {
+        exercise.validate().map_err(|e| e.to_string())?;
+        if lock(&self.shared.status).state != EngineState::Running {
+            return Err("Select a working input device before practicing.".into());
+        }
+        if self.shared.calibration_running() {
+            return Err("Wait for the calibration to finish first.".into());
+        }
+        let bpm = self.shared.settings.get().practice.rhythm.bpm;
+        let _ = self.commands.send(Command::StartRhythm { exercise, bpm });
+        Ok(())
+    }
+
+    pub fn stop_rhythm_practice(&self) {
+        let _ = self.commands.send(Command::StopRhythm);
     }
 }
 
@@ -204,6 +272,7 @@ struct Runner {
     wanted: Option<DeviceId>,
     input: Option<(InputStream, Analyzer)>,
     calibration: Option<CalibrationSession>,
+    practice: Option<RhythmSession>,
     next_attempt: Instant,
     /// Whether the last stream ended by failing (vs. never opened).
     was_running: bool,
@@ -216,6 +285,7 @@ fn run(shared: Arc<Shared>, commands: mpsc::Receiver<Command>, wanted: Option<De
         wanted,
         input: None,
         calibration: None,
+        practice: None,
         next_attempt: Instant::now(),
         was_running: false,
         clock: Instant::now(),
@@ -242,6 +312,7 @@ impl Runner {
         match command {
             Command::SetDevice(device) => {
                 self.stop_calibration(Some("the input device was changed"));
+                self.stop_practice(Some("the input device was changed"));
                 // Release the old device before opening the new one.
                 self.input = None;
                 self.shared.set_status(EngineStatus {
@@ -274,6 +345,44 @@ impl Runner {
                 }
             }
             Command::CancelCalibration => self.stop_calibration(None),
+            Command::StartRhythm { exercise, bpm } => {
+                if self.input.is_none() {
+                    return self.shared.set_practice(PracticeState::Failed {
+                        message: "No input device is running.".into(),
+                    });
+                }
+                if self.calibration.is_some() {
+                    return self.shared.set_practice(PracticeState::Failed {
+                        message: "Wait for the calibration to finish first.".into(),
+                    });
+                }
+                // Restarting replaces the previous session (and its clicks).
+                self.practice = None;
+                match RhythmSession::start(&exercise, bpm) {
+                    Ok(session) => {
+                        self.shared.set_practice(PracticeState::Running {
+                            position_beats: None,
+                            count_in_beats: COUNT_IN_CLICKS,
+                            total_beats: session.total_beats(),
+                        });
+                        self.practice = Some(session);
+                    }
+                    Err(message) => self.shared.set_practice(PracticeState::Failed { message }),
+                }
+            }
+            Command::StopRhythm => self.stop_practice(None),
+        }
+    }
+
+    /// End a running practice session: back to idle, or failed with `reason`.
+    fn stop_practice(&mut self, reason: Option<&str>) {
+        if self.practice.take().is_some() {
+            self.shared.set_practice(match reason {
+                Some(reason) => PracticeState::Failed {
+                    message: format!("Practice stopped: {reason}."),
+                },
+                None => PracticeState::Idle,
+            });
         }
     }
 
@@ -303,6 +412,7 @@ impl Runner {
             self.next_attempt = Instant::now() + RETRY_INTERVAL;
             self.report_error(device, &error);
             self.stop_calibration(Some("the input device was lost"));
+            self.stop_practice(Some("the input device was lost"));
             return;
         }
 
@@ -321,16 +431,34 @@ impl Runner {
                 }
                 Progress::Finished(result) => {
                     self.calibration = None;
-                    self.finish_calibration(result);
+                    Self::finish_calibration(&self.shared, result);
                 }
             }
         }
+
+        if let Some(session) = &mut self.practice {
+            let state = match session.tick(analyzer) {
+                practice::Progress::Running { position_beats } => PracticeState::Running {
+                    position_beats,
+                    count_in_beats: COUNT_IN_CLICKS,
+                    total_beats: session.total_beats(),
+                },
+                practice::Progress::Finished => PracticeState::Finished,
+                practice::Progress::Failed(message) => PracticeState::Failed { message },
+            };
+            if !matches!(state, PracticeState::Running { .. }) {
+                self.practice = None;
+            }
+            self.shared.set_practice(state);
+        }
     }
 
-    fn finish_calibration(&self, result: Result<dsp::LatencyEstimate, Failure>) {
+    /// Save a finished calibration's result. Takes only the shared state so it
+    /// can run while the analyzer is still borrowed in `tick`.
+    fn finish_calibration(shared: &Shared, result: Result<dsp::LatencyEstimate, Failure>) {
         let estimate = match result {
             Ok(estimate) => estimate,
-            Err(f) => return self.shared.set_calibration(failed(f.message, f.matched)),
+            Err(f) => return shared.set_calibration(failed(f.message, f.matched)),
         };
         let latency = LatencyCalibration {
             ms: estimate.latency_ms,
@@ -338,17 +466,12 @@ impl Runner {
             matched: Some(estimate.matched),
             total_clicks: Some(estimate.total_clicks),
         };
-        match self
-            .shared
-            .update_settings(|s| s.latency = Some(latency.clone()))
-        {
-            Ok(_) => self.shared.set_calibration(CalibrationState::Done {
+        match shared.update_settings(|s| s.latency = Some(latency.clone())) {
+            Ok(_) => shared.set_calibration(CalibrationState::Done {
                 latency,
                 rejected: estimate.rejected,
             }),
-            Err(e) => self
-                .shared
-                .set_calibration(failed(e, Some(estimate.matched))),
+            Err(e) => shared.set_calibration(failed(e, Some(estimate.matched))),
         }
     }
 

@@ -8,7 +8,8 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::engine::AudioEngine;
 use crate::engine::events::{EngineEvent, EngineSnapshot};
-use crate::settings::Settings;
+use crate::settings::{RhythmPracticeSettings, Settings};
+use rhythm::Exercise;
 
 /// Windows Settings page that controls microphone access for desktop apps.
 const MICROPHONE_PRIVACY_URL: &str = "ms-settings:privacy-microphone";
@@ -60,6 +61,35 @@ pub fn start_calibration(engine: State<'_, AudioEngine>) -> Result<(), String> {
 #[tauri::command]
 pub fn cancel_calibration(engine: State<'_, AudioEngine>) {
     engine.cancel_calibration();
+}
+
+/// Save rhythm practice settings; returns the (clamped) saved settings.
+#[tauri::command]
+pub fn set_rhythm_settings(
+    rhythm: RhythmPracticeSettings,
+    engine: State<'_, AudioEngine>,
+) -> Result<Settings, String> {
+    engine.set_rhythm_settings(rhythm)
+}
+
+/// A new random exercise from the saved rhythm settings.
+#[tauri::command]
+pub fn generate_rhythm_exercise(engine: State<'_, AudioEngine>) -> Result<Exercise, String> {
+    engine.generate_rhythm_exercise()
+}
+
+/// Play `exercise` with count-in and metronome; progress arrives as events.
+#[tauri::command]
+pub fn start_rhythm_practice(
+    exercise: Exercise,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.start_rhythm_practice(exercise)
+}
+
+#[tauri::command]
+pub fn stop_rhythm_practice(engine: State<'_, AudioEngine>) {
+    engine.stop_rhythm_practice();
 }
 
 #[tauri::command]

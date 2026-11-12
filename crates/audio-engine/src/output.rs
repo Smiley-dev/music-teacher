@@ -22,15 +22,91 @@ const CLICK_AMPLITUDE: f32 = 0.5;
 const ATTACK_SECS: f32 = 0.0005;
 
 /// When to play clicks, relative to the start of the output stream.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct ClickSchedule {
     /// Silence before the first click, in seconds.
     pub lead_in_secs: f64,
     /// Time between clicks, in seconds.
     pub interval_secs: f64,
-    pub count: u32,
-    /// Every `accent_every`-th click (starting with the first) is accented.
-    pub accent_every: u32,
+    /// One entry per click: `true` = accented (higher pitch).
+    pub accents: Vec<bool>,
+}
+
+impl ClickSchedule {
+    /// `count` clicks, accenting the first of every `accent_every`.
+    pub fn regular(lead_in_secs: f64, interval_secs: f64, count: u32, accent_every: u32) -> Self {
+        Self {
+            lead_in_secs,
+            interval_secs,
+            accents: (0..count)
+                .map(|k| k.is_multiple_of(accent_every.max(1)))
+                .collect(),
+        }
+    }
+}
+
+/// Pre-computed click schedule rendered frame by frame. Allocation-free after
+/// construction, O(1) per frame (walks the sorted click list with an index).
+struct ClickTrack {
+    starts: Vec<u64>,
+    accents: Vec<bool>,
+    accent: Vec<f32>,
+    normal: Vec<f32>,
+    /// First click that has not finished sounding.
+    next: usize,
+    frame: u64,
+}
+
+impl ClickTrack {
+    fn new(schedule: &ClickSchedule, sample_rate: u32) -> Self {
+        let sr = sample_rate as f64;
+        Self {
+            starts: (0..schedule.accents.len())
+                .map(|k| {
+                    ((schedule.lead_in_secs + k as f64 * schedule.interval_secs) * sr).round()
+                        as u64
+                })
+                .collect(),
+            accents: schedule.accents.clone(),
+            accent: click_sound(sample_rate, ACCENT_HZ),
+            normal: click_sound(sample_rate, NORMAL_HZ),
+            next: 0,
+            frame: 0,
+        }
+    }
+
+    /// Render `frames` frames: `write(i, value)` per frame, and
+    /// `started(click_index, frame_offset)` for each click starting here.
+    fn render(
+        &mut self,
+        frames: usize,
+        mut write: impl FnMut(usize, f32),
+        mut started: impl FnMut(u32, u64),
+    ) {
+        let len = self.normal.len() as u64;
+        for i in 0..frames {
+            let f = self.frame + i as u64;
+            while self.next < self.starts.len() && f >= self.starts[self.next] + len {
+                self.next += 1;
+            }
+            let mut value = 0.0;
+            if let Some(&start) = self.starts.get(self.next)
+                && f >= start
+            {
+                if f == start {
+                    started(self.next as u32, i as u64);
+                }
+                let sound = if self.accents[self.next] {
+                    &self.accent
+                } else {
+                    &self.normal
+                };
+                value = sound.get((f - start) as usize).copied().unwrap_or(0.0);
+            }
+            write(i, value);
+        }
+        self.frame += frames as u64;
+    }
 }
 
 /// A click that has been rendered, with the time its first sample plays.
@@ -125,10 +201,10 @@ fn open_stream(
     let supported = device.default_output_config()?;
     let format = supported.sample_format();
     let config: cpal::StreamConfig = supported.into();
-    let (tx, rx) = RingBuffer::new(schedule.count.max(1) as usize);
+    let (tx, rx) = RingBuffer::new(schedule.accents.len().max(1));
 
     use cpal::SampleFormat as F;
-    let (d, c, s, e) = (&device, &config, schedule, error);
+    let (d, c, s, e) = (&device, &config, &schedule, error);
     let stream = match format {
         F::F32 => build::<f32>(d, c, s, tx, e)?,
         F::F64 => build::<f64>(d, c, s, tx, e)?,
@@ -145,7 +221,7 @@ fn open_stream(
 fn build<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
-    schedule: ClickSchedule,
+    schedule: &ClickSchedule,
     mut clicks_tx: Producer<ClickTimestamp>,
     error: Arc<Mutex<Option<AudioError>>>,
 ) -> Result<cpal::Stream, AudioError>
@@ -154,52 +230,27 @@ where
 {
     let sample_rate = config.sample_rate.0;
     let channels = config.channels as usize;
-    let sr = sample_rate as f64;
     // Everything the callback needs is computed up front.
-    let click_frames: Vec<u64> = (0..schedule.count)
-        .map(|k| ((schedule.lead_in_secs + k as f64 * schedule.interval_secs) * sr).round() as u64)
-        .collect();
-    let accent = click_sound(sample_rate, ACCENT_HZ);
-    let normal = click_sound(sample_rate, NORMAL_HZ);
-    let accent_every = schedule.accent_every.max(1);
-    let mut frame: u64 = 0;
+    let mut track = ClickTrack::new(schedule, sample_rate);
 
     let stream = device.build_output_stream(
         config,
         // REAL-TIME CALLBACK: no allocation, locks, I/O or logging here.
         move |data: &mut [T], info: &cpal::OutputCallbackInfo| {
-            let buffer_start = frame;
-            let buffer_frames = (data.len() / channels) as u64;
-            for (i, out_frame) in data.chunks_exact_mut(channels).enumerate() {
-                let f = buffer_start + i as u64;
-                let mut value = 0.0f32;
-                // At most one click sounds at a time (clicks are far apart).
-                if let Some((k, &start)) = click_frames
-                    .iter()
-                    .enumerate()
-                    .find(|&(_, &start)| f >= start && f - start < normal.len() as u64)
-                {
-                    let accented = (k as u32).is_multiple_of(accent_every);
-                    let sound = if accented { &accent } else { &normal };
-                    value = sound.get((f - start) as usize).copied().unwrap_or(0.0);
-                }
-                let sample = T::from_sample(value);
-                out_frame.iter_mut().for_each(|s| *s = sample);
-            }
-            for (k, &start) in click_frames.iter().enumerate() {
-                if start >= buffer_start && start < buffer_start + buffer_frames {
-                    let playback = offset_instant(
-                        &info.timestamp().playback,
-                        start - buffer_start,
-                        sample_rate,
-                    );
+            let playback = info.timestamp().playback;
+            track.render(
+                data.len() / channels,
+                |i, value| {
+                    let sample = T::from_sample(value);
+                    data[i * channels..(i + 1) * channels].fill(sample);
+                },
+                |index, offset| {
                     let _ = clicks_tx.push(ClickTimestamp {
-                        index: k as u32,
-                        playback,
+                        index,
+                        playback: offset_instant(&playback, offset, sample_rate),
                     });
-                }
-            }
-            frame += buffer_frames;
+                },
+            );
         },
         move |err| {
             *error.lock().unwrap_or_else(PoisonError::into_inner) = Some(err.into());
@@ -207,4 +258,67 @@ where
         None,
     )?;
     Ok(stream)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SR: u32 = 48_000;
+
+    /// Render `total` frames in uneven buffers; return the samples and the
+    /// absolute frame at which each click was reported to start.
+    fn render_all(schedule: &ClickSchedule, total: usize) -> (Vec<f32>, Vec<(u32, u64)>) {
+        let mut track = ClickTrack::new(schedule, SR);
+        let mut samples = vec![0.0; total];
+        let mut starts = Vec::new();
+        let mut done = 0;
+        for size in [441, 512, 1000, 127].iter().cycle() {
+            if done >= total {
+                break;
+            }
+            let n = (*size).min(total - done);
+            let base = done;
+            track.render(
+                n,
+                |i, v| samples[base + i] = v,
+                |k, offset| starts.push((k, base as u64 + offset)),
+            );
+            done += n;
+        }
+        (samples, starts)
+    }
+
+    #[test]
+    fn regular_accents() {
+        let s = ClickSchedule::regular(0.0, 0.5, 6, 3);
+        assert_eq!(s.accents, vec![true, false, false, true, false, false]);
+    }
+
+    #[test]
+    fn clicks_start_on_exact_frames_and_are_reported_once() {
+        let s = ClickSchedule::regular(0.1, 0.25, 8, 4);
+        let (samples, starts) = render_all(&s, SR as usize * 3);
+        let expected: Vec<(u32, u64)> = (0..8).map(|k| (k, 4_800 + k as u64 * 12_000)).collect();
+        assert_eq!(starts, expected);
+        assert!(samples[..4_800].iter().all(|&v| v == 0.0), "silent lead-in");
+        assert!(
+            samples[4_801..4_900].iter().any(|v| v.abs() > 0.1),
+            "click sounds"
+        );
+    }
+
+    #[test]
+    fn accented_clicks_use_the_accent_sound() {
+        let s = ClickSchedule {
+            lead_in_secs: 0.0,
+            interval_secs: 0.5,
+            accents: vec![true, false],
+        };
+        let (samples, _) = render_all(&s, SR as usize);
+        let accent = click_sound(SR, ACCENT_HZ);
+        let normal = click_sound(SR, NORMAL_HZ);
+        assert_eq!(&samples[..accent.len()], &accent[..]);
+        assert_eq!(&samples[24_000..24_000 + normal.len()], &normal[..]);
+    }
 }

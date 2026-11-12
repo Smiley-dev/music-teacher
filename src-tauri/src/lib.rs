@@ -28,6 +28,10 @@ pub fn run() {
             commands::set_latency_ms,
             commands::start_calibration,
             commands::cancel_calibration,
+            commands::set_rhythm_settings,
+            commands::generate_rhythm_exercise,
+            commands::start_rhythm_practice,
+            commands::stop_rhythm_practice,
             commands::open_microphone_privacy_settings,
         ])
         .run(tauri::generate_context!())

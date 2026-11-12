@@ -54,12 +54,12 @@ impl CalibrationSession {
     /// starting with the next frame it reads.
     pub fn start(analyzer: &Analyzer) -> Result<Self, String> {
         let beat = beat_secs(CALIBRATION_BPM);
-        let player = ClickPlayer::start(ClickSchedule {
-            lead_in_secs: LEAD_IN_SECS,
-            interval_secs: beat,
-            count: CLICK_COUNT,
-            accent_every: BEATS_PER_BAR,
-        })
+        let player = ClickPlayer::start(ClickSchedule::regular(
+            LEAD_IN_SECS,
+            beat,
+            CLICK_COUNT,
+            BEATS_PER_BAR,
+        ))
         .map_err(|e| format!("could not play the metronome: {e}"))?;
         let planned = LEAD_IN_SECS + beat * (CLICK_COUNT as f64 - 1.0 + TAIL_BEATS);
         Ok(Self {
