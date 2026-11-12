@@ -1,0 +1,40 @@
+# Architecture Decision Records
+
+One file per decision, numbered in order: `NNNN-short-title.md`. Records are
+never deleted; a decision that changes gets a new ADR that supersedes the old
+one (update the old one's status).
+
+## Index
+
+| # | Title | Status |
+| --- | --- | --- |
+| [0001](0001-pitch-detection-mcleod.md) | Pitch detection with the McLeod Pitch Method | Accepted |
+| [0002](0002-native-audio-threads.md) | Audio processing on native Rust threads | Accepted |
+| [0003](0003-latency-calibration-audio-clock.md) | Latency calibration on the audio clock | Accepted |
+| [0004](0004-settings-persistence-json.md) | Settings persisted as JSON by the Rust backend | Accepted |
+| [0005](0005-single-audio-engine.md) | One shared audio engine with a single event stream | Accepted |
+
+## Template
+
+```markdown
+# NNNN. Title
+
+- Status: Proposed | Accepted | Superseded by NNNN
+- Date: YYYY-MM-DD
+
+## Context
+
+What problem or force makes a decision necessary.
+
+## Decision
+
+What we chose, stated precisely.
+
+## Alternatives considered
+
+- Option: why not.
+
+## Consequences
+
+What becomes easier, what becomes harder, follow-up work.
+```
