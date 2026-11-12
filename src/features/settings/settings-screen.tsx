@@ -1,3 +1,4 @@
+import { CalibrationCard } from "./calibration-card";
 import { InputDeviceCard } from "./input-device-card";
 import { InputGainCard } from "./input-gain-card";
 
@@ -6,6 +7,7 @@ export function SettingsScreen() {
     <div className="flex flex-col gap-6">
       <InputDeviceCard />
       <InputGainCard />
+      <CalibrationCard />
     </div>
   );
 }
