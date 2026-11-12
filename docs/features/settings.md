@@ -57,9 +57,9 @@ Changing the device or losing it during calibration stops the session.
 
 - Click times: output callback `playback` instant + sample offset of the
   click's first sample.
-- Onset times: `OnsetDetector` finds energy rises (5 ms hops, RMS above
-  −45 dBFS and ≥ 6 dB above the previous 20 ms, 100 ms refractory period),
-  refined to the first sample above half the hop's peak; converted with the
+- Onset times: `OnsetDetector` finds attacks with spectral flux (40 ms
+  window, ~10 ms hops, RMS above −45 dBFS, 50 ms refractory period), refined
+  to ~1 ms by the sharpest rise in high-frequency energy (ADR 0010); converted with the
   input buffer's `capture` instant + sample offset. Both instants use the same
   clock (QPC on Windows).
 - Each click is matched to the nearest unused onset within ±40% of a beat

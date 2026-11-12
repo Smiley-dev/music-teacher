@@ -964,6 +964,7 @@ name = "dsp"
 version = "0.1.0"
 dependencies = [
  "pitch-detection",
+ "rustfft",
  "serde",
  "thiserror 2.0.21",
 ]

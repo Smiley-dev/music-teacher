@@ -14,7 +14,7 @@ crates/
     stabilizer.rs      NoteStabilizer: note confirmation, smoothing, hold
     meter.rs           ChannelMeter: level ballistics, peak hold, signal/clip flags
     waveform.rs        Min/max reduction of samples for drawing
-    onset.rs           OnsetDetector: energy-rise note onsets with sample positions
+    onset.rs           OnsetDetector: spectral-flux note onsets, ~1 ms timing (ADR 0010)
     calibration.rs     Latency estimate from click/onset times (+ constants)
   rhythm/              Pure rhythm logic (ADR 0006). No devices, threads or Tauri.
     model.rs           NoteValue, Symbol, TimeSignature, Difficulty presets, Exercise

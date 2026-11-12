@@ -106,7 +106,7 @@ notes stand out.
 ### Timing judgement (ADR 0008)
 
 While you play, the engine detects each note you strike on the input
-(`OnsetDetector`, energy rise; pitch is ignored) and `rhythm::TimingJudge`
+(`OnsetDetector`, spectral flux, ADR 0010; pitch is ignored) and `rhythm::TimingJudge`
 matches it to the exercise:
 
 | Result | Rule | Colour in the score |

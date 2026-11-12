@@ -10,13 +10,14 @@ one (update the old one's status).
 | --- | --- | --- |
 | [0001](0001-pitch-detection-mcleod.md) | Pitch detection with the McLeod Pitch Method | Accepted |
 | [0002](0002-native-audio-threads.md) | Audio processing on native Rust threads | Accepted |
-| [0003](0003-latency-calibration-audio-clock.md) | Latency calibration on the audio clock | Accepted |
+| [0003](0003-latency-calibration-audio-clock.md) | Latency calibration on the audio clock | Accepted (detector: 0010) |
 | [0004](0004-settings-persistence-json.md) | Settings persisted as JSON by the Rust backend | Accepted |
 | [0005](0005-single-audio-engine.md) | One shared audio engine with a single event stream | Accepted |
 | [0006](0006-rhythm-exercises-and-practice-sessions.md) | Rhythm exercises generated in Rust, played as engine sessions | Accepted |
 | [0007](0007-notation-rendering-vexflow.md) | Music notation rendered with VexFlow | Accepted |
 | [0008](0008-rhythm-timing-judgement.md) | Judging rhythm practice timing from input onsets | Accepted |
 | [0009](0009-written-custom-rhythms.md) | User-written custom rhythms stored as a symbol sequence | Accepted |
+| [0010](0010-spectral-flux-onsets.md) | Spectral-flux onset detection | Accepted |
 
 ## Template
 

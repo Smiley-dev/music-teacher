@@ -1,6 +1,6 @@
 # 0003. Latency calibration on the audio clock
 
-- Status: Accepted
+- Status: Accepted (onset detector replaced by ADR 0010)
 - Date: 2026-11-12
 
 ## Context
@@ -16,8 +16,8 @@ measured on the user's actual setup.
   `dsp::calibration`) on the default output device with `ClickPlayer`. Each
   click is rendered at an exact sample position; its time is the output
   callback's `playback` `StreamInstant` plus the sample offset.
-- Detect when the user's notes start with `dsp::OnsetDetector` (energy rise
-  above the gate, ~5 ms hops, refined to the first strong sample). Onset time
+- Detect when the user's notes start with `dsp::OnsetDetector` (originally
+  an energy-rise detector; now spectral flux, see ADR 0010). Onset time
   = the input buffer's `capture` `StreamInstant` plus the sample offset.
   Pitch detection is not used; onsets are faster and more precise.
 - On WASAPI both instants come from the same performance counter (QPC), so
