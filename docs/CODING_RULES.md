@@ -42,7 +42,10 @@ Timing that matters (calibration, later Practice) uses the audio clock: cpal
 - Types that cross IPC derive `Serialize` (and `Deserialize` if received) with
   `#[serde(rename_all = "camelCase")]`. Enums sent to the UI use
   `#[serde(tag = "type")]` or `rename_all` so the TypeScript side gets string
-  literals.
+  literals. On enums, `rename_all` renames only the variants: enums with
+  struct variants also need `rename_all_fields = "camelCase"`. Every type sent
+  to the UI with a non-trivial shape gets a JSON shape test
+  (see `engine/events.rs`).
 - Code is formatted with `cargo fmt --all` (default rustfmt settings).
 - `cargo clippy --workspace --all-targets -- -D warnings` must pass.
 

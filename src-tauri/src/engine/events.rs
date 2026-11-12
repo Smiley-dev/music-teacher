@@ -57,8 +57,14 @@ pub struct Frame {
     pub note: Option<StableNote>,
 }
 
+/// `rename_all` only renames variants; `rename_all_fields` is needed so the
+/// variants' fields are camelCase too (`beatsPerBar`, `totalClicks`).
 #[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(tag = "phase", rename_all = "camelCase")]
+#[serde(
+    tag = "phase",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum CalibrationState {
     Idle,
     /// Clicks are playing. `beat` = clicks played so far (0 during lead-in).
@@ -87,4 +93,68 @@ pub struct EngineSnapshot {
     pub status: EngineStatus,
     pub settings: Settings,
     pub calibration: CalibrationState,
+}
+
+#[cfg(test)]
+mod tests {
+    //! Pin the JSON shape that `src/lib/engine.ts` relies on.
+    use super::*;
+    use crate::settings::LatencySource;
+    use serde_json::json;
+
+    #[test]
+    fn calibration_state_fields_are_camel_case() {
+        let running = CalibrationState::Running {
+            beat: 3,
+            beats_per_bar: 4,
+            total_clicks: 16,
+        };
+        assert_eq!(
+            serde_json::to_value(&running).unwrap(),
+            json!({"phase": "running", "beat": 3, "beatsPerBar": 4, "totalClicks": 16})
+        );
+
+        let failed = CalibrationState::Failed {
+            message: "x".into(),
+            matched: Some(5),
+            total_clicks: 16,
+        };
+        assert_eq!(
+            serde_json::to_value(&failed).unwrap(),
+            json!({"phase": "failed", "message": "x", "matched": 5, "totalClicks": 16})
+        );
+
+        let done = CalibrationState::Done {
+            latency: LatencyCalibration {
+                ms: 40.0,
+                source: LatencySource::Measured,
+                matched: Some(15),
+                total_clicks: Some(16),
+            },
+            rejected: 1,
+        };
+        assert_eq!(
+            serde_json::to_value(&done).unwrap(),
+            json!({
+                "phase": "done",
+                "latency": {"ms": 40.0, "source": "measured", "matched": 15, "totalClicks": 16},
+                "rejected": 1
+            })
+        );
+        assert_eq!(
+            serde_json::to_value(CalibrationState::Idle).unwrap(),
+            json!({"phase": "idle"})
+        );
+    }
+
+    #[test]
+    fn engine_event_is_tagged_by_type() {
+        let event = EngineEvent::Calibration {
+            calibration: CalibrationState::Idle,
+        };
+        assert_eq!(
+            serde_json::to_value(&event).unwrap(),
+            json!({"type": "calibration", "calibration": {"phase": "idle"}})
+        );
+    }
 }
