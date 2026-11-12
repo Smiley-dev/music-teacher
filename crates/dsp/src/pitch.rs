@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
-use pitch_detection::detector::mcleod::McLeodDetector;
 use pitch_detection::detector::PitchDetector;
+use pitch_detection::detector::mcleod::McLeodDetector;
 use serde::Serialize;
 
 use crate::Note;
@@ -125,7 +125,11 @@ mod tests {
             (880.0, "A", 5),
         ] {
             let r = detect(tone(hz, 0.2, 0.5)).unwrap_or_else(|| panic!("no pitch at {hz} Hz"));
-            assert_eq!((r.note.name, r.note.octave), (name, octave), "{hz} Hz -> {r:?}");
+            assert_eq!(
+                (r.note.name, r.note.octave),
+                (name, octave),
+                "{hz} Hz -> {r:?}"
+            );
             assert!(r.note.cents.abs() < 5.0, "{hz} Hz -> {r:?}");
         }
     }

@@ -6,8 +6,8 @@ use std::time::{Duration, Instant};
 use audio_engine::{InputDeviceInfo, InputMonitor, MonitorInfo};
 use dsp::{PitchReading, PitchTracker};
 use serde::Serialize;
-use tauri::ipc::Channel;
 use tauri::State;
+use tauri::ipc::Channel;
 
 /// How often level updates are pushed to the UI (~30 fps).
 const METER_INTERVAL: Duration = Duration::from_millis(33);
@@ -147,7 +147,9 @@ fn start_monitoring(
                         }
                         Err(e) => {
                             next_retry = Instant::now() + RECONNECT_INTERVAL;
-                            MonitorEvent::Reconnecting { message: e.to_string() }
+                            MonitorEvent::Reconnecting {
+                                message: e.to_string(),
+                            }
                         }
                     },
                 };

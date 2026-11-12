@@ -39,8 +39,19 @@ impl Note {
 
     /// Exact frequency of this note (ignoring `cents`).
     pub fn frequency(&self) -> f32 {
-        Self::A4_HZ * 2f32.powf((self.midi - 69) as f32 / 12.0)
+        midi_to_frequency(self.midi)
     }
+}
+
+/// Exact equal-tempered frequency of a MIDI note.
+pub fn midi_to_frequency(midi: i32) -> f32 {
+    Note::A4_HZ * 2f32.powf((midi - 69) as f32 / 12.0)
+}
+
+/// Cents between `frequency` and the exact frequency of `midi`
+/// (positive = sharp).
+pub fn cents_from(frequency: f32, midi: i32) -> f32 {
+    1200.0 * (frequency / midi_to_frequency(midi)).log2()
 }
 
 #[cfg(test)]
@@ -57,8 +68,8 @@ mod tests {
     #[test]
     fn guitar_and_bass_strings() {
         for (hz, name, octave) in [
-            (41.20, "E", 1),  // bass low E
-            (82.41, "E", 2),  // guitar low E
+            (41.20, "E", 1), // bass low E
+            (82.41, "E", 2), // guitar low E
             (110.0, "A", 2),
             (146.83, "D", 3),
             (196.0, "G", 3),
@@ -80,6 +91,14 @@ mod tests {
         let flat = Note::from_frequency(435.0).unwrap();
         assert_eq!(flat.name, "A");
         assert!(flat.cents < -15.0 && flat.cents > -25.0);
+    }
+
+    #[test]
+    fn cents_from_exact_note() {
+        assert!(cents_from(440.0, 69).abs() < 0.01);
+        assert!((cents_from(880.0, 69) - 1200.0).abs() < 0.01);
+        assert!((cents_from(midi_to_frequency(40), 40)).abs() < 0.01);
+        assert!((midi_to_frequency(40) - 82.41).abs() < 0.01); // E2
     }
 
     #[test]

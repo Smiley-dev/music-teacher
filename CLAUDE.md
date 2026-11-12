@@ -17,6 +17,7 @@ in the same change.
 
 ```sh
 npm run tauri dev                     # run the app
+cargo fmt --all                       # format Rust code
 cargo test --workspace                # Rust unit tests (all DSP logic lives here)
 cargo clippy --workspace --all-targets -- -D warnings
 npm run build                         # type-check + build the frontend

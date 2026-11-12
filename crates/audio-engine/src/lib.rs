@@ -46,7 +46,9 @@ pub struct InputDeviceInfo {
 pub fn list_input_devices() -> Result<Vec<InputDeviceInfo>, AudioError> {
     let mut out = Vec::new();
     for host_id in cpal::available_hosts() {
-        let Ok(host) = cpal::host_from_id(host_id) else { continue };
+        let Ok(host) = cpal::host_from_id(host_id) else {
+            continue;
+        };
         let default_name = host.default_input_device().and_then(|d| d.name().ok());
         for device in host.input_devices()? {
             let name = device.name().unwrap_or_else(|_| "<unknown>".into());
@@ -70,8 +72,8 @@ pub(crate) fn find_input_device(host: &str, name: &str) -> Result<cpal::Device, 
         .into_iter()
         .find(|id| id.name() == host)
         .ok_or_else(|| AudioError::HostUnavailable(host.to_string()))?;
-    let host = cpal::host_from_id(host_id)
-        .map_err(|_| AudioError::HostUnavailable(host.to_string()))?;
+    let host =
+        cpal::host_from_id(host_id).map_err(|_| AudioError::HostUnavailable(host.to_string()))?;
     host.input_devices()?
         .find(|d| d.name().is_ok_and(|n| n == name))
         .ok_or_else(|| AudioError::DeviceNotFound(name.to_string()))

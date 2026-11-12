@@ -6,3 +6,4 @@ version.workspace = true
 [dependencies]
 pitch-detection = "0.3.0"
 serde = { version = "1.0.229", features = ["derive"] }
+thiserror = "2"

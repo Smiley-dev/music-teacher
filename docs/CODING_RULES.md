@@ -42,6 +42,7 @@ Timing that matters (calibration, later Practice) uses the audio clock: cpal
   `#[serde(rename_all = "camelCase")]`. Enums sent to the UI use
   `#[serde(tag = "type")]` or `rename_all` so the TypeScript side gets string
   literals.
+- Code is formatted with `cargo fmt --all` (default rustfmt settings).
 - `cargo clippy --workspace --all-targets -- -D warnings` must pass.
 
 ## TypeScript / React
@@ -74,7 +75,8 @@ errors. Tell the user what to do, not only what failed.
   file (`#[cfg(test)] mod tests`), using synthetic signals (sines, harmonic
   tones, bursts) rather than recordings.
 - New thresholds or algorithms come with a test that pins the behaviour.
-- Before committing: `cargo test --workspace`, clippy, and `npm run build`.
+- Before committing: `cargo fmt --all`, `cargo test --workspace`, clippy, and
+  `npm run build`.
 
 ## Comments
 

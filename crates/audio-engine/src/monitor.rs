@@ -2,11 +2,11 @@
 //! forwards the raw samples through a lock-free ring buffer for analysis.
 
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread::JoinHandle;
 
-use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::SizedSample;
+use cpal::traits::{DeviceTrait, StreamTrait};
 use rtrb::{Consumer, Producer, RingBuffer};
 use serde::Serialize;
 
@@ -14,7 +14,7 @@ use serde::Serialize;
 /// than this, the newest samples are dropped (the audio thread never blocks).
 const RING_SECONDS: usize = 1;
 
-use crate::{find_input_device, AudioError};
+use crate::{AudioError, find_input_device};
 
 /// State shared between the audio callback and readers.
 struct Shared {
