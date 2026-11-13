@@ -335,7 +335,9 @@ export type Prompt =
   | { kind: "interval"; interval: IntervalName; direction: Direction }
   | { kind: "scale"; root: Pitch; scale: ScaleKind; upAndDown: boolean }
   /** `inversion`: 0 root position, 1 = 3rd in the bass, 2 = 5th, 3 = 7th. */
-  | { kind: "chord"; root: Pitch; chord: ChordKind; inversion: number };
+  | { kind: "chord"; root: Pitch; chord: ChordKind; inversion: number }
+  /** Play back what was played; `key`: tonic of the major key, null = any notes. */
+  | { kind: "echo"; key: Pitch | null };
 
 export type PitchTask = {
   prompt: Prompt;
@@ -375,8 +377,22 @@ export type ChordOptions = {
   showNotes: boolean;
 };
 
+/** Must match `MIN_EAR_NOTES` / `MAX_EAR_NOTES` in `crates/theory`. */
+export const MIN_EAR_NOTES = 1;
+export const MAX_EAR_NOTES = 8;
+
+export type EarOptions = {
+  /** Notes per task, MIN_EAR_NOTES..MAX_EAR_NOTES. */
+  notes: number;
+  /** Any of the twelve notes, not only those of a major key. */
+  chromatic: boolean;
+  /** Show the first note on the staff. */
+  showFirst: boolean;
+  anyOctave: boolean;
+};
+
 /** Pitch exercises; one Practice tab each. */
-export type PitchExerciseKind = "notes" | "intervals" | "scales" | "chords";
+export type PitchExerciseKind = "notes" | "intervals" | "scales" | "chords" | "ear";
 
 export type PitchPracticeSettings = {
   instrument: Instrument;
@@ -384,6 +400,7 @@ export type PitchPracticeSettings = {
   intervals: IntervalOptions;
   scales: ScaleOptions;
   chords: ChordOptions;
+  ear: EarOptions;
 };
 
 export type TaskStage = "listening" | "playing" | "solved" | "revealed";

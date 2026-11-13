@@ -73,6 +73,8 @@ export function PitchSessionCard({
   };
   const canStart = status.state === "running" && calibration.phase !== "running" && !blocked;
   const stage = running ? state.stage : null;
+  // Ear training plays the notes first; the button then repeats them.
+  const replayLabel = running && state.task.playFirst ? "Play again" : "Hear it";
 
   return (
     <Card>
@@ -90,7 +92,7 @@ export function PitchSessionCard({
                 disabled={stage !== "playing"}
               >
                 <Volume2 />
-                Hear it
+                {replayLabel}
               </Button>
               <Button
                 variant="outline"

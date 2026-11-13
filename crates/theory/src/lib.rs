@@ -6,6 +6,7 @@
 //! for transposing instruments (guitar sounds an octave lower than written).
 
 mod chord;
+mod ear;
 mod exercise;
 mod instrument;
 mod interval;
@@ -17,6 +18,7 @@ mod scale;
 mod task;
 
 pub use chord::{ChordKind, ChordOptions};
+pub use ear::{EarOptions, MAX_EAR_NOTES, MAX_LEAP, MIN_EAR_NOTES};
 pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
 pub use instrument::{Clef, Instrument};
 pub use interval::{Direction, Directions, IntervalName, IntervalOptions};

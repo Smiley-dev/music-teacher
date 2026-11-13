@@ -7,7 +7,7 @@ use audio_engine::DeviceId;
 use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
 use theory::{
-    ChordOptions, Instrument, IntervalOptions, NoteReadingOptions, PitchExercise,
+    ChordOptions, EarOptions, Instrument, IntervalOptions, NoteReadingOptions, PitchExercise,
     PitchExerciseKind, ScaleOptions,
 };
 
@@ -99,6 +99,7 @@ pub struct PitchPracticeSettings {
     pub intervals: IntervalOptions,
     pub scales: ScaleOptions,
     pub chords: ChordOptions,
+    pub ear: EarOptions,
 }
 
 impl PitchPracticeSettings {
@@ -109,6 +110,7 @@ impl PitchPracticeSettings {
             PitchExerciseKind::Intervals => PitchExercise::Intervals(self.intervals.clone()),
             PitchExerciseKind::Scales => PitchExercise::Scales(self.scales.clone()),
             PitchExerciseKind::Chords => PitchExercise::Chords(self.chords.clone()),
+            PitchExerciseKind::Ear => PitchExercise::Ear(self.ear),
         }
     }
 }
@@ -202,6 +204,10 @@ fn sanitize(mut s: Settings) -> Settings {
     pitch.scales.scales.dedup();
     pitch.chords.chords.sort();
     pitch.chords.chords.dedup();
+    pitch.ear.notes = pitch
+        .ear
+        .notes
+        .clamp(theory::MIN_EAR_NOTES, theory::MAX_EAR_NOTES);
     s
 }
 
@@ -361,6 +367,12 @@ mod tests {
                 .chords,
             theory::ChordOptions::default()
         );
+
+        let raw = r#"{"practice": {"pitch": {"ear": {"notes": 99, "chromatic": true}}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let ear = SettingsStore::load(path.clone()).get().practice.pitch.ear;
+        assert_eq!(ear.notes, theory::MAX_EAR_NOTES, "clamped");
+        assert!(ear.chromatic && !ear.show_first && !ear.any_octave);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

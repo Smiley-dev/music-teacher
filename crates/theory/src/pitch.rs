@@ -103,6 +103,19 @@ impl Pitch {
         Self::new(letter, accidental, (midi.div_euclid(12) - 1) as i8)
     }
 
+    /// `midi` spelled with flats (C, Db, D …), as for a melody going down.
+    pub fn from_midi_flat(midi: i32) -> Self {
+        let sharp = Self::from_midi(midi);
+        if sharp.accidental == 0 {
+            return sharp;
+        }
+        let up = Self::natural_at(sharp.step() + 1);
+        Self {
+            accidental: (midi - up.midi()) as i8,
+            ..up
+        }
+    }
+
     /// Move `steps` letters and `semitones` (both negative = down), spelled
     /// correctly: C4 moved by a major third (2 steps, 4 semitones) is E4,
     /// never F♭4. `None` if that would need more than a double accidental.
@@ -181,6 +194,12 @@ mod tests {
         assert_eq!(Pitch::from_midi(61), Pitch::new(C, 1, 4));
         assert_eq!(Pitch::from_midi(40), Pitch::natural(E, 2));
         assert_eq!(Pitch::from_midi(70).to_string(), "A#4");
+        assert_eq!(Pitch::from_midi_flat(70).to_string(), "Bb4");
+        assert_eq!(Pitch::from_midi_flat(61).to_string(), "Db4");
+        assert_eq!(Pitch::from_midi_flat(64).to_string(), "E4");
+        for midi in 40..90 {
+            assert_eq!(Pitch::from_midi_flat(midi).midi(), midi);
+        }
     }
 
     #[test]

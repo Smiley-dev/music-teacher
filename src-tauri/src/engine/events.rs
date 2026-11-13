@@ -421,6 +421,11 @@ mod tests {
             json!({"kind": "chord", "root": {"letter": "a", "accidental": 0, "octave": 3},
                 "chord": "halfDiminished7", "inversion": 2})
         );
+        assert_eq!(
+            serde_json::to_value(theory::Prompt::Echo { key: None }).unwrap(),
+            json!({"kind": "echo", "key": null})
+        );
+        assert_eq!(serde_json::to_value(PitchExerciseKind::Ear).unwrap(), "ear");
     }
 
     #[test]

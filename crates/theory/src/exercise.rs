@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::chord::{self, ChordOptions};
+use crate::ear::{self, EarOptions};
 use crate::instrument::Instrument;
 use crate::interval::{self, IntervalOptions};
 use crate::notes::{self, NoteReadingOptions};
@@ -18,6 +19,7 @@ pub enum PitchExerciseKind {
     Intervals,
     Scales,
     Chords,
+    Ear,
 }
 
 /// A pitch exercise with its options.
@@ -27,6 +29,7 @@ pub enum PitchExercise {
     Intervals(IntervalOptions),
     Scales(ScaleOptions),
     Chords(ChordOptions),
+    Ear(EarOptions),
 }
 
 impl PitchExercise {
@@ -36,6 +39,7 @@ impl PitchExercise {
             Self::Intervals(_) => PitchExerciseKind::Intervals,
             Self::Scales(_) => PitchExerciseKind::Scales,
             Self::Chords(_) => PitchExerciseKind::Chords,
+            Self::Ear(_) => PitchExerciseKind::Ear,
         }
     }
 }
@@ -73,6 +77,7 @@ pub fn generate(
         }
         PitchExercise::Scales(options) => scale::generate(options, instrument, previous, &mut rng),
         PitchExercise::Chords(options) => chord::generate(options, instrument, previous, &mut rng),
+        PitchExercise::Ear(options) => ear::generate(options, instrument, previous, &mut rng),
     }
 }
 
@@ -87,6 +92,7 @@ mod tests {
             PitchExercise::Intervals(IntervalOptions::default()),
             PitchExercise::Scales(ScaleOptions::default()),
             PitchExercise::Chords(ChordOptions::default()),
+            PitchExercise::Ear(EarOptions::default()),
         ] {
             let a = generate(&exercise, Instrument::Violin, None, 42).unwrap();
             let b = generate(&exercise, Instrument::Violin, None, 42).unwrap();
@@ -104,6 +110,7 @@ mod tests {
                 PitchExercise::Intervals(IntervalOptions::default()),
                 PitchExercise::Scales(ScaleOptions::default()),
                 PitchExercise::Chords(ChordOptions::default()),
+                PitchExercise::Ear(EarOptions::default()),
             ] {
                 let mut previous = None;
                 for seed in 0..20 {

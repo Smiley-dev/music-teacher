@@ -60,6 +60,10 @@ pub enum Prompt {
         chord: ChordKind,
         inversion: u8,
     },
+    /// Play back the notes that were played to you. `key` is the major key
+    /// they come from (tonic; its octave is meaningless), `None` if any
+    /// notes may occur.
+    Echo { key: Option<Pitch> },
 }
 
 /// A task: play `notes` in order.

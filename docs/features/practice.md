@@ -1,8 +1,8 @@
 # Practice
 
 Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
-exercises: **Notes**, **Intervals**, **Scales** and **Chords**. More are
-added through the `PRACTICE_SECTIONS` registry, see
+exercises: **Notes**, **Intervals**, **Scales**, **Chords** and **Ear
+training**. More are added through the `PRACTICE_SECTIONS` registry, see
 [CODING_RULES.md](../CODING_RULES.md); ideas are listed in
 [exercise-catalog.md](exercise-catalog.md).
 
@@ -210,9 +210,10 @@ when the staff shows B♭), otherwise with sharps.
    is named ("Not quite: that was D♯4. Try again.") and counted; the task
    waits for the right note.
 3. Once every note is played: **Correct!**, and 1.2 s later the next task.
-4. **Hear it** plays the task's notes (soft tones, 0.7 s each) on the
-   default output and restarts the task; judging resumes 0.3 s after the
-   last tone so a microphone hearing the speakers is not judged.
+4. **Hear it** (**Play again** in ear training, which plays every task
+   first) plays the task's notes (soft tones, 0.7 s each) on the default
+   output and restarts the task; judging resumes 0.3 s after the last tone
+   so a microphone hearing the speakers is not judged.
    **Skip** shows the answer in amber for 3 s, then moves on.
 5. **Stop** ends the session and shows the score. Leaving the tab (or the
    Practice screen) stops it too.
@@ -307,3 +308,26 @@ root (C augmented has G♯, B diminished 7th has A♭); chords that would need
 a double sharp or flat (C diminished 7th: B𝄫) are not used. A task never
 starts on the previous task's last note, and the same chord and position
 are not asked twice in a row.
+
+## Ear training
+
+The app plays a few notes (soft tones, 0.7 s each, on the default output),
+then you play them back in order. One note is **pitch matching**: find the
+note you hear. Several notes are **melodic dictation**. Notes appear on the
+staff as you get them right; a wrong note is named and the task waits.
+**Play again** repeats the notes and starts the task over. While the notes
+play (and for 0.3 s after) nothing is judged, so a microphone hearing the
+speakers is not taken for the player.
+
+| Option (saved) | Effect | Default |
+| --- | --- | --- |
+| Notes per task | 1–8 | 3 |
+| Notes from | A major key (named in the task, e.g. "D major") or any notes (chromatic) | major key |
+| Show the first note | The first note is on the staff from the start; find the rest by ear | off |
+| Any octave | Accept the notes an octave up or down, keeping the shape | off (exact pitch) |
+
+Generation (`theory::ear`): a random walk over the instrument's range, no
+note twice in a row, steps of at most a perfect 5th (`MAX_LEAP`). Keys are
+the 13 major keys with up to six sharps or flats, spelled by the key;
+chromatic notes are spelled with sharps going up and flats going down. A
+task never starts on the previous task's last note.
