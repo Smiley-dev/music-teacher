@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::chord::{self, ChordOptions};
 use crate::instrument::Instrument;
 use crate::interval::{self, IntervalOptions};
 use crate::notes::{self, NoteReadingOptions};
@@ -16,6 +17,7 @@ pub enum PitchExerciseKind {
     Notes,
     Intervals,
     Scales,
+    Chords,
 }
 
 /// A pitch exercise with its options.
@@ -24,6 +26,7 @@ pub enum PitchExercise {
     Notes(NoteReadingOptions),
     Intervals(IntervalOptions),
     Scales(ScaleOptions),
+    Chords(ChordOptions),
 }
 
 impl PitchExercise {
@@ -32,6 +35,7 @@ impl PitchExercise {
             Self::Notes(_) => PitchExerciseKind::Notes,
             Self::Intervals(_) => PitchExerciseKind::Intervals,
             Self::Scales(_) => PitchExerciseKind::Scales,
+            Self::Chords(_) => PitchExerciseKind::Chords,
         }
     }
 }
@@ -68,6 +72,7 @@ pub fn generate(
             interval::generate(options, instrument, previous, &mut rng)
         }
         PitchExercise::Scales(options) => scale::generate(options, instrument, previous, &mut rng),
+        PitchExercise::Chords(options) => chord::generate(options, instrument, previous, &mut rng),
     }
 }
 
@@ -81,6 +86,7 @@ mod tests {
             PitchExercise::Notes(NoteReadingOptions::default()),
             PitchExercise::Intervals(IntervalOptions::default()),
             PitchExercise::Scales(ScaleOptions::default()),
+            PitchExercise::Chords(ChordOptions::default()),
         ] {
             let a = generate(&exercise, Instrument::Violin, None, 42).unwrap();
             let b = generate(&exercise, Instrument::Violin, None, 42).unwrap();
@@ -97,6 +103,7 @@ mod tests {
                 PitchExercise::Notes(NoteReadingOptions::default()),
                 PitchExercise::Intervals(IntervalOptions::default()),
                 PitchExercise::Scales(ScaleOptions::default()),
+                PitchExercise::Chords(ChordOptions::default()),
             ] {
                 let mut previous = None;
                 for seed in 0..20 {

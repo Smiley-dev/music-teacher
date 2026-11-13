@@ -411,6 +411,16 @@ mod tests {
             json!({"kind": "scale", "root": {"letter": "e", "accidental": -1, "octave": 4},
                 "scale": "harmonicMinor", "upAndDown": true})
         );
+        let chord = theory::Prompt::Chord {
+            root: theory::Pitch::natural(theory::Letter::A, 3),
+            chord: theory::ChordKind::HalfDiminished7,
+            inversion: 2,
+        };
+        assert_eq!(
+            serde_json::to_value(chord).unwrap(),
+            json!({"kind": "chord", "root": {"letter": "a", "accidental": 0, "octave": 3},
+                "chord": "halfDiminished7", "inversion": 2})
+        );
     }
 
     #[test]

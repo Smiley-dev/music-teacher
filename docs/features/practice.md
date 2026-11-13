@@ -1,9 +1,10 @@
 # Practice
 
 Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
-exercises: **Notes**, **Intervals** and **Scales**. More are added through
-the `PRACTICE_SECTIONS` registry, see [CODING_RULES.md](../CODING_RULES.md);
-ideas are listed in [exercise-catalog.md](exercise-catalog.md).
+exercises: **Notes**, **Intervals**, **Scales** and **Chords**. More are
+added through the `PRACTICE_SECTIONS` registry, see
+[CODING_RULES.md](../CODING_RULES.md); ideas are listed in
+[exercise-catalog.md](exercise-catalog.md).
 
 ## Rhythm
 
@@ -283,3 +284,26 @@ need a double sharp or flat (G♯ major) are not used. Melodic minor comes
 back down as natural minor. A task never starts on the previous task's last
 note, and the same scale is not asked twice in a row. The staff shrinks
 (down to normal size) so a 15-note scale fits on one line.
+
+## Chords
+
+A chord is named, e.g. **A minor 7th (Am7), 2nd inversion**: play its notes
+one at a time from the lowest up (an arpeggio, since pitch detection hears
+one note at a time). Root position starts on the root, 1st inversion on the
+3rd, 2nd on the 5th, 3rd on the 7th. No note is shown until played (unless
+**Show the notes** is on); any octave is accepted for the first note, the
+others must go up from it (`Matching::AnyOctave`).
+
+| Option (saved) | Effect | Default |
+| --- | --- | --- |
+| Chords | Major, minor, diminished, augmented, dominant 7th, major 7th, minor 7th, half-diminished 7th, diminished 7th | major, minor |
+| Inversions | Every inversion as well as root position | off |
+| Show the notes | Every note is shown: chord reading instead of building | off |
+
+Generation (`theory::chord`): each selected chord comes up equally often,
+then each of its positions; the root is any natural, sharp or flat whose
+chord fits the instrument's range. Notes are spelled in thirds from the
+root (C augmented has G♯, B diminished 7th has A♭); chords that would need
+a double sharp or flat (C diminished 7th: B𝄫) are not used. A task never
+starts on the previous task's last note, and the same chord and position
+are not asked twice in a row.

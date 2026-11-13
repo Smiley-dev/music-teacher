@@ -5,6 +5,7 @@
 //! staff; what the player must play is the sounding MIDI note, which differs
 //! for transposing instruments (guitar sounds an octave lower than written).
 
+mod chord;
 mod exercise;
 mod instrument;
 mod interval;
@@ -15,6 +16,7 @@ mod rng;
 mod scale;
 mod task;
 
+pub use chord::{ChordKind, ChordOptions};
 pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
 pub use instrument::{Clef, Instrument};
 pub use interval::{Direction, Directions, IntervalName, IntervalOptions};

@@ -14,7 +14,7 @@ Status: **done** (in the app), **idea** (fits the current engine), **later**
 | Note Names, Piano Keys, Guitar Frets, Violin/Viola/Cello/Double Bass Fingerboard | **Note reading**: a note appears on the staff, play it. One exercise with an instrument setting (clef, transposition, range) | done |
 | Interval Building | **Intervals**: the first note is shown with an interval name (e.g. "Major 3rd up"); play both notes | done |
 | Scale Building, Scales (ear) | **Scales**: play a named scale or mode from the root shown, up (and down); "Show the notes" turns it into scale reading | done |
-| Chord Building, Chord Identification | **Chords**: play the notes of a named chord (triads, sevenths, inversions) bottom to top | planned (step 4) |
+| Chord Building, Chord Identification | **Chords**: play the notes of a named chord (triads, sevenths, inversions) bottom to top; "Show the notes" turns it into chord reading | done |
 | Perfect Pitch, Intervals (ear), Melodic Dictation | **Ear training**: hear 1–8 notes, play them back | planned (step 5) |
 | Paced Note Names | Note reading against the clock: notes scroll across the staff and must be played before they reach the end | idea |
 | Interval Identification (theory) | Two notes shown on the staff: play both (Intervals with "Show both notes") | done |

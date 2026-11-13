@@ -305,11 +305,37 @@ export const SCALE_KINDS: readonly ScaleKind[] = [
   "locrian",
 ];
 
+export type ChordKind =
+  | "major"
+  | "minor"
+  | "diminished"
+  | "augmented"
+  | "dominant7"
+  | "major7"
+  | "minor7"
+  | "halfDiminished7"
+  | "diminished7";
+
+/** Display order; must match `ChordKind::ALL`. */
+export const CHORD_KINDS: readonly ChordKind[] = [
+  "major",
+  "minor",
+  "diminished",
+  "augmented",
+  "dominant7",
+  "major7",
+  "minor7",
+  "halfDiminished7",
+  "diminished7",
+];
+
 /** What a task asks for. */
 export type Prompt =
   | { kind: "note" }
   | { kind: "interval"; interval: IntervalName; direction: Direction }
-  | { kind: "scale"; root: Pitch; scale: ScaleKind; upAndDown: boolean };
+  | { kind: "scale"; root: Pitch; scale: ScaleKind; upAndDown: boolean }
+  /** `inversion`: 0 root position, 1 = 3rd in the bass, 2 = 5th, 3 = 7th. */
+  | { kind: "chord"; root: Pitch; chord: ChordKind; inversion: number };
 
 export type PitchTask = {
   prompt: Prompt;
@@ -341,14 +367,23 @@ export type ScaleOptions = {
   showNotes: boolean;
 };
 
+export type ChordOptions = {
+  chords: ChordKind[];
+  /** Also inversions. */
+  inversions: boolean;
+  /** Show every note (reading practice). */
+  showNotes: boolean;
+};
+
 /** Pitch exercises; one Practice tab each. */
-export type PitchExerciseKind = "notes" | "intervals" | "scales";
+export type PitchExerciseKind = "notes" | "intervals" | "scales" | "chords";
 
 export type PitchPracticeSettings = {
   instrument: Instrument;
   notes: NoteReadingOptions;
   intervals: IntervalOptions;
   scales: ScaleOptions;
+  chords: ChordOptions;
 };
 
 export type TaskStage = "listening" | "playing" | "solved" | "revealed";

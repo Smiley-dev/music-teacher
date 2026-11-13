@@ -7,7 +7,8 @@ use audio_engine::DeviceId;
 use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
 use theory::{
-    Instrument, IntervalOptions, NoteReadingOptions, PitchExercise, PitchExerciseKind, ScaleOptions,
+    ChordOptions, Instrument, IntervalOptions, NoteReadingOptions, PitchExercise,
+    PitchExerciseKind, ScaleOptions,
 };
 
 /// Allowed input gain range in dB.
@@ -97,6 +98,7 @@ pub struct PitchPracticeSettings {
     pub notes: NoteReadingOptions,
     pub intervals: IntervalOptions,
     pub scales: ScaleOptions,
+    pub chords: ChordOptions,
 }
 
 impl PitchPracticeSettings {
@@ -106,6 +108,7 @@ impl PitchPracticeSettings {
             PitchExerciseKind::Notes => PitchExercise::Notes(self.notes),
             PitchExerciseKind::Intervals => PitchExercise::Intervals(self.intervals.clone()),
             PitchExerciseKind::Scales => PitchExercise::Scales(self.scales.clone()),
+            PitchExerciseKind::Chords => PitchExercise::Chords(self.chords.clone()),
         }
     }
 }
@@ -197,6 +200,8 @@ fn sanitize(mut s: Settings) -> Settings {
     pitch.intervals.intervals.dedup();
     pitch.scales.scales.sort();
     pitch.scales.scales.dedup();
+    pitch.chords.chords.sort();
+    pitch.chords.chords.dedup();
     s
 }
 
@@ -348,6 +353,14 @@ mod tests {
             vec![theory::ScaleKind::Major, theory::ScaleKind::Dorian]
         );
         assert!(scales.up_and_down && !scales.show_notes);
+        assert_eq!(
+            SettingsStore::load(path.clone())
+                .get()
+                .practice
+                .pitch
+                .chords,
+            theory::ChordOptions::default()
+        );
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

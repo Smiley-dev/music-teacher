@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 
+import { ChordsPractice } from "./chords/chords-practice";
 import { IntervalsPractice } from "./intervals/intervals-practice";
 import { NotesPractice } from "./notes/notes-practice";
 import { RhythmPractice } from "./rhythm/rhythm-practice";
@@ -17,4 +18,5 @@ export const PRACTICE_SECTIONS = [
   { id: "notes", label: "Notes", Component: NotesPractice },
   { id: "intervals", label: "Intervals", Component: IntervalsPractice },
   { id: "scales", label: "Scales", Component: ScalesPractice },
+  { id: "chords", label: "Chords", Component: ChordsPractice },
 ] as const satisfies readonly PracticeSection[];

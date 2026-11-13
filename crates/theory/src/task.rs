@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 
+use crate::chord::ChordKind;
 use crate::instrument::{Clef, Instrument};
 use crate::interval::{Direction, IntervalName};
 use crate::pitch::Pitch;
@@ -51,6 +52,13 @@ pub enum Prompt {
         root: Pitch,
         scale: ScaleKind,
         up_and_down: bool,
+    },
+    /// Play `chord` on `root` note by note from its lowest note; `inversion`
+    /// 0 = root position, 1 = lowest note the 3rd, 2 = the 5th, 3 = the 7th.
+    Chord {
+        root: Pitch,
+        chord: ChordKind,
+        inversion: u8,
     },
 }
 

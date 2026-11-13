@@ -1,4 +1,4 @@
-import type { Instrument, IntervalName, Pitch, ScaleKind } from "@/lib/engine";
+import type { ChordKind, Instrument, IntervalName, Pitch, ScaleKind } from "@/lib/engine";
 
 const ACCIDENTAL_SIGNS: Record<number, string> = { [-2]: "𝄫", [-1]: "♭", 1: "♯", 2: "𝄪" };
 
@@ -51,6 +51,19 @@ export const SCALE_LABELS: Record<ScaleKind, { name: string; hint: string }> = {
   lydian: { name: "Lydian", hint: "♯4" },
   mixolydian: { name: "Mixolydian", hint: "♭7" },
   locrian: { name: "Locrian", hint: "♭2 ♭3 ♭5 ♭6 ♭7" },
+};
+
+/** Chord names, chord-symbol suffixes (C + "m7") and their tones. */
+export const CHORD_LABELS: Record<ChordKind, { name: string; symbol: string; tones: string }> = {
+  major: { name: "Major", symbol: "", tones: "1 3 5" },
+  minor: { name: "Minor", symbol: "m", tones: "1 ♭3 5" },
+  diminished: { name: "Diminished", symbol: "°", tones: "1 ♭3 ♭5" },
+  augmented: { name: "Augmented", symbol: "+", tones: "1 3 ♯5" },
+  dominant7: { name: "Dominant 7th", symbol: "7", tones: "1 3 5 ♭7" },
+  major7: { name: "Major 7th", symbol: "maj7", tones: "1 3 5 7" },
+  minor7: { name: "Minor 7th", symbol: "m7", tones: "1 ♭3 5 ♭7" },
+  halfDiminished7: { name: "Half-diminished 7th", symbol: "m7♭5", tones: "1 ♭3 ♭5 ♭7" },
+  diminished7: { name: "Diminished 7th", symbol: "°7", tones: "1 ♭3 ♭5 𝄫7" },
 };
 
 /** Instrument names and what their range covers (`Instrument::written_range` in Rust). */
