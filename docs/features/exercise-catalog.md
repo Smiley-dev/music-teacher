@@ -12,12 +12,12 @@ Status: **done** (in the app), **idea** (fits the current engine), **later**
 | --- | --- | --- |
 | Rhythm Performance | Play the rhythm shown, timing judged (Practice → Rhythm) | done |
 | Note Names, Piano Keys, Guitar Frets, Violin/Viola/Cello/Double Bass Fingerboard | **Note reading**: a note appears on the staff, play it. One exercise with an instrument setting (clef, transposition, range) | done |
-| Interval Building | **Intervals**: the first note is shown with an interval name (e.g. "Major 3rd up"); play both notes | planned (step 2) |
+| Interval Building | **Intervals**: the first note is shown with an interval name (e.g. "Major 3rd up"); play both notes | done |
 | Scale Building, Scales (ear) | **Scales**: play a named scale or mode from the root shown, up (and down) | planned (step 3) |
 | Chord Building, Chord Identification | **Chords**: play the notes of a named chord (triads, sevenths, inversions) bottom to top | planned (step 4) |
 | Perfect Pitch, Intervals (ear), Melodic Dictation | **Ear training**: hear 1–8 notes, play them back | planned (step 5) |
 | Paced Note Names | Note reading against the clock: notes scroll across the staff and must be played before they reach the end | idea |
-| Interval Identification (theory) | Two notes shown on the staff: play both (note reading with two notes) | idea |
+| Interval Identification (theory) | Two notes shown on the staff: play both (Intervals with "Show both notes") | done |
 | Key Signature Identification | A key signature is shown: play that major (or relative minor) scale | idea |
 | Chord Functions | "V7 in G major": play the chord's notes as an arpeggio | idea |
 | Intervals in Context, Scale Degrees (ear) | Hear a cadence that sets the key, then a note: play that note (or sing its degree) | later: needs chords in the reference playback (overlapping tones) |

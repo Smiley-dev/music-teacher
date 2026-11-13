@@ -388,6 +388,22 @@ mod tests {
     }
 
     #[test]
+    fn pitch_prompts_are_tagged_by_kind() {
+        let interval = theory::Prompt::Interval {
+            interval: theory::IntervalName::MajorThird,
+            direction: theory::Direction::Down,
+        };
+        assert_eq!(
+            serde_json::to_value(interval).unwrap(),
+            json!({"kind": "interval", "interval": "majorThird", "direction": "down"})
+        );
+        assert_eq!(
+            serde_json::to_value(PitchExerciseKind::Intervals).unwrap(),
+            "intervals"
+        );
+    }
+
+    #[test]
     fn engine_event_is_tagged_by_type() {
         let event = EngineEvent::Calibration {
             calibration: CalibrationState::Idle,

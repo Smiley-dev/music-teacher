@@ -28,6 +28,7 @@ crates/
     judge.rs           NoteJudge: pitch readings vs the task's notes, in order
     exercise.rs        PitchExercise(+Kind), seeded generate(), TheoryError
     notes.rs           Note reading generator
+    interval.rs        IntervalName, Direction(s), interval generator
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
@@ -61,8 +62,10 @@ src/
   features/practice/   Practice tabs (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
-                       instrument select, usePitchSettings
+                       instrument select, option checklist/buttons,
+                       usePitchSettings
     notes/             Note reading tab
+    intervals/         Intervals tab
   components/          Shared: level meter, waveform canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)

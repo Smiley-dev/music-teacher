@@ -6,7 +6,7 @@ use std::sync::{Mutex, PoisonError};
 use audio_engine::DeviceId;
 use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
-use theory::{Instrument, NoteReadingOptions, PitchExercise, PitchExerciseKind};
+use theory::{Instrument, IntervalOptions, NoteReadingOptions, PitchExercise, PitchExerciseKind};
 
 /// Allowed input gain range in dB.
 pub const MIN_GAIN_DB: f32 = -24.0;
@@ -93,6 +93,7 @@ pub struct PitchPracticeSettings {
     /// exercise.
     pub instrument: Instrument,
     pub notes: NoteReadingOptions,
+    pub intervals: IntervalOptions,
 }
 
 impl PitchPracticeSettings {
@@ -100,6 +101,7 @@ impl PitchPracticeSettings {
     pub fn exercise(&self, kind: PitchExerciseKind) -> PitchExercise {
         match kind {
             PitchExerciseKind::Notes => PitchExercise::Notes(self.notes),
+            PitchExerciseKind::Intervals => PitchExercise::Intervals(self.intervals.clone()),
         }
     }
 }
@@ -186,6 +188,9 @@ fn sanitize(mut s: Settings) -> Settings {
     rhythm.custom.values.dedup();
     rhythm.written.retain(Symbol::is_valid);
     rhythm.written.truncate(rhythm::MAX_WRITTEN_SYMBOLS);
+    let pitch = &mut s.practice.pitch;
+    pitch.intervals.intervals.sort();
+    pitch.intervals.intervals.dedup();
     s
 }
 
@@ -303,6 +308,26 @@ mod tests {
                 ..Default::default()
             })
         );
+        assert_eq!(pitch.intervals, IntervalOptions::default());
+
+        let raw = r#"{"practice": {"pitch": {"intervals": {
+            "intervals": ["octave", "minorThird", "octave"], "directions": "both"}}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let intervals = SettingsStore::load(path.clone())
+            .get()
+            .practice
+            .pitch
+            .intervals;
+        assert_eq!(
+            intervals.intervals,
+            vec![
+                theory::IntervalName::MinorThird,
+                theory::IntervalName::Octave
+            ],
+            "sorted, duplicates removed"
+        );
+        assert_eq!(intervals.directions, theory::Directions::Both);
+        assert!(!intervals.show_both);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

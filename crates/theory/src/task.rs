@@ -3,6 +3,7 @@
 use serde::Serialize;
 
 use crate::instrument::{Clef, Instrument};
+use crate::interval::{Direction, IntervalName};
 use crate::pitch::Pitch;
 
 /// How played notes are compared with the expected ones.
@@ -39,6 +40,11 @@ pub struct TaskNote {
 pub enum Prompt {
     /// Play the note shown on the staff.
     Note,
+    /// Play the first note, then the note `interval` above or below it.
+    Interval {
+        interval: IntervalName,
+        direction: Direction,
+    },
 }
 
 /// A task: play `notes` in order.

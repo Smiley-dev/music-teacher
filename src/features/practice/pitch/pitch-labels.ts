@@ -1,4 +1,4 @@
-import type { Instrument, Pitch } from "@/lib/engine";
+import type { Instrument, IntervalName, Pitch } from "@/lib/engine";
 
 const ACCIDENTAL_SIGNS: Record<number, string> = { [-2]: "𝄫", [-1]: "♭", 1: "♯", 2: "𝄪" };
 
@@ -21,6 +21,22 @@ export function ordinal(n: number): string {
   const suffix = n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th";
   return `${n}${suffix}`;
 }
+
+/** Interval names and their usual abbreviations. */
+export const INTERVAL_LABELS: Record<IntervalName, { name: string; short: string }> = {
+  minorSecond: { name: "Minor 2nd", short: "m2" },
+  majorSecond: { name: "Major 2nd", short: "M2" },
+  minorThird: { name: "Minor 3rd", short: "m3" },
+  majorThird: { name: "Major 3rd", short: "M3" },
+  perfectFourth: { name: "Perfect 4th", short: "P4" },
+  tritone: { name: "Tritone", short: "A4" },
+  perfectFifth: { name: "Perfect 5th", short: "P5" },
+  minorSixth: { name: "Minor 6th", short: "m6" },
+  majorSixth: { name: "Major 6th", short: "M6" },
+  minorSeventh: { name: "Minor 7th", short: "m7" },
+  majorSeventh: { name: "Major 7th", short: "M7" },
+  octave: { name: "Octave", short: "P8" },
+};
 
 /** Instrument names and what their range covers (`Instrument::written_range` in Rust). */
 export const INSTRUMENT_INFO: Record<Instrument, { label: string; hint: string }> = {

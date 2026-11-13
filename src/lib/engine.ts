@@ -242,8 +242,45 @@ export type TaskNote = {
   given: boolean;
 };
 
+export type IntervalName =
+  | "minorSecond"
+  | "majorSecond"
+  | "minorThird"
+  | "majorThird"
+  | "perfectFourth"
+  | "tritone"
+  | "perfectFifth"
+  | "minorSixth"
+  | "majorSixth"
+  | "minorSeventh"
+  | "majorSeventh"
+  | "octave";
+
+/** Smallest to largest; must match `IntervalName::ALL`. */
+export const INTERVAL_NAMES: readonly IntervalName[] = [
+  "minorSecond",
+  "majorSecond",
+  "minorThird",
+  "majorThird",
+  "perfectFourth",
+  "tritone",
+  "perfectFifth",
+  "minorSixth",
+  "majorSixth",
+  "minorSeventh",
+  "majorSeventh",
+  "octave",
+];
+
+export type Direction = "up" | "down";
+
+/** Interval directions to practise. */
+export type Directions = "up" | "down" | "both";
+
 /** What a task asks for. */
-export type Prompt = { kind: "note" };
+export type Prompt =
+  | { kind: "note" }
+  | { kind: "interval"; interval: IntervalName; direction: Direction };
 
 export type PitchTask = {
   prompt: Prompt;
@@ -260,12 +297,20 @@ export type NoteReadingOptions = {
   anyOctave: boolean;
 };
 
+export type IntervalOptions = {
+  intervals: IntervalName[];
+  directions: Directions;
+  /** Show the second note too (reading practice). */
+  showBoth: boolean;
+};
+
 /** Pitch exercises; one Practice tab each. */
-export type PitchExerciseKind = "notes";
+export type PitchExerciseKind = "notes" | "intervals";
 
 export type PitchPracticeSettings = {
   instrument: Instrument;
   notes: NoteReadingOptions;
+  intervals: IntervalOptions;
 };
 
 export type TaskStage = "listening" | "playing" | "solved" | "revealed";

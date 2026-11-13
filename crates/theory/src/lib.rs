@@ -7,6 +7,7 @@
 
 mod exercise;
 mod instrument;
+mod interval;
 mod judge;
 mod notes;
 mod pitch;
@@ -15,6 +16,7 @@ mod task;
 
 pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
 pub use instrument::{Clef, Instrument};
+pub use interval::{Direction, Directions, IntervalName, IntervalOptions};
 pub use judge::{CONFIRM_SECS, Heard, NoteJudge, WRONG_SECS};
 pub use notes::{NoteReadingOptions, note_pool};
 pub use pitch::{Letter, Pitch};

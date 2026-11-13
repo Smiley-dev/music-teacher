@@ -1,7 +1,7 @@
 # Practice
 
 Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
-exercises: **Notes**. More are added through the `PRACTICE_SECTIONS`
+exercises: **Notes** and **Intervals**. More are added through the `PRACTICE_SECTIONS`
 registry, see [CODING_RULES.md](../CODING_RULES.md); ideas are listed in
 [exercise-catalog.md](exercise-catalog.md).
 
@@ -238,3 +238,25 @@ fretboard and fingerboard reading drills for every instrument above.
 | Any octave | Accept the note name in any octave | off |
 
 The next note is never the same note name as the previous one.
+
+## Intervals
+
+A note is shown with an interval name, e.g. **Major 3rd up**: play the note,
+then the note at that interval from it. The second note is hidden until it
+is played (unless **Show both notes** is on). Any octave is accepted as long
+as the second note is the right distance from the first
+(`Matching::AnyOctave`).
+
+| Option (saved) | Effect | Default |
+| --- | --- | --- |
+| Intervals | Any of minor 2nd … octave, including the tritone (spelled as an augmented 4th) | M2, m3, M3, P4, P5, octave |
+| Direction | Up, down or both | up |
+| Show both notes | The second note is shown too: interval reading instead of building | off |
+
+Generation (`theory::interval`): each selected interval (and direction)
+comes up equally often; the start note is any natural, sharp or flat in the
+instrument's range (with ledger lines). The second note is spelled by the
+interval (E♭ + major 3rd = G, C♯ − minor 6th = E♯), never with a double
+sharp or flat, and must be in range too. A task never starts on the
+previous task's last note, and the same task is not asked twice in a row.
+With nothing selected, Start is disabled and the card says so.
