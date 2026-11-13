@@ -1,4 +1,4 @@
-import type { Instrument, IntervalName, Pitch } from "@/lib/engine";
+import type { Instrument, IntervalName, Pitch, ScaleKind } from "@/lib/engine";
 
 const ACCIDENTAL_SIGNS: Record<number, string> = { [-2]: "𝄫", [-1]: "♭", 1: "♯", 2: "𝄪" };
 
@@ -36,6 +36,21 @@ export const INTERVAL_LABELS: Record<IntervalName, { name: string; short: string
   minorSeventh: { name: "Minor 7th", short: "m7" },
   majorSeventh: { name: "Major 7th", short: "M7" },
   octave: { name: "Octave", short: "P8" },
+};
+
+/** Scale names, and how each differs from the major scale. */
+export const SCALE_LABELS: Record<ScaleKind, { name: string; hint: string }> = {
+  major: { name: "Major", hint: "Ionian" },
+  naturalMinor: { name: "Natural minor", hint: "Aeolian: ♭3 ♭6 ♭7" },
+  harmonicMinor: { name: "Harmonic minor", hint: "♭3 ♭6, major 7th" },
+  melodicMinor: { name: "Melodic minor", hint: "♭3 going up; natural minor down" },
+  majorPentatonic: { name: "Major pentatonic", hint: "1 2 3 5 6" },
+  minorPentatonic: { name: "Minor pentatonic", hint: "1 ♭3 4 5 ♭7" },
+  dorian: { name: "Dorian", hint: "♭3 ♭7" },
+  phrygian: { name: "Phrygian", hint: "♭2 ♭3 ♭6 ♭7" },
+  lydian: { name: "Lydian", hint: "♯4" },
+  mixolydian: { name: "Mixolydian", hint: "♭7" },
+  locrian: { name: "Locrian", hint: "♭2 ♭3 ♭5 ♭6 ♭7" },
 };
 
 /** Instrument names and what their range covers (`Instrument::written_range` in Rust). */

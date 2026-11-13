@@ -6,7 +6,9 @@ use std::sync::{Mutex, PoisonError};
 use audio_engine::DeviceId;
 use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
-use theory::{Instrument, IntervalOptions, NoteReadingOptions, PitchExercise, PitchExerciseKind};
+use theory::{
+    Instrument, IntervalOptions, NoteReadingOptions, PitchExercise, PitchExerciseKind, ScaleOptions,
+};
 
 /// Allowed input gain range in dB.
 pub const MIN_GAIN_DB: f32 = -24.0;
@@ -94,6 +96,7 @@ pub struct PitchPracticeSettings {
     pub instrument: Instrument,
     pub notes: NoteReadingOptions,
     pub intervals: IntervalOptions,
+    pub scales: ScaleOptions,
 }
 
 impl PitchPracticeSettings {
@@ -102,6 +105,7 @@ impl PitchPracticeSettings {
         match kind {
             PitchExerciseKind::Notes => PitchExercise::Notes(self.notes),
             PitchExerciseKind::Intervals => PitchExercise::Intervals(self.intervals.clone()),
+            PitchExerciseKind::Scales => PitchExercise::Scales(self.scales.clone()),
         }
     }
 }
@@ -191,6 +195,8 @@ fn sanitize(mut s: Settings) -> Settings {
     let pitch = &mut s.practice.pitch;
     pitch.intervals.intervals.sort();
     pitch.intervals.intervals.dedup();
+    pitch.scales.scales.sort();
+    pitch.scales.scales.dedup();
     s
 }
 
@@ -328,6 +334,20 @@ mod tests {
         );
         assert_eq!(intervals.directions, theory::Directions::Both);
         assert!(!intervals.show_both);
+
+        let raw = r#"{"practice": {"pitch": {"scales": {
+            "scales": ["dorian", "major", "dorian"], "upAndDown": true}}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let scales = SettingsStore::load(path.clone())
+            .get()
+            .practice
+            .pitch
+            .scales;
+        assert_eq!(
+            scales.scales,
+            vec![theory::ScaleKind::Major, theory::ScaleKind::Dorian]
+        );
+        assert!(scales.up_and_down && !scales.show_notes);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

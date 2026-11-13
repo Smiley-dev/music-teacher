@@ -401,6 +401,16 @@ mod tests {
             serde_json::to_value(PitchExerciseKind::Intervals).unwrap(),
             "intervals"
         );
+        let scale = theory::Prompt::Scale {
+            root: theory::Pitch::new(theory::Letter::E, -1, 4),
+            scale: theory::ScaleKind::HarmonicMinor,
+            up_and_down: true,
+        };
+        assert_eq!(
+            serde_json::to_value(scale).unwrap(),
+            json!({"kind": "scale", "root": {"letter": "e", "accidental": -1, "octave": 4},
+                "scale": "harmonicMinor", "upAndDown": true})
+        );
     }
 
     #[test]

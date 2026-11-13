@@ -3,6 +3,7 @@ import type { ComponentType } from "react";
 import { IntervalsPractice } from "./intervals/intervals-practice";
 import { NotesPractice } from "./notes/notes-practice";
 import { RhythmPractice } from "./rhythm/rhythm-practice";
+import { ScalesPractice } from "./scales/scales-practice";
 
 export type PracticeSection = {
   id: string;
@@ -15,4 +16,5 @@ export const PRACTICE_SECTIONS = [
   { id: "rhythm", label: "Rhythm", Component: RhythmPractice },
   { id: "notes", label: "Notes", Component: NotesPractice },
   { id: "intervals", label: "Intervals", Component: IntervalsPractice },
+  { id: "scales", label: "Scales", Component: ScalesPractice },
 ] as const satisfies readonly PracticeSection[];

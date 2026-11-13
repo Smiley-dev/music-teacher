@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::instrument::{Clef, Instrument};
 use crate::interval::{Direction, IntervalName};
 use crate::pitch::Pitch;
+use crate::scale::ScaleKind;
 
 /// How played notes are compared with the expected ones.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -44,6 +45,12 @@ pub enum Prompt {
     Interval {
         interval: IntervalName,
         direction: Direction,
+    },
+    /// Play `scale` from `root` up to its octave (and back down).
+    Scale {
+        root: Pitch,
+        scale: ScaleKind,
+        up_and_down: bool,
     },
 }
 

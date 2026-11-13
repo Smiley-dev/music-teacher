@@ -12,6 +12,7 @@ mod judge;
 mod notes;
 mod pitch;
 mod rng;
+mod scale;
 mod task;
 
 pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
@@ -20,4 +21,5 @@ pub use interval::{Direction, Directions, IntervalName, IntervalOptions};
 pub use judge::{CONFIRM_SECS, Heard, NoteJudge, WRONG_SECS};
 pub use notes::{NoteReadingOptions, note_pool};
 pub use pitch::{Letter, Pitch};
+pub use scale::{ScaleKind, ScaleOptions};
 pub use task::{Matching, PitchTask, Prompt, TaskNote};

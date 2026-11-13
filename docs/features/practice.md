@@ -1,9 +1,9 @@
 # Practice
 
 Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
-exercises: **Notes** and **Intervals**. More are added through the `PRACTICE_SECTIONS`
-registry, see [CODING_RULES.md](../CODING_RULES.md); ideas are listed in
-[exercise-catalog.md](exercise-catalog.md).
+exercises: **Notes**, **Intervals** and **Scales**. More are added through
+the `PRACTICE_SECTIONS` registry, see [CODING_RULES.md](../CODING_RULES.md);
+ideas are listed in [exercise-catalog.md](exercise-catalog.md).
 
 ## Rhythm
 
@@ -260,3 +260,26 @@ interval (E♭ + major 3rd = G, C♯ − minor 6th = E♯), never with a double
 sharp or flat, and must be in range too. A task never starts on the
 previous task's last note, and the same task is not asked twice in a row.
 With nothing selected, Start is disabled and the card says so.
+
+## Scales
+
+A scale is named with its root, e.g. **E♭ major, up**, and only the root is
+shown (unless **Show the notes** is on). Play the scale note by note from
+the root to its octave, and back down with **Up and down**. Any octave is
+accepted for the root; the rest must follow in that octave
+(`Matching::AnyOctave`). Each note appears on the staff as it is played.
+
+| Option (saved) | Effect | Default |
+| --- | --- | --- |
+| Scales and modes | Major, natural/harmonic/melodic minor, major/minor pentatonic, Dorian, Phrygian, Lydian, Mixolydian, Locrian | major, natural minor |
+| Up and down | Up to the octave, then back down to the root | off |
+| Show the notes | Every note is shown: scale reading instead of building | off |
+
+Generation (`theory::scale`): each selected scale comes up equally often;
+the root is any natural, sharp or flat (never E♯, B♯, C♭, F♭) whose whole
+scale fits the instrument's range. Notes are spelled by degree, one letter
+per degree (F♯ major has E♯, E♭ major has A♭), and roots whose scale would
+need a double sharp or flat (G♯ major) are not used. Melodic minor comes
+back down as natural minor. A task never starts on the previous task's last
+note, and the same scale is not asked twice in a row. The staff shrinks
+(down to normal size) so a 15-note scale fits on one line.

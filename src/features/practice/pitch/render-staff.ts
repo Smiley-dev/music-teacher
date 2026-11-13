@@ -6,8 +6,10 @@ import { Accidental, Formatter, Renderer, Stave, StaveNote, Voice } from "vexflo
 
 import type { Clef, Pitch } from "@/lib/engine";
 
-/** Drawing scale: bigger than the rhythm score, single notes must be easy to read. */
-const SCALE = 1.5;
+/** Largest drawing scale: few notes are drawn big so they are easy to read. */
+const MAX_SCALE = 1.5;
+/** Smallest drawing scale: long tasks (scales up and down) shrink to this to fit. */
+const MIN_SCALE = 1;
 /** Height in layout units: room for four ledger lines above and below the staff. */
 const HEIGHT = 150;
 /** Width reserved for the clef, px. */
@@ -34,12 +36,13 @@ export function renderStaff(
 ): (SVGElement | undefined)[] {
   container.replaceChildren();
   const wanted = CLEF_WIDTH + Math.max(MIN_SLOTS, notes.length) * NOTE_WIDTH + 2 * PADDING;
-  const width = Math.max(200, Math.min(maxWidth / SCALE, wanted));
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, maxWidth / wanted));
+  const width = Math.max(200, Math.min(maxWidth / scale, wanted));
 
   const renderer = new Renderer(container as HTMLDivElement, Renderer.Backends.SVG);
-  renderer.resize(width * SCALE, HEIGHT * SCALE);
+  renderer.resize(width * scale, HEIGHT * scale);
   const ctx = renderer.getContext();
-  ctx.scale(SCALE, SCALE);
+  ctx.scale(scale, scale);
   const stave = new Stave(PADDING, 0, width - 2 * PADDING);
   stave.addClef(clef);
   stave.setContext(ctx).draw();

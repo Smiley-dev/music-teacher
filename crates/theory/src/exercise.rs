@@ -6,6 +6,7 @@ use crate::instrument::Instrument;
 use crate::interval::{self, IntervalOptions};
 use crate::notes::{self, NoteReadingOptions};
 use crate::rng::Rng;
+use crate::scale::{self, ScaleOptions};
 use crate::task::PitchTask;
 
 /// Which pitch exercise (the Practice tab).
@@ -14,6 +15,7 @@ use crate::task::PitchTask;
 pub enum PitchExerciseKind {
     Notes,
     Intervals,
+    Scales,
 }
 
 /// A pitch exercise with its options.
@@ -21,6 +23,7 @@ pub enum PitchExerciseKind {
 pub enum PitchExercise {
     Notes(NoteReadingOptions),
     Intervals(IntervalOptions),
+    Scales(ScaleOptions),
 }
 
 impl PitchExercise {
@@ -28,6 +31,7 @@ impl PitchExercise {
         match self {
             Self::Notes(_) => PitchExerciseKind::Notes,
             Self::Intervals(_) => PitchExerciseKind::Intervals,
+            Self::Scales(_) => PitchExerciseKind::Scales,
         }
     }
 }
@@ -63,6 +67,7 @@ pub fn generate(
         PitchExercise::Intervals(options) => {
             interval::generate(options, instrument, previous, &mut rng)
         }
+        PitchExercise::Scales(options) => scale::generate(options, instrument, previous, &mut rng),
     }
 }
 
@@ -75,6 +80,7 @@ mod tests {
         for exercise in [
             PitchExercise::Notes(NoteReadingOptions::default()),
             PitchExercise::Intervals(IntervalOptions::default()),
+            PitchExercise::Scales(ScaleOptions::default()),
         ] {
             let a = generate(&exercise, Instrument::Violin, None, 42).unwrap();
             let b = generate(&exercise, Instrument::Violin, None, 42).unwrap();
@@ -90,6 +96,7 @@ mod tests {
             for exercise in [
                 PitchExercise::Notes(NoteReadingOptions::default()),
                 PitchExercise::Intervals(IntervalOptions::default()),
+                PitchExercise::Scales(ScaleOptions::default()),
             ] {
                 let mut previous = None;
                 for seed in 0..20 {

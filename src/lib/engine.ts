@@ -277,10 +277,39 @@ export type Direction = "up" | "down";
 /** Interval directions to practise. */
 export type Directions = "up" | "down" | "both";
 
+export type ScaleKind =
+  | "major"
+  | "naturalMinor"
+  | "harmonicMinor"
+  | "melodicMinor"
+  | "majorPentatonic"
+  | "minorPentatonic"
+  | "dorian"
+  | "phrygian"
+  | "lydian"
+  | "mixolydian"
+  | "locrian";
+
+/** Display order; must match `ScaleKind::ALL`. */
+export const SCALE_KINDS: readonly ScaleKind[] = [
+  "major",
+  "naturalMinor",
+  "harmonicMinor",
+  "melodicMinor",
+  "majorPentatonic",
+  "minorPentatonic",
+  "dorian",
+  "phrygian",
+  "lydian",
+  "mixolydian",
+  "locrian",
+];
+
 /** What a task asks for. */
 export type Prompt =
   | { kind: "note" }
-  | { kind: "interval"; interval: IntervalName; direction: Direction };
+  | { kind: "interval"; interval: IntervalName; direction: Direction }
+  | { kind: "scale"; root: Pitch; scale: ScaleKind; upAndDown: boolean };
 
 export type PitchTask = {
   prompt: Prompt;
@@ -304,13 +333,22 @@ export type IntervalOptions = {
   showBoth: boolean;
 };
 
+export type ScaleOptions = {
+  scales: ScaleKind[];
+  /** Up to the octave and back down, instead of up only. */
+  upAndDown: boolean;
+  /** Show every note (reading practice), not only the root. */
+  showNotes: boolean;
+};
+
 /** Pitch exercises; one Practice tab each. */
-export type PitchExerciseKind = "notes" | "intervals";
+export type PitchExerciseKind = "notes" | "intervals" | "scales";
 
 export type PitchPracticeSettings = {
   instrument: Instrument;
   notes: NoteReadingOptions;
   intervals: IntervalOptions;
+  scales: ScaleOptions;
 };
 
 export type TaskStage = "listening" | "playing" | "solved" | "revealed";

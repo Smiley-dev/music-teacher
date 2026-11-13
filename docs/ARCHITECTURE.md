@@ -29,6 +29,7 @@ crates/
     exercise.rs        PitchExercise(+Kind), seeded generate(), TheoryError
     notes.rs           Note reading generator
     interval.rs        IntervalName, Direction(s), interval generator
+    scale.rs           ScaleKind (scales and modes, spelled by degree), scale generator
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
@@ -66,6 +67,7 @@ src/
                        usePitchSettings
     notes/             Note reading tab
     intervals/         Intervals tab
+    scales/            Scales tab
   components/          Shared: level meter, waveform canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
