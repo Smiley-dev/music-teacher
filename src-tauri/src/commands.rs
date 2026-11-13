@@ -8,8 +8,9 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::engine::AudioEngine;
 use crate::engine::events::{EngineEvent, EngineSnapshot};
-use crate::settings::{RhythmPracticeSettings, Settings};
+use crate::settings::{PitchPracticeSettings, RhythmPracticeSettings, Settings};
 use rhythm::{Exercise, ExerciseDraft};
+use theory::PitchExerciseKind;
 
 /// Windows Settings page that controls microphone access for desktop apps.
 const MICROPHONE_PRIVACY_URL: &str = "ms-settings:privacy-microphone";
@@ -97,6 +98,41 @@ pub fn listen_to_rhythm(exercise: Exercise, engine: State<'_, AudioEngine>) -> R
 #[tauri::command]
 pub fn stop_rhythm_practice(engine: State<'_, AudioEngine>) {
     engine.stop_rhythm_practice();
+}
+
+/// Save pitch practice settings (instrument, exercise options).
+#[tauri::command]
+pub fn set_pitch_settings(
+    pitch: PitchPracticeSettings,
+    engine: State<'_, AudioEngine>,
+) -> Result<Settings, String> {
+    engine.set_pitch_settings(pitch)
+}
+
+/// Start a pitch exercise with its saved options; progress arrives as events.
+#[tauri::command]
+pub fn start_pitch_practice(
+    exercise: PitchExerciseKind,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.start_pitch_practice(exercise)
+}
+
+#[tauri::command]
+pub fn stop_pitch_practice(engine: State<'_, AudioEngine>) {
+    engine.stop_pitch_practice();
+}
+
+/// Show the current task's answer and move on to the next one.
+#[tauri::command]
+pub fn skip_pitch_task(engine: State<'_, AudioEngine>) {
+    engine.skip_pitch_task();
+}
+
+/// Play the current task's notes (again).
+#[tauri::command]
+pub fn replay_pitch_task(engine: State<'_, AudioEngine>) {
+    engine.replay_pitch_task();
 }
 
 #[tauri::command]

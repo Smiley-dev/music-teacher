@@ -33,6 +33,11 @@ pub fn run() {
             commands::start_rhythm_practice,
             commands::listen_to_rhythm,
             commands::stop_rhythm_practice,
+            commands::set_pitch_settings,
+            commands::start_pitch_practice,
+            commands::stop_pitch_practice,
+            commands::skip_pitch_task,
+            commands::replay_pitch_task,
             commands::open_microphone_privacy_settings,
         ])
         .run(tauri::generate_context!())

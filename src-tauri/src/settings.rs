@@ -6,6 +6,7 @@ use std::sync::{Mutex, PoisonError};
 use audio_engine::DeviceId;
 use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSignature};
 use serde::{Deserialize, Serialize};
+use theory::{Instrument, NoteReadingOptions, PitchExercise, PitchExerciseKind};
 
 /// Allowed input gain range in dB.
 pub const MIN_GAIN_DB: f32 = -24.0;
@@ -84,10 +85,30 @@ impl RhythmPracticeSettings {
     }
 }
 
+/// Pitch exercise choices (ADR 0011), see docs/features/practice.md.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PitchPracticeSettings {
+    /// The instrument played: clef, transposition and range of every pitch
+    /// exercise.
+    pub instrument: Instrument,
+    pub notes: NoteReadingOptions,
+}
+
+impl PitchPracticeSettings {
+    /// The exercise `kind` with its saved options.
+    pub fn exercise(&self, kind: PitchExerciseKind) -> PitchExercise {
+        match kind {
+            PitchExerciseKind::Notes => PitchExercise::Notes(self.notes),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PracticeSettings {
     pub rhythm: RhythmPracticeSettings,
+    pub pitch: PitchPracticeSettings,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -254,6 +275,34 @@ mod tests {
         let rhythm = SettingsStore::load(path.clone()).get().practice.rhythm;
         assert_eq!(rhythm.custom_mode, CustomMode::Written);
         assert_eq!(rhythm.written.len(), 1, "dotted sixteenth dropped");
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn pitch_defaults_and_round_trip() {
+        let path = temp_path("pitch");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        // A file from before pitch exercises existed.
+        std::fs::write(&path, r#"{"practice": {"rhythm": {"bpm": 90}}}"#).unwrap();
+        let store = SettingsStore::load(path.clone());
+        assert_eq!(store.get().practice.pitch, PitchPracticeSettings::default());
+        assert_eq!(store.get().practice.pitch.instrument, Instrument::Guitar);
+
+        store
+            .update(|s| {
+                s.practice.pitch.instrument = Instrument::Viola;
+                s.practice.pitch.notes.ledger_lines = true;
+            })
+            .unwrap();
+        let pitch = SettingsStore::load(path.clone()).get().practice.pitch;
+        assert_eq!(pitch.instrument, Instrument::Viola);
+        assert_eq!(
+            pitch.exercise(PitchExerciseKind::Notes),
+            PitchExercise::Notes(NoteReadingOptions {
+                ledger_lines: true,
+                ..Default::default()
+            })
+        );
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

@@ -30,6 +30,8 @@ pub struct Analyzer {
     mono: Vec<f32>,
     mono_start: u64,
     waveform: Vec<f32>,
+    /// MIDI note of the strongest clear pitch of the last tick (unsmoothed).
+    pitch_midi: Option<i32>,
 }
 
 impl Analyzer {
@@ -49,6 +51,7 @@ impl Analyzer {
             mono: Vec::new(),
             mono_start: 0,
             waveform: Vec::new(),
+            pitch_midi: None,
             info,
         }
     }
@@ -112,6 +115,7 @@ impl Analyzer {
             .enumerate()
             .filter_map(|(ch, p)| p.as_ref().map(|p| (p, ch)))
             .max_by(|a, b| peaks[a.1].total_cmp(&peaks[b.1]));
+        self.pitch_midi = strongest.map(|(p, _)| p.note.midi);
         let note = self.stabilizer.update(strongest, now).cloned();
 
         let waveform_channel = note.as_ref().map(|n| n.channel).unwrap_or_else(|| {
@@ -129,6 +133,12 @@ impl Analyzer {
             waveform_channel,
             note,
         }
+    }
+
+    /// MIDI note of the strongest clear pitch read by the last `process`
+    /// call (no smoothing or hold, unlike `Frame::note`), for judging.
+    pub fn pitch_midi(&self) -> Option<i32> {
+        self.pitch_midi
     }
 
     /// Frames consumed so far; the next `process` starts at this frame index.

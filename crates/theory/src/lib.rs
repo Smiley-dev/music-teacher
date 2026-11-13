@@ -1,0 +1,21 @@
+//! Music theory and pitch exercises: spelled pitches, instruments, task
+//! generators and the note judge. Pure: no devices, threads or UI (ADR 0011).
+//!
+//! Notes are spelled (letter, accidental, octave) so they can be drawn on a
+//! staff; what the player must play is the sounding MIDI note, which differs
+//! for transposing instruments (guitar sounds an octave lower than written).
+
+mod exercise;
+mod instrument;
+mod judge;
+mod notes;
+mod pitch;
+mod rng;
+mod task;
+
+pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
+pub use instrument::{Clef, Instrument};
+pub use judge::{CONFIRM_SECS, Heard, NoteJudge, WRONG_SECS};
+pub use notes::{NoteReadingOptions, note_pool};
+pub use pitch::{Letter, Pitch};
+pub use task::{Matching, PitchTask, Prompt, TaskNote};

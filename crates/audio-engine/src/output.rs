@@ -190,6 +190,9 @@ pub struct ClickTimestamp {
 /// Plays a click schedule on the default output device. Dropping it stops.
 pub struct ClickPlayer {
     clicks: Consumer<ClickTimestamp>,
+    /// Receives the playback time of the stream's first frame, once.
+    origin_rx: Consumer<StreamInstant>,
+    origin: Option<StreamInstant>,
     error: Arc<Mutex<Option<AudioError>>>,
     stop_tx: Option<mpsc::Sender<()>>,
     thread: Option<JoinHandle<()>>,
@@ -205,8 +208,8 @@ impl ClickPlayer {
         let thread = std::thread::Builder::new()
             .name("click-output".into())
             .spawn(move || match open_stream(schedule, thread_error) {
-                Ok((stream, clicks)) => {
-                    let _ = ready_tx.send(Ok(clicks));
+                Ok((stream, rings)) => {
+                    let _ = ready_tx.send(Ok(rings));
                     let _ = stop_rx.recv();
                     drop(stream);
                 }
@@ -216,9 +219,11 @@ impl ClickPlayer {
             })
             .map_err(|_| AudioError::ThreadDied)?;
 
-        let clicks = ready_rx.recv().map_err(|_| AudioError::ThreadDied)??;
+        let (clicks, origin_rx) = ready_rx.recv().map_err(|_| AudioError::ThreadDied)??;
         Ok(Self {
             clicks,
+            origin_rx,
+            origin: None,
             error,
             stop_tx: Some(stop_tx),
             thread: Some(thread),
@@ -230,6 +235,16 @@ impl ClickPlayer {
         while let Ok(c) = self.clicks.pop() {
             out.push(c);
         }
+    }
+
+    /// When the schedule's time 0 plays (the stream's first frame), on the
+    /// audio clock. `None` until the output has started. Schedule times
+    /// (`lead_in_secs`, `Tone::start_secs`) are relative to this instant.
+    pub fn origin(&mut self) -> Option<StreamInstant> {
+        if self.origin.is_none() {
+            self.origin = self.origin_rx.pop().ok();
+        }
+        self.origin
     }
 
     pub fn take_error(&self) -> Option<AudioError> {
@@ -283,10 +298,13 @@ fn tone_sound(sample_rate: u32, hz: f32, frames: usize) -> Vec<f32> {
         .collect()
 }
 
+/// Ring buffer ends the player reads: click timestamps and the origin.
+type Rings = (Consumer<ClickTimestamp>, Consumer<StreamInstant>);
+
 fn open_stream(
     schedule: ClickSchedule,
     error: Arc<Mutex<Option<AudioError>>>,
-) -> Result<(cpal::Stream, Consumer<ClickTimestamp>), AudioError> {
+) -> Result<(cpal::Stream, Rings), AudioError> {
     let device = cpal::default_host()
         .default_output_device()
         .ok_or(AudioError::NoOutputDevice)?;
@@ -294,27 +312,29 @@ fn open_stream(
     let format = supported.sample_format();
     let config: cpal::StreamConfig = supported.into();
     let (tx, rx) = RingBuffer::new(schedule.accents.len().max(1));
+    let (origin_tx, origin_rx) = RingBuffer::new(1);
 
     use cpal::SampleFormat as F;
     let (d, c, s, e) = (&device, &config, &schedule, error);
+    let t = (tx, origin_tx);
     let stream = match format {
-        F::F32 => build::<f32>(d, c, s, tx, e)?,
-        F::F64 => build::<f64>(d, c, s, tx, e)?,
-        F::I16 => build::<i16>(d, c, s, tx, e)?,
-        F::I32 => build::<i32>(d, c, s, tx, e)?,
-        F::U16 => build::<u16>(d, c, s, tx, e)?,
-        F::U8 => build::<u8>(d, c, s, tx, e)?,
+        F::F32 => build::<f32>(d, c, s, t, e)?,
+        F::F64 => build::<f64>(d, c, s, t, e)?,
+        F::I16 => build::<i16>(d, c, s, t, e)?,
+        F::I32 => build::<i32>(d, c, s, t, e)?,
+        F::U16 => build::<u16>(d, c, s, t, e)?,
+        F::U8 => build::<u8>(d, c, s, t, e)?,
         other => return Err(AudioError::UnsupportedFormat(other)),
     };
     stream.play()?;
-    Ok((stream, rx))
+    Ok((stream, (rx, origin_rx)))
 }
 
 fn build<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     schedule: &ClickSchedule,
-    mut clicks_tx: Producer<ClickTimestamp>,
+    (mut clicks_tx, mut origin_tx): (Producer<ClickTimestamp>, Producer<StreamInstant>),
     error: Arc<Mutex<Option<AudioError>>>,
 ) -> Result<cpal::Stream, AudioError>
 where
@@ -324,12 +344,17 @@ where
     let channels = config.channels as usize;
     // Everything the callback needs is computed up front.
     let mut track = ClickTrack::new(schedule, sample_rate);
+    let mut origin_sent = false;
 
     let stream = device.build_output_stream(
         config,
         // REAL-TIME CALLBACK: no allocation, locks, I/O or logging here.
         move |data: &mut [T], info: &cpal::OutputCallbackInfo| {
             let playback = info.timestamp().playback;
+            if !origin_sent {
+                // The first buffer starts at schedule time 0.
+                origin_sent = origin_tx.push(playback).is_ok();
+            }
             track.render(
                 data.len() / channels,
                 |i, value| {

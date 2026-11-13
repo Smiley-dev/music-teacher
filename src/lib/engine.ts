@@ -199,6 +199,105 @@ export type PracticeState =
   | { phase: "finished"; report: TimingReport }
   | { phase: "failed"; message: string };
 
+// ---- theory (crates/theory) ----
+
+export type Letter = "c" | "d" | "e" | "f" | "g" | "a" | "b";
+
+/** A written note. `accidental`: -2 double flat … 2 double sharp. Middle C = c4. */
+export type Pitch = { letter: Letter; accidental: number; octave: number };
+
+export type Clef = "treble" | "bass" | "alto";
+
+export type Instrument =
+  | "guitar"
+  | "bassGuitar"
+  | "keyboardTreble"
+  | "keyboardBass"
+  | "violin"
+  | "viola"
+  | "cello"
+  | "doubleBass";
+
+/** Display order; must match `Instrument::ALL`. */
+export const INSTRUMENTS: readonly Instrument[] = [
+  "guitar",
+  "bassGuitar",
+  "keyboardTreble",
+  "keyboardBass",
+  "violin",
+  "viola",
+  "cello",
+  "doubleBass",
+];
+
+/** Exact pitch, or any octave as long as the shape stays the same. */
+export type Matching = "exact" | "anyOctave";
+
+export type TaskNote = {
+  /** As written for the instrument. */
+  written: Pitch;
+  /** Sounding MIDI note to play. */
+  midi: number;
+  /** Shown before it is played (otherwise revealed once played). */
+  given: boolean;
+};
+
+/** What a task asks for. */
+export type Prompt = { kind: "note" };
+
+export type PitchTask = {
+  prompt: Prompt;
+  clef: Clef;
+  notes: TaskNote[];
+  matching: Matching;
+  /** The notes are played to the user first (ear training). */
+  playFirst: boolean;
+};
+
+export type NoteReadingOptions = {
+  ledgerLines: boolean;
+  accidentals: boolean;
+  anyOctave: boolean;
+};
+
+/** Pitch exercises; one Practice tab each. */
+export type PitchExerciseKind = "notes";
+
+export type PitchPracticeSettings = {
+  instrument: Instrument;
+  notes: NoteReadingOptions;
+};
+
+export type TaskStage = "listening" | "playing" | "solved" | "revealed";
+
+export type PitchScore = {
+  solved: number;
+  /** Solved without a wrong note. */
+  clean: number;
+  skipped: number;
+  wrongNotes: number;
+};
+
+export type PitchPracticeState =
+  | { phase: "idle" }
+  | {
+      phase: "running";
+      exercise: PitchExerciseKind;
+      task: PitchTask;
+      stage: TaskStage;
+      /** Notes of the task played correctly so far. */
+      progress: number;
+      /** Last wrong note of this task, as written (e.g. "D#4"). */
+      wrong: string | null;
+      /** The note heard right now, as written. */
+      heard: string | null;
+      /** Current task number, from 1. */
+      round: number;
+      score: PitchScore;
+    }
+  | { phase: "finished"; exercise: PitchExerciseKind; score: PitchScore }
+  | { phase: "failed"; message: string };
+
 // ---- settings ----
 
 /** Must match `MIN_GAIN_DB` / `MAX_GAIN_DB` in `src-tauri/src/settings.rs`. */
@@ -222,7 +321,7 @@ export type Settings = {
   inputDevice: DeviceId | null;
   gainDb: number;
   latency: LatencyCalibration | null;
-  practice: { rhythm: RhythmPracticeSettings };
+  practice: { rhythm: RhythmPracticeSettings; pitch: PitchPracticeSettings };
 };
 
 // ---- engine ----
@@ -258,6 +357,7 @@ export type EngineEvent =
   | { type: "calibration"; calibration: CalibrationState }
   | { type: "practice"; practice: PracticeState }
   | { type: "practiceJudged"; judgements: Judgement[] }
+  | { type: "pitchPractice"; pitch: PitchPracticeState }
   | { type: "settings"; settings: Settings };
 
 export type EngineSnapshot = {
@@ -266,6 +366,7 @@ export type EngineSnapshot = {
   settings: Settings;
   calibration: CalibrationState;
   practice: PracticeState;
+  pitch: PitchPracticeState;
 };
 
 // ---- commands ----
@@ -310,6 +411,21 @@ export const listenToRhythm = (exercise: Exercise) =>
   invoke<void>("listen_to_rhythm", { exercise });
 
 export const stopRhythmPractice = () => invoke<void>("stop_rhythm_practice");
+
+export const setPitchSettings = (pitch: PitchPracticeSettings) =>
+  invoke<Settings>("set_pitch_settings", { pitch });
+
+/** Start a pitch exercise with its saved options; tasks follow until stopped. */
+export const startPitchPractice = (exercise: PitchExerciseKind) =>
+  invoke<void>("start_pitch_practice", { exercise });
+
+export const stopPitchPractice = () => invoke<void>("stop_pitch_practice");
+
+/** Show the current task's answer and move on. */
+export const skipPitchTask = () => invoke<void>("skip_pitch_task");
+
+/** Play the current task's notes (again); the task restarts. */
+export const replayPitchTask = () => invoke<void>("replay_pitch_task");
 
 export const openMicrophonePrivacySettings = () =>
   invoke<void>("open_microphone_privacy_settings");

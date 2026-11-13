@@ -147,3 +147,20 @@
 .rhythm-score .vf-active {
   color: var(--color-sky-500);
 }
+/* Pitch exercises (render-staff.ts): one stave, state classes per note. */
+.pitch-staff .vf-stave path {
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+.pitch-staff .vf-hidden {
+  opacity: 0;
+}
+.pitch-staff .vf-next {
+  color: var(--color-sky-500);
+}
+.pitch-staff .vf-correct {
+  color: var(--color-emerald-500);
+}
+.pitch-staff .vf-answer {
+  color: var(--color-amber-500);
+}

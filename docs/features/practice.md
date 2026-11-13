@@ -1,8 +1,9 @@
 # Practice
 
-Practice has subsections, shown as tabs. Currently: **Rhythm**. More
-subsections (e.g. note reading) are added through the `PRACTICE_SECTIONS`
-registry, see [CODING_RULES.md](../CODING_RULES.md).
+Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
+exercises: **Notes**. More are added through the `PRACTICE_SECTIONS`
+registry, see [CODING_RULES.md](../CODING_RULES.md); ideas are listed in
+[exercise-catalog.md](exercise-catalog.md).
 
 ## Rhythm
 
@@ -172,3 +173,68 @@ tip also suggests higher notes.
 
 Stopping early discards the analysis. Generating a new exercise hides the
 previous results.
+
+## Pitch exercises (ADR 0011)
+
+In these exercises *which* note you play matters, not when. Each tab has its
+options and a **Read and play**-style card; they share how tasks are shown,
+judged and scored.
+
+### Instrument (saved, shared by every pitch exercise)
+
+Notation is written for the instrument and judged on what sounds:
+
+| Instrument | Clef | Sounds | Range used (written) |
+| --- | --- | --- | --- |
+| Guitar | treble | an octave lower | E3–C6 (open low E to 8th fret on the high E) |
+| Bass guitar | bass | an octave lower | E2–D4 (open E to 7th fret on the G string) |
+| Keyboard (treble clef) | treble | as written | C4–C6 |
+| Keyboard (bass clef) | bass | as written | C2–C4 |
+| Violin | treble | as written | G3–B5 (first position) |
+| Viola | alto | as written | C3–D5 (first position) |
+| Cello | bass | as written | C2–D4 (first position) |
+| Double bass | bass | an octave lower | E2–D4 |
+
+Note names on screen (what you played, wrong notes) are written pitches for
+the instrument, spelled like the task's note of the same name (B♭, not A♯,
+when the staff shows B♭), otherwise with sharps.
+
+### A session
+
+1. **Start** generates the first task (options are locked while it runs).
+   The task is shown as whole notes on one staff; notes you must work out
+   yourself stay hidden until played.
+2. Play the notes in order and hold each one briefly. A note turns green
+   once it has been heard steadily for 80 ms. A wrong note held for 250 ms
+   is named ("Not quite: that was D♯4. Try again.") and counted; the task
+   waits for the right note.
+3. Once every note is played: **Correct!**, and 1.2 s later the next task.
+4. **Hear it** plays the task's notes (soft tones, 0.7 s each) on the
+   default output and restarts the task; judging resumes 0.3 s after the
+   last tone so a microphone hearing the speakers is not judged.
+   **Skip** shows the answer in amber for 3 s, then moves on.
+5. **Stop** ends the session and shows the score. Leaving the tab (or the
+   Practice screen) stops it too.
+
+The live line shows the note being heard ("Hearing G♯3"). The score counts
+tasks solved, solved without a wrong note ("first try"), skipped, and wrong
+notes.
+
+Judging rules (`theory::NoteJudge`): the last correct note heard again (or
+its octave, usually its harmonic while it rings) is ignored; a note already
+sounding when a task starts is ignored until it stops or changes; tasks
+never repeat the previous note. Needs a running input device; calibration,
+rhythm practice and pitch exercises cannot run at the same time.
+
+## Notes (note reading)
+
+A single note appears on the staff; play it. Covers note-name, piano-key,
+fretboard and fingerboard reading drills for every instrument above.
+
+| Option (saved) | Effect | Default |
+| --- | --- | --- |
+| Ledger lines | Notes above and below the staff, up to the instrument's range. Off: the staff plus the spaces just below and above it | off |
+| Sharps and flats | Also sharps and flats (never E♯, B♯, C♭, F♭) | off |
+| Any octave | Accept the note name in any octave | off |
+
+The next note is never the same note name as the previous one.

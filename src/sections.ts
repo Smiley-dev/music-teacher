@@ -26,7 +26,7 @@ export const SECTIONS = [
   {
     id: "practice",
     label: "Practice",
-    description: "Rhythm exercises with a metronome.",
+    description: "Rhythm and note exercises that listen to your instrument.",
     icon: Dumbbell,
     Screen: PracticeScreen,
   },

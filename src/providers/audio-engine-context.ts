@@ -7,6 +7,9 @@ import type {
   Exercise,
   Frame,
   Judgement,
+  PitchExerciseKind,
+  PitchPracticeSettings,
+  PitchPracticeState,
   PracticeState,
   RhythmPracticeSettings,
   Settings,
@@ -27,6 +30,12 @@ export type EngineContextValue = {
   /** Play the exercise back so the user can hear it. */
   listenToRhythm: (exercise: Exercise) => Promise<void>;
   stopRhythmPractice: () => Promise<void>;
+  setPitchSettings: (pitch: PitchPracticeSettings) => Promise<void>;
+  startPitchPractice: (exercise: PitchExerciseKind) => Promise<void>;
+  stopPitchPractice: () => Promise<void>;
+  skipPitchTask: () => Promise<void>;
+  /** Play the current task's notes (again). */
+  replayPitchTask: () => Promise<void>;
 };
 
 /** Rarely changing engine state and actions. */
@@ -45,6 +54,8 @@ export const PracticeContext = createContext<PracticeContextValue>({
   state: { phase: "idle" },
   judgements: [],
 });
+/** Pitch practice session state; updates when a note is judged or heard. */
+export const PitchPracticeContext = createContext<PitchPracticeState>({ phase: "idle" });
 
 export function useEngine(): EngineContextValue {
   const value = useContext(EngineContext);
@@ -65,6 +76,11 @@ export function usePractice(): PracticeState {
 /** Timing judgements of the current or last session, live while playing. */
 export function usePracticeJudgements(): Judgement[] {
   return useContext(PracticeContext).judgements;
+}
+
+/** The pitch practice session (note reading, intervals …): task and score. */
+export function usePitchPractice(): PitchPracticeState {
+  return useContext(PitchPracticeContext);
 }
 
 export function useSettings(): Settings {

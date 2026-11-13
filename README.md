@@ -9,7 +9,9 @@ analysed live.
 - **Settings**: input device, input gain with clip indicator, and a
   click-along latency calibration.
 - **Practice**: rhythm exercises (easy, medium, hard or custom) shown in
-  standard notation, with a count-in and metronome at your tempo.
+  standard notation, with a count-in and metronome at your tempo, and note
+  exercises judged by pitch for guitar, bass, keyboard and strings: note
+  reading.
 
 Built with Tauri 2, React 19, Tailwind v4 + shadcn/ui, and Rust (cpal for
 audio, McLeod pitch detection, VexFlow for notation).

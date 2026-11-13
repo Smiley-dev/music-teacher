@@ -18,6 +18,7 @@ one (update the old one's status).
 | [0008](0008-rhythm-timing-judgement.md) | Judging rhythm practice timing from input onsets | Accepted |
 | [0009](0009-written-custom-rhythms.md) | User-written custom rhythms stored as a symbol sequence | Accepted |
 | [0010](0010-spectral-flux-onsets.md) | Spectral-flux onset detection | Accepted |
+| [0011](0011-pitch-exercises.md) | Pitch exercises: theory crate, note judge and pitch sessions | Accepted |
 
 ## Template
 
