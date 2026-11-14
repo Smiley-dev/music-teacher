@@ -19,7 +19,7 @@ use dsp::calibration::{BEATS_PER_BAR, CLICK_COUNT};
 use tauri::ipc::Channel;
 
 use rhythm::{CustomMode, Difficulty, Exercise, ExerciseDraft};
-use theory::{PitchExerciseKind, ReadingExercise};
+use theory::{MelodyPitchJudge, PitchExerciseKind, ReadingExercise};
 
 use crate::settings::{
     LatencyCalibration, LatencySource, PitchPracticeSettings, ReadingPracticeSettings,
@@ -55,6 +55,8 @@ enum Command {
         /// When listening: tone frequency per played note (one = same pitch
         /// for every note).
         listen: Option<Vec<f32>>,
+        /// Also judge the pitch of each note (a sight-reading melody).
+        pitch: Option<MelodyPitchJudge>,
     },
     StopRhythm,
     StartPitch(PitchExerciseKind),
@@ -327,6 +329,7 @@ impl AudioEngine {
             bpm,
             mode: SessionMode::Practice,
             listen: None,
+            pitch: None,
         });
         Ok(())
     }
@@ -355,6 +358,7 @@ impl AudioEngine {
             bpm,
             mode: SessionMode::Listen { note },
             listen: Some(vec![frequency]),
+            pitch: None,
         });
         Ok(())
     }
@@ -452,6 +456,7 @@ impl AudioEngine {
             bpm,
             mode: SessionMode::Melody,
             listen: Some(frequencies),
+            pitch: None,
         });
         Ok(())
     }
@@ -461,6 +466,24 @@ impl AudioEngine {
         exercise.validate().map_err(|e| e.to_string())?;
         self.can_start_session()?;
         let _ = self.commands.send(Command::StartReading(exercise));
+        Ok(())
+    }
+
+    /// Play `exercise` with count-in and metronome at the saved reading
+    /// tempo; timing and pitch of every note are judged (a rhythm session in
+    /// practice mode with a `MelodyPitchJudge`).
+    pub fn start_reading_with_metronome(&self, exercise: ReadingExercise) -> Result<(), String> {
+        exercise.validate().map_err(|e| e.to_string())?;
+        self.can_start_session()?;
+        let bpm = self.shared.settings.get().practice.reading.bpm;
+        let pitch = MelodyPitchJudge::new(&exercise, bpm as f64);
+        let _ = self.commands.send(Command::StartRhythm {
+            exercise: exercise.rhythm,
+            bpm,
+            mode: SessionMode::Practice,
+            listen: None,
+            pitch: Some(pitch),
+        });
         Ok(())
     }
 
@@ -588,6 +611,7 @@ impl Runner {
                 bpm,
                 mode,
                 listen,
+                pitch,
             } => {
                 let Some((_, analyzer)) = &self.input else {
                     return self.shared.set_practice(PracticeState::Failed {
@@ -607,8 +631,15 @@ impl Runner {
                 // Restarting replaces the previous session (and its clicks).
                 self.practice = None;
                 let latency_ms = self.shared.settings.get().latency.map(|l| l.ms);
-                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer, listen.as_deref())
-                {
+                let started = RhythmSession::start(
+                    &exercise,
+                    bpm,
+                    latency_ms,
+                    analyzer,
+                    listen.as_deref(),
+                    pitch,
+                );
+                match started {
                     Ok(session) => {
                         self.mode = mode.clone();
                         self.shared.set_practice(PracticeState::Running {
@@ -809,10 +840,15 @@ impl Runner {
                 practice::Progress::Running {
                     position_beats,
                     judged,
+                    pitched,
                 } => {
                     if !judged.is_empty() {
                         self.shared
                             .broadcast(&EngineEvent::PracticeJudged { judgements: judged });
+                    }
+                    if !pitched.is_empty() {
+                        self.shared
+                            .broadcast(&EngineEvent::PracticePitched { checks: pitched });
                     }
                     PracticeState::Running {
                         mode: self.mode.clone(),
@@ -821,8 +857,11 @@ impl Runner {
                         total_beats: session.total_beats(),
                     }
                 }
-                practice::Progress::Finished(Some(report)) => PracticeState::Finished { report },
-                practice::Progress::Finished(None) => PracticeState::Idle,
+                practice::Progress::Finished {
+                    report: Some(report),
+                    pitch,
+                } => PracticeState::Finished { report, pitch },
+                practice::Progress::Finished { report: None, .. } => PracticeState::Idle,
                 practice::Progress::Failed(message) => PracticeState::Failed { message },
             };
             if !matches!(state, PracticeState::Running { .. }) {

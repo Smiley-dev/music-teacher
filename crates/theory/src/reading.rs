@@ -106,7 +106,7 @@ pub struct ReadingNote {
 }
 
 /// A melody to read and play.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReadingExercise {
     pub rhythm: Exercise,
@@ -118,6 +118,11 @@ pub struct ReadingExercise {
     pub root: Pitch,
     /// Every played note in order; rests have none.
     pub notes: Vec<ReadingNote>,
+    /// Shortest distance between two played notes, in beats (`None` with
+    /// fewer than two): fast notes are harder to detect when played with
+    /// the metronome. Informational (the engine does not use it).
+    #[serde(default)]
+    pub min_note_gap_beats: Option<f64>,
 }
 
 impl ReadingExercise {
@@ -322,6 +327,7 @@ pub fn generate_reading(
                 midi: instrument.sounding(written),
             })
             .collect();
+        let min_note_gap_beats = rhythm.min_note_gap_beats();
         return Ok(ReadingExercise {
             rhythm,
             clef: instrument.clef(),
@@ -329,6 +335,7 @@ pub fn generate_reading(
             scale: *scale,
             root: *root,
             notes,
+            min_note_gap_beats,
         });
     }
     Err(TheoryError::OutOfRange("melody"))

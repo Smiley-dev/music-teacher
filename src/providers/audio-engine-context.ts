@@ -7,6 +7,7 @@ import type {
   Exercise,
   Frame,
   Judgement,
+  PitchCheck,
   PitchExerciseKind,
   PitchPracticeSettings,
   PitchPracticeState,
@@ -45,6 +46,8 @@ export type EngineContextValue = {
   /** Play a sight-reading melody at your own pace, judged by pitch. */
   startReadingPractice: (exercise: ReadingExercise) => Promise<void>;
   stopReadingPractice: () => Promise<void>;
+  /** Play a sight-reading melody with the metronome; timing and pitch judged. */
+  startReadingWithMetronome: (exercise: ReadingExercise) => Promise<void>;
 };
 
 /** Rarely changing engine state and actions. */
@@ -56,12 +59,15 @@ export type PracticeContextValue = {
   state: PracticeState;
   /** Notes judged in the current (or last finished) session, in order. */
   judgements: Judgement[];
+  /** Pitch checks of the current (or last finished) melody, in order. */
+  pitchChecks: PitchCheck[];
 };
 
 /** Practice session state; updates ~30 times/s while a session runs. */
 export const PracticeContext = createContext<PracticeContextValue>({
   state: { phase: "idle" },
   judgements: [],
+  pitchChecks: [],
 });
 /** Pitch practice session state; updates when a note is judged or heard. */
 export const PitchPracticeContext = createContext<PitchPracticeState>({ phase: "idle" });
@@ -85,6 +91,12 @@ export function usePractice(): PracticeState {
 }
 
 /** Timing judgements of the current or last session, live while playing. */
+/** Pitch checks of the current or last sight-reading melody played with the
+ * metronome, live while playing. */
+export function usePracticePitchChecks(): PitchCheck[] {
+  return useContext(PracticeContext).pitchChecks;
+}
+
 export function usePracticeJudgements(): Judgement[] {
   return useContext(PracticeContext).judgements;
 }

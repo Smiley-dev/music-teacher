@@ -179,6 +179,16 @@ pub fn stop_reading_practice(engine: State<'_, AudioEngine>) {
     engine.stop_reading_practice();
 }
 
+/// Play the melody with count-in and metronome; timing and pitch of every
+/// note are judged (practice, practiceJudged and practicePitched events).
+#[tauri::command]
+pub fn start_reading_with_metronome(
+    exercise: ReadingExercise,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.start_reading_with_metronome(exercise)
+}
+
 #[tauri::command]
 pub fn open_microphone_privacy_settings(app: tauri::AppHandle) -> Result<(), String> {
     app.opener()

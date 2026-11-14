@@ -15,6 +15,7 @@ mod instrument;
 mod interval;
 mod judge;
 mod key;
+mod melody_check;
 mod notes;
 mod pitch;
 mod reading;
@@ -29,6 +30,10 @@ pub use instrument::{Clef, Instrument};
 pub use interval::{Direction, Directions, IntervalName, IntervalOptions};
 pub use judge::{CONFIRM_SECS, Heard, NoteJudge, WRONG_SECS};
 pub use key::{KeySignature, MAX_KEY_ACCIDENTALS};
+pub use melody_check::{
+    MIN_PITCH_READINGS, MelodyPitchJudge, PITCH_SETTLE_SECS, PitchCheck, PitchReport, PitchResult,
+    PitchSummary,
+};
 pub use notes::{NoteReadingOptions, note_pool};
 pub use pitch::{Letter, Pitch};
 pub use reading::{

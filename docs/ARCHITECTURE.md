@@ -35,6 +35,7 @@ crates/
     ear.rs             Ear training generator (melodies in a key or chromatic)
     key.rs             KeySignature: a scale's signature (parent major)
     reading.rs         Sight-reading melodies: rhythm + scale walk (ADR 0012)
+    melody_check.rs    MelodyPitchJudge: pitch of each note played with the metronome
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers
@@ -47,8 +48,9 @@ src-tauri/src/
   engine/mod.rs        AudioEngine service: one instance, owns all audio state
   engine/analysis.rs   Per-frame analysis pipeline (gain, meters, waveform, pitch)
   engine/calibration.rs Calibration session (clicks ↔ onsets on the audio clock)
-  engine/practice.rs   Rhythm practice session (count-in, metronome, position,
-                       onset detection + timing judgement)
+  engine/practice.rs   Rhythm session (count-in, metronome, position,
+                       onset detection + timing judgement; listen mode; melody
+                       pitch judgement for sight reading)
   engine/reading.rs    Sight reading at your own pace (NoteJudge + onsets)
   engine/pitch.rs      Pitch practice session (task after task, NoteJudge on the
                        raw pitch, reference playback, score)
@@ -114,9 +116,9 @@ flowchart LR
 3. Results go to every subscribed webview as one `EngineEvent::Frame` (meters,
    waveform, note), plus `Status`, `Calibration`, `Practice`, `PitchPractice`,
    `Reading` and `Settings` events when those change (`Practice` every tick
-   while a rhythm session runs, `PracticeJudged` whenever notes are judged,
-   `PitchPractice` and `Reading` when a task, its progress or the heard note
-   changes).
+   while a rhythm session runs, `PracticeJudged` / `PracticePitched` whenever
+   notes are judged for timing / pitch, `PitchPractice` and `Reading` when a
+   task, its progress or the heard note changes).
 4. `AudioEngineProvider` keeps rarely changing state (status, settings,
    calibration), the latest frame, rhythm practice, pitch practice and sight
    reading in separate React contexts, so only live views (meters, waveform,

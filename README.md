@@ -13,7 +13,8 @@ analysed live.
   exercises judged by pitch for guitar, bass, keyboard and strings: note
   reading, intervals, scales, chords and ear training. **Sight reading**:
   generated melodies in standard notation (choose scales, key signatures,
-  intervals, note lengths, time signature), to hear and to play.
+  intervals, note lengths, time signature), to hear and to play at your own
+  pace or with the metronome (timing and pitch judged).
 - **Theme**: light, dark or follow the system (bottom of the menu).
 
 Built with Tauri 2, React 19, Tailwind v4 + shadcn/ui, and Rust (cpal for

@@ -1,5 +1,7 @@
 //! Rhythm practice session: count-in plus a metronome over the exercise, and
 //! live timing judgement of the notes played on the input (ADR 0006, 0008).
+//! For a sight-reading melody, the pitch of each note is judged too
+//! (`MelodyPitchJudge`, ADR 0012).
 //!
 //! Everything is measured on the audio clock. A played note's position is
 //! `(onset capture instant − first click playback instant) / beat − count-in
@@ -10,6 +12,7 @@ use std::time::{Duration, Instant};
 use audio_engine::{ClickPlayer, ClickSchedule, ClickTimestamp, StreamInstant, Tone, signed_secs};
 use dsp::OnsetDetector;
 use rhythm::{Exercise, Judgement, MAX_WINDOW_MS, SIXTEENTHS_PER_BEAT, TimingJudge, TimingReport};
+use theory::{MelodyPitchJudge, PitchCheck, PitchReport};
 
 use super::analysis::Analyzer;
 
@@ -63,9 +66,16 @@ pub enum Progress {
         position_beats: Option<f64>,
         /// Notes judged during this tick (hits and misses).
         judged: Vec<Judgement>,
+        /// Notes whose pitch was judged during this tick (melodies only).
+        pitched: Vec<PitchCheck>,
     },
-    /// Played to the end; the timing report (`None` when only listening).
-    Finished(Option<TimingReport>),
+    /// Played to the end.
+    Finished {
+        /// The timing report (`None` when only listening).
+        report: Option<TimingReport>,
+        /// The pitch report (melodies only).
+        pitch: Option<PitchReport>,
+    },
     Failed(String),
 }
 
@@ -73,6 +83,8 @@ pub struct RhythmSession {
     player: ClickPlayer,
     detector: OnsetDetector,
     judge: Option<TimingJudge>,
+    /// Pitch of each note, when playing a sight-reading melody.
+    pitch: Option<MelodyPitchJudge>,
     beat_secs: f64,
     /// Saved latency in beats; subtracted from onsets.
     latency_beats: f64,
@@ -88,13 +100,15 @@ impl RhythmSession {
     /// frame. `latency_ms` is the saved calibration (`None` = 0).
     ///
     /// With `listen` (one frequency per played note, see `exercise_tones`),
-    /// the exercise is played back as tones instead of being judged.
+    /// the exercise is played back as tones instead of being judged. With
+    /// `pitch`, the pitch of each played note is judged as well as its timing.
     pub fn start(
         exercise: &Exercise,
         bpm: u32,
         latency_ms: Option<f64>,
         analyzer: &Analyzer,
         listen: Option<&[f32]>,
+        pitch: Option<MelodyPitchJudge>,
     ) -> Result<Self, String> {
         let beats_per_bar = exercise.time_signature.beats_per_bar;
         let bars = exercise.bars.len() as u32;
@@ -120,6 +134,7 @@ impl RhythmSession {
             judge: listen
                 .is_none()
                 .then(|| TimingJudge::new(exercise, bpm as f64)),
+            pitch: pitch.filter(|_| listen.is_none()),
             beat_secs,
             latency_beats: latency_secs / beat_secs,
             total_beats,
@@ -163,20 +178,26 @@ impl RhythmSession {
             return Progress::Running {
                 position_beats: None,
                 judged: Vec::new(),
+                pitched: Vec::new(),
             };
         };
         let to_beats = |instant: &StreamInstant| {
             signed_secs(instant, &first) / self.beat_secs - COUNT_IN_CLICKS as f64
         };
         let mut judged = Vec::new();
+        let mut pitched = Vec::new();
         let position_beats = analyzer.latest_instant().map(|now| to_beats(&now));
         let Some(judge) = self.judge.as_mut() else {
             // Listening only: done once the last bar has been heard.
             return match position_beats {
-                Some(p) if p >= self.total_beats as f64 => Progress::Finished(None),
+                Some(p) if p >= self.total_beats as f64 => Progress::Finished {
+                    report: None,
+                    pitch: None,
+                },
                 _ => Progress::Running {
                     position_beats,
                     judged,
+                    pitched,
                 },
             };
         };
@@ -190,18 +211,27 @@ impl RhythmSession {
         if let Some(position) = position_beats {
             // A note played on time arrives `latency` later, so only give up
             // on it once that much more audio has been heard.
-            judged.extend(judge.advance(position - self.latency_beats));
+            let heard_at = position - self.latency_beats;
+            judged.extend(judge.advance(heard_at));
+            if let Some(pitch) = self.pitch.as_mut() {
+                pitch.hear(heard_at, analyzer.pitch_midi());
+                pitched.extend(pitch.advance(heard_at));
+            }
             let window_beats = MAX_WINDOW_MS / 1000.0 / self.beat_secs;
             let done = self.total_beats as f64 + self.latency_beats.max(0.0) + window_beats;
             if position >= done
                 && let Some(judge) = self.judge.take()
             {
-                return Progress::Finished(Some(judge.report()));
+                return Progress::Finished {
+                    report: Some(judge.report()),
+                    pitch: self.pitch.take().map(MelodyPitchJudge::report),
+                };
             }
         }
         Progress::Running {
             position_beats,
             judged,
+            pitched,
         }
     }
 }

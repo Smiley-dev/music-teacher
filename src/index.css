@@ -181,7 +181,7 @@
   color: var(--color-red-500);
 }
 .reading-score .vf-wrongPitch {
-  color: var(--color-fuchsia-500);
+  color: var(--color-violet-500);
 }
 /* Last, so the note being played wins over a result colour. */
 .reading-score .vf-active {

@@ -11,7 +11,7 @@ Status: **done** (in the app), **idea** (fits the current engine), **later**
 | Exercise (ToneSavvy) | On the instrument | Status |
 | --- | --- | --- |
 | Rhythm Performance | Play the rhythm shown, timing judged (Practice → Rhythm) | done |
-| Note Names + Rhythm Performance together | **Reading**: sight-read a generated melody (scales, key signatures, intervals, note lengths); listen, then play it at your own pace | done |
+| Note Names + Rhythm Performance together | **Reading**: sight-read a generated melody (scales, key signatures, intervals, note lengths); listen, then play it at your own pace or with the metronome (timing and pitch judged) | done |
 | Note Names, Piano Keys, Guitar Frets, Violin/Viola/Cello/Double Bass Fingerboard | **Note reading**: a note appears on the staff, play it. One exercise with an instrument setting (clef, transposition, range) | done |
 | Interval Building | **Intervals**: the first note is shown with an interval name (e.g. "Major 3rd up"); play both notes | done |
 | Scale Building, Scales (ear) | **Scales**: play a named scale or mode from the root shown, up (and down); "Show the notes" turns it into scale reading | done |

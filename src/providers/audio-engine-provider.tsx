@@ -19,16 +19,26 @@ import {
   ReadingContext,
 } from "./audio-engine-context";
 
-/** Practice state plus the judgements collected for the current session. */
+/** Practice state plus the timing judgements and pitch checks collected for
+ * the current session. */
 function applyPracticeEvent(p: PracticeContextValue, event: EngineEvent): PracticeContextValue {
   if (event.type === "practiceJudged") {
     return { ...p, judgements: [...p.judgements, ...event.judgements] };
   }
+  if (event.type === "practicePitched") {
+    return { ...p, pitchChecks: [...p.pitchChecks, ...event.checks] };
+  }
   if (event.type !== "practice") return p;
   const next = event.practice;
-  if (next.phase === "finished") return { state: next, judgements: next.report.judgements };
+  if (next.phase === "finished") {
+    return {
+      state: next,
+      judgements: next.report.judgements,
+      pitchChecks: next.pitch?.checks ?? [],
+    };
+  }
   const starting = next.phase === "running" && p.state.phase !== "running";
-  return { state: next, judgements: starting ? [] : p.judgements };
+  return starting ? { state: next, judgements: [], pitchChecks: [] } : { ...p, state: next };
 }
 
 /** Rarely changing state; frames and practice progress live separately. */
@@ -53,6 +63,7 @@ function applyEvent(state: State, event: EngineEvent): State {
     case "frame":
     case "practice":
     case "practiceJudged":
+    case "practicePitched":
     case "pitchPractice":
     case "reading":
       return state;
@@ -70,6 +81,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [practice, setPractice] = useState<PracticeContextValue>({
     state: { phase: "idle" },
     judgements: [],
+    pitchChecks: [],
   });
   const [pitch, setPitch] = useState<PitchPracticeState>({ phase: "idle" });
   const [reading, setReading] = useState<ReadingState>({ phase: "idle" });
@@ -93,7 +105,11 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         pending.current.push(event);
         return;
       }
-      if (event.type === "practice" || event.type === "practiceJudged") {
+      if (
+        event.type === "practice" ||
+        event.type === "practiceJudged" ||
+        event.type === "practicePitched"
+      ) {
         setPractice((p) => applyPracticeEvent(p, event));
         return;
       }
@@ -124,6 +140,8 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         const initial: PracticeContextValue = {
           state: initialPractice,
           judgements: initialPractice.phase === "finished" ? initialPractice.report.judgements : [],
+          pitchChecks:
+            initialPractice.phase === "finished" ? (initialPractice.pitch?.checks ?? []) : [],
         };
         setPractice(queued.reduce(applyPracticeEvent, initial));
         setPitch(queued.reduce(applyPitchEvent, pitch));
@@ -163,6 +181,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       listenToReading: (exercise) => run(engine.listenToReading(exercise)),
       startReadingPractice: (exercise) => run(engine.startReadingPractice(exercise)),
       stopReadingPractice: () => run(engine.stopReadingPractice()),
+      startReadingWithMetronome: (exercise) => run(engine.startReadingWithMetronome(exercise)),
     };
   }, [state]);
 

@@ -43,6 +43,7 @@ pub fn run() {
             commands::listen_to_reading,
             commands::start_reading_practice,
             commands::stop_reading_practice,
+            commands::start_reading_with_metronome,
             commands::open_microphone_privacy_settings,
         ])
         .run(tauri::generate_context!())

@@ -4,7 +4,7 @@ use audio_engine::{DeviceId, ErrorKind, StreamInfo};
 use dsp::{MeterReading, StableNote};
 use rhythm::{Judgement, TimingReport};
 use serde::Serialize;
-use theory::{PitchExerciseKind, PitchTask};
+use theory::{PitchCheck, PitchExerciseKind, PitchReport, PitchTask};
 
 use crate::settings::{LatencyCalibration, Settings};
 
@@ -26,6 +26,11 @@ pub enum EngineEvent {
     /// Notes judged since the last event while a practice session runs.
     PracticeJudged {
         judgements: Vec<Judgement>,
+    },
+    /// Notes whose pitch was judged since the last event, while a
+    /// sight-reading melody is played with the metronome.
+    PracticePitched {
+        checks: Vec<PitchCheck>,
     },
     /// Pitch practice (note reading, intervals …) state, whenever it changes.
     PitchPractice {
@@ -175,9 +180,11 @@ pub enum PracticeState {
         count_in_beats: u32,
         total_beats: u32,
     },
-    /// The session played to the end; the timing analysis.
+    /// The session played to the end; the timing analysis, and the pitch
+    /// analysis for sight-reading melodies (`None` for rhythm practice).
     Finished {
         report: TimingReport,
+        pitch: Option<PitchReport>,
     },
     Failed {
         message: String,
@@ -340,9 +347,13 @@ mod tests {
         .unwrap();
         let report = rhythm::TimingJudge::new(&exercise, 60.0).report();
         let finished = serde_json::to_value(EngineEvent::Practice {
-            practice: PracticeState::Finished { report },
+            practice: PracticeState::Finished {
+                report,
+                pitch: None,
+            },
         })
         .unwrap();
+        assert_eq!(finished["practice"]["pitch"], json!(null));
         assert_eq!(finished["type"], "practice");
         assert_eq!(finished["practice"]["phase"], "finished");
         let summary = &finished["practice"]["report"]["summary"];
@@ -366,6 +377,29 @@ mod tests {
             judged.unwrap(),
             json!({"type": "practiceJudged", "judgements": []})
         );
+
+        // A melody played with the metronome: pitch checks and report.
+        let melody = theory::generate_reading(
+            &theory::ReadingOptions::default(),
+            theory::Instrument::Guitar,
+            1,
+        )
+        .unwrap();
+        let mut pitch = theory::MelodyPitchJudge::new(&melody, 60.0);
+        let checks = pitch.advance(1000.0);
+        assert_eq!(
+            serde_json::to_value(EngineEvent::PracticePitched {
+                checks: checks[..1].to_vec()
+            })
+            .unwrap(),
+            json!({"type": "practicePitched", "checks": [
+                {"bar": 0, "symbol": 0, "result": "unclear", "played": null}]})
+        );
+        let report = serde_json::to_value(pitch.report()).unwrap();
+        for key in ["notes", "right", "wrong", "unclear", "rightPercent"] {
+            assert!(report["summary"].get(key).is_some(), "missing {key}");
+        }
+        assert!(report["checks"].is_array());
     }
 
     #[test]

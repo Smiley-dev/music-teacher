@@ -200,7 +200,8 @@ export type PracticeState =
       countInBeats: number;
       totalBeats: number;
     }
-  | { phase: "finished"; report: TimingReport }
+  /** `pitch`: the pitch analysis of a sight-reading melody (null for rhythm practice). */
+  | { phase: "finished"; report: TimingReport; pitch: PitchReport | null }
   | { phase: "failed"; message: string };
 
 // ---- theory (crates/theory) ----
@@ -481,6 +482,8 @@ export type ReadingExercise = {
   root: Pitch;
   /** Every played note in order; rests have none. */
   notes: ReadingNote[];
+  /** Shortest distance between two played notes, beats (null if < 2 notes). */
+  minNoteGapBeats: number | null;
 };
 
 export type ReadingOptions = {
@@ -499,6 +502,27 @@ export type ReadingPracticeSettings = {
   bpm: number;
   melody: ReadingOptions;
 };
+
+/** Pitch of a melody note played with the metronome (`theory::melody_check`). */
+export type PitchResult = "right" | "wrong" | "unclear";
+
+export type PitchCheck = {
+  bar: number;
+  symbol: number;
+  result: PitchResult;
+  /** The pitch heard most, as written (e.g. "F#4"); null if nothing clear. */
+  played: string | null;
+};
+
+export type PitchSummary = {
+  notes: number;
+  right: number;
+  wrong: number;
+  unclear: number;
+  rightPercent: number;
+};
+
+export type PitchReport = { checks: PitchCheck[]; summary: PitchSummary };
 
 /** Sight reading at your own pace. */
 export type ReadingState =
@@ -580,6 +604,7 @@ export type EngineEvent =
   | { type: "calibration"; calibration: CalibrationState }
   | { type: "practice"; practice: PracticeState }
   | { type: "practiceJudged"; judgements: Judgement[] }
+  | { type: "practicePitched"; checks: PitchCheck[] }
   | { type: "pitchPractice"; pitch: PitchPracticeState }
   | { type: "reading"; reading: ReadingState }
   | { type: "settings"; settings: Settings };
@@ -670,3 +695,7 @@ export const startReadingPractice = (exercise: ReadingExercise) =>
   invoke<void>("start_reading_practice", { exercise });
 
 export const stopReadingPractice = () => invoke<void>("stop_reading_practice");
+
+/** Play the melody with count-in and metronome; timing and pitch are judged. */
+export const startReadingWithMetronome = (exercise: ReadingExercise) =>
+  invoke<void>("start_reading_with_metronome", { exercise });

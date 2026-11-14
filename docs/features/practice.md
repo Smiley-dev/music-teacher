@@ -336,7 +336,8 @@ task never starts on the previous task's last note.
 ## Reading (sight reading, ADR 0012)
 
 A short melody in standard notation, generated from your choices: read it,
-listen to it, then play it on your instrument.
+listen to it, then play it on your instrument at your own pace or with the
+metronome.
 
 ### Options (saved)
 
@@ -348,7 +349,7 @@ listen to it, then play it on your instrument.
 | Intervals between neighbouring notes | repeated note, 2nd, 3rd, 4th, 5th, 6th, 7th, octave (counted in letters) | 2nd, 3rd |
 | Note lengths | whole … sixteenth, dotted notes, rests (as in rhythm practice) | whole, half, quarter |
 | Ledger lines | Notes above and below the staff, up to the instrument's range | off |
-| Tempo | 40–200 BPM, for listening | 80 |
+| Tempo | 40–200 BPM, for listening and playing with the metronome | 80 |
 | Time signature | 2/4, 3/4, 4/4 | 4/4 |
 | Bars | 1–16 | 4 |
 
@@ -392,6 +393,34 @@ notes count again when you pick them again (an onset re-arms the judge).
 The status line shows the note number, the note being heard and the wrong
 notes. At the end: the number of notes, the time taken and the wrong notes.
 Pitch must be exact (octave included), as written for the instrument.
+
+### Play with metronome
+
+4 count-in clicks, then play along with the metronome at the chosen tempo.
+It is a rhythm session in practice mode, so **timing** is judged exactly as
+in rhythm practice (onsets, latency correction, windows, ADR 0008), and in
+addition the **pitch** of every note (`theory::MelodyPitchJudge`):
+
+- The raw pitch readings heard while a note should sound vote, from 80 ms
+  after its start (`PITCH_SETTLE_SECS`; half the note for very short notes)
+  until its end, corrected by the saved latency. Before that the pitch
+  window still holds the previous note and the attack.
+- The most frequent reading decides: **right** if it is the written pitch
+  (exact octave), **wrong** otherwise, **unclear** with fewer than 2
+  readings (not played, too short or too quiet).
+- A note is decided once it has ended; results stream to the UI as
+  `practicePitched` events.
+
+Colours while playing: green on time, amber early or late, red missed,
+**purple wrong pitch** (overrides the timing colour), blue the current
+note. Live counters show both. The latency line and the fast-notes warning
+from rhythm practice are shown before starting.
+
+After the last bar: the rhythm practice timing analysis (accuracy, notes
+played, average offset, consistency, chart, tips) and a **Notes** card:
+share of right notes, right / wrong / unclear counts, the wrong notes by bar
+("Bar 2: F♯4 instead of C5", up to 8), and tips (play it at your own pace
+first; let notes ring, play louder or slower when many are unclear).
 
 Leaving the tab stops listening or playing. Needs a running input device;
 it cannot run together with calibration or another practice session.
