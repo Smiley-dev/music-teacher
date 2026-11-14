@@ -51,10 +51,11 @@ src-tauri/src/
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
   settings.rs          Settings model + JSON persistence
 src/
-  main.tsx             Entry; theme; mounts <AudioEngineProvider>
-  App.tsx              App shell: main menu + active section
+  main.tsx             Entry; applies the saved theme; mounts <AudioEngineProvider>
+  App.tsx              App shell: main menu + active section + theme toggle
   sections.ts          Registry of menu sections (SECTIONS)
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
+  lib/theme.ts         Theme preference (system/light/dark): load, save, apply
   providers/
     audio-engine-provider.tsx  Subscribes once; holds engine state, latest frame,
                                rhythm and pitch practice state in four contexts
@@ -73,7 +74,8 @@ src/
     chords/            Chords tab
     ear/               Ear training tab
   components/          Shared: level meter, waveform canvas, engine status banner,
-                       calibration panel/card/dialog (Settings + Practice)
+                       calibration panel/card/dialog (Settings + Practice),
+                       theme toggle + useTheme
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
 
@@ -141,7 +143,10 @@ flowchart LR
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
   Windows) whenever they change. See ADR 0004.
-- **UI-only state** (selected section) stays in React.
+- **UI-only state** stays in React, remembered in localStorage: the selected
+  section and the theme (system, light or dark; applied as the `.dark` class
+  on `<html>` and to the window title bar, re-applied when the OS theme
+  changes while set to system).
 - Practice (and anything else) reads the latency through `useLatency()` in the
   UI or `AudioEngine::latency()` in Rust.
 

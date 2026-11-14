@@ -12,6 +12,7 @@ analysed live.
   standard notation, with a count-in and metronome at your tempo, and note
   exercises judged by pitch for guitar, bass, keyboard and strings: note
   reading, intervals, scales, chords and ear training.
+- **Theme**: light, dark or follow the system (bottom of the menu).
 
 Built with Tauri 2, React 19, Tailwind v4 + shadcn/ui, and Rust (cpal for
 audio, McLeod pitch detection, VexFlow for notation).

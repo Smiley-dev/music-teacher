@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AudioLines } from "lucide-react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SECTIONS, type SectionId } from "@/sections";
@@ -60,6 +61,7 @@ function App() {
             </Button>
           );
         })}
+        <ThemeToggle className="mt-auto" />
       </nav>
 
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
