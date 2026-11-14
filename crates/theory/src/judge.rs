@@ -50,14 +50,33 @@ pub struct NoteJudge {
 
 impl NoteJudge {
     pub fn new(task: &PitchTask) -> Self {
+        Self::from_midi(task.midi_notes(), task.matching)
+    }
+
+    /// A judge for `expected` sounding MIDI notes, in order.
+    pub fn from_midi(expected: Vec<i32>, matching: Matching) -> Self {
         Self {
-            expected: task.midi_notes(),
-            matching: task.matching,
+            expected,
+            matching,
             next: 0,
             shift: 0,
             held: None,
             last: None,
             mistakes: 0,
+        }
+    }
+
+    /// A new note was struck (an onset). If the next expected note is the
+    /// one already held (a repeated note), it may now count again; other
+    /// onsets change nothing, so a ringing note is still not judged twice.
+    pub fn onset(&mut self) {
+        if let Some(held) = self.held
+            && !self.is_done()
+            && held.judged
+            && self.matches(held.midi)
+        {
+            self.held = None;
+            self.last = None;
         }
     }
 
@@ -305,5 +324,22 @@ mod tests {
         readings.extend(hold(64, 5));
         let (heard, _) = play(&mut j, now, &readings);
         assert_eq!(heard, vec![Heard::Correct { index: 0, midi: 64 }]);
+    }
+
+    #[test]
+    fn an_onset_lets_a_repeated_note_count_again() {
+        let mut j = NoteJudge::from_midi(vec![60, 60, 62], Matching::Exact);
+        let (heard, now) = play(&mut j, 0.0, &hold(60, 10));
+        assert_eq!(heard, vec![Heard::Correct { index: 0, midi: 60 }]);
+        // Struck again without a gap in the pitch readings.
+        j.onset();
+        let (heard, now) = play(&mut j, now, &hold(60, 5));
+        assert_eq!(heard, vec![Heard::Correct { index: 1, midi: 60 }]);
+        // An onset while the next note is different changes nothing: the
+        // ringing 60 is still ignored.
+        j.onset();
+        let (heard, _) = play(&mut j, now, &hold(60, 20));
+        assert!(heard.is_empty());
+        assert_eq!(j.mistakes(), 0);
     }
 }

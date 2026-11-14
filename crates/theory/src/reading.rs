@@ -12,6 +12,7 @@ use crate::key::{KeySignature, MAX_KEY_ACCIDENTALS};
 use crate::pitch::{Letter, Pitch};
 use crate::rng::Rng;
 use crate::scale::ScaleKind;
+use crate::task::name_like;
 
 /// Longest melody, in bars.
 pub const MAX_READING_BARS: u32 = 16;
@@ -142,6 +143,12 @@ impl ReadingExercise {
     /// Sounding MIDI notes, in order.
     pub fn midi_notes(&self) -> Vec<i32> {
         self.notes.iter().map(|n| n.midi).collect()
+    }
+
+    /// How to name a played (sounding) note: as written, spelled like the
+    /// melody's note of the same name if there is one, otherwise with sharps.
+    pub fn name_of(&self, midi: i32) -> Pitch {
+        name_like(self.notes.iter().map(|n| (n.written, n.midi)), midi)
     }
 }
 

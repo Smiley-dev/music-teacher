@@ -49,6 +49,7 @@ src-tauri/src/
   engine/calibration.rs Calibration session (clicks ↔ onsets on the audio clock)
   engine/practice.rs   Rhythm practice session (count-in, metronome, position,
                        onset detection + timing judgement)
+  engine/reading.rs    Sight reading at your own pace (NoteJudge + onsets)
   engine/pitch.rs      Pitch practice session (task after task, NoteJudge on the
                        raw pitch, reference playback, score)
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
@@ -61,13 +62,15 @@ src/
   lib/theme.ts         Theme preference (system/light/dark): load, save, apply
   providers/
     audio-engine-provider.tsx  Subscribes once; holds engine state, latest frame,
-                               rhythm and pitch practice state in four contexts
+                               rhythm, pitch and reading state in five contexts
     audio-engine-context.ts    useEngine / useFrame / usePractice / usePitchPractice /
-                               useSettings / useLatency
+                               useReading / useSettings / useLatency
   features/tuner/      Tuner screen, note display + cents gauge
   features/settings/   Device and gain cards (+ shared calibration card); useInputDevices
   features/practice/   Practice tabs (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
+    reading/           Sight reading: options, VexFlow melody score, listen/play
+    tempo-field.tsx    Tempo control shared by rhythm and reading
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
                        instrument select, option checklist/buttons,
                        usePitchSettings
@@ -109,15 +112,17 @@ flowchart LR
 2. The engine thread wakes every ~33 ms, drains both rings, applies the input
    gain, and runs the analysis pipeline per channel.
 3. Results go to every subscribed webview as one `EngineEvent::Frame` (meters,
-   waveform, note), plus `Status`, `Calibration`, `Practice`, `PitchPractice`
-   and `Settings` events when those change (`Practice` every tick while a
-   rhythm session runs, `PracticeJudged` whenever notes are judged,
-   `PitchPractice` when a pitch task, its progress or the heard note changes).
+   waveform, note), plus `Status`, `Calibration`, `Practice`, `PitchPractice`,
+   `Reading` and `Settings` events when those change (`Practice` every tick
+   while a rhythm session runs, `PracticeJudged` whenever notes are judged,
+   `PitchPractice` and `Reading` when a task, its progress or the heard note
+   changes).
 4. `AudioEngineProvider` keeps rarely changing state (status, settings,
-   calibration), the latest frame, rhythm practice and pitch practice in
-   separate React contexts, so only live views (meters, waveform, note)
-   re-render 30 times per second. Switching sections never starts or stops
-   audio (leaving a pitch exercise's tab stops that exercise).
+   calibration), the latest frame, rhythm practice, pitch practice and sight
+   reading in separate React contexts, so only live views (meters, waveform,
+   note) re-render 30 times per second. Switching sections never starts or
+   stops audio (leaving a pitch exercise's or the reading tab stops what it
+   started).
 
 ## Threads
 
@@ -142,7 +147,8 @@ flowchart LR
   (reloaded or closed webview) are dropped automatically.
 - **Settings** (`Settings`: input device, gain in dB, latency calibration,
   `practice.rhythm` tempo/difficulty/custom/time signature/bars,
-  `practice.pitch` instrument and pitch exercise options) are
+  `practice.pitch` instrument and pitch exercise options, `practice.reading`
+  tempo and melody options) are
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
   Windows) whenever they change. See ADR 0004.

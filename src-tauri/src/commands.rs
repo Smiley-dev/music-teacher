@@ -8,9 +8,11 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::engine::AudioEngine;
 use crate::engine::events::{EngineEvent, EngineSnapshot};
-use crate::settings::{PitchPracticeSettings, RhythmPracticeSettings, Settings};
+use crate::settings::{
+    PitchPracticeSettings, ReadingPracticeSettings, RhythmPracticeSettings, Settings,
+};
 use rhythm::{Exercise, ExerciseDraft};
-use theory::PitchExerciseKind;
+use theory::{PitchExerciseKind, ReadingExercise};
 
 /// Windows Settings page that controls microphone access for desktop apps.
 const MICROPHONE_PRIVACY_URL: &str = "ms-settings:privacy-microphone";
@@ -133,6 +135,48 @@ pub fn skip_pitch_task(engine: State<'_, AudioEngine>) {
 #[tauri::command]
 pub fn replay_pitch_task(engine: State<'_, AudioEngine>) {
     engine.replay_pitch_task();
+}
+
+/// Save sight-reading settings (tempo, melody options).
+#[tauri::command]
+pub fn set_reading_settings(
+    reading: ReadingPracticeSettings,
+    engine: State<'_, AudioEngine>,
+) -> Result<Settings, String> {
+    engine.set_reading_settings(reading)
+}
+
+/// A new sight-reading melody for the saved options and instrument.
+#[tauri::command]
+pub fn generate_reading_exercise(
+    engine: State<'_, AudioEngine>,
+) -> Result<ReadingExercise, String> {
+    engine.generate_reading_exercise()
+}
+
+/// Play the melody back with count-in and metronome; progress arrives as
+/// practice events.
+#[tauri::command]
+pub fn listen_to_reading(
+    exercise: ReadingExercise,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.listen_to_reading(exercise)
+}
+
+/// Play the melody at your own pace, judged by pitch; progress arrives as
+/// reading events.
+#[tauri::command]
+pub fn start_reading_practice(
+    exercise: ReadingExercise,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.start_reading_practice(exercise)
+}
+
+#[tauri::command]
+pub fn stop_reading_practice(engine: State<'_, AudioEngine>) {
+    engine.stop_reading_practice();
 }
 
 #[tauri::command]

@@ -20,10 +20,10 @@ const NOTE_WIDTH = 56;
 const MIN_SLOTS = 3;
 const PADDING = 8;
 
-const ACCIDENTAL_CODES: Record<number, string> = { [-2]: "bb", [-1]: "b", 1: "#", 2: "##" };
+export const ACCIDENTAL_CODES: Record<number, string> = { [-2]: "bb", [-1]: "b", 1: "#", 2: "##" };
 
 /** VexFlow key such as "c#/4". */
-function vexKey(p: Pitch): string {
+export function vexKey(p: Pitch): string {
   return `${p.letter}${ACCIDENTAL_CODES[p.accidental] ?? ""}/${p.octave}`;
 }
 

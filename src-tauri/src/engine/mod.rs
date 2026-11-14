@@ -1,13 +1,14 @@
 //! The one shared audio engine (ADR 0005). Owns the input stream, gain,
 //! device selection, reconnects, analysis, calibration and practice sessions
-//! (rhythm and pitch) on a single `audio-engine` thread, and broadcasts
-//! `EngineEvent`s to every subscribed webview.
+//! (rhythm, pitch and sight reading) on a single `audio-engine` thread, and
+//! broadcasts `EngineEvent`s to every subscribed webview.
 
 mod analysis;
 mod calibration;
 pub mod events;
 mod pitch;
 mod practice;
+mod reading;
 
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc};
@@ -18,20 +19,21 @@ use dsp::calibration::{BEATS_PER_BAR, CLICK_COUNT};
 use tauri::ipc::Channel;
 
 use rhythm::{CustomMode, Difficulty, Exercise, ExerciseDraft};
-use theory::PitchExerciseKind;
+use theory::{PitchExerciseKind, ReadingExercise};
 
 use crate::settings::{
-    LatencyCalibration, LatencySource, PitchPracticeSettings, RhythmPracticeSettings, Settings,
-    SettingsStore,
+    LatencyCalibration, LatencySource, PitchPracticeSettings, ReadingPracticeSettings,
+    RhythmPracticeSettings, Settings, SettingsStore,
 };
 use analysis::Analyzer;
 use calibration::{CalibrationSession, Failure, Progress};
 use events::{
     CalibrationState, EngineError, EngineEvent, EngineSnapshot, EngineState, EngineStatus,
-    PitchPracticeState, PracticeState, SessionMode,
+    PitchPracticeState, PracticeState, ReadingState, SessionMode,
 };
 use pitch::PitchSession;
 use practice::{COUNT_IN_CLICKS, RhythmSession};
+use reading::ReadingSession;
 
 /// Shown when a session is started while another one runs.
 const BUSY_MESSAGE: &str = "Stop the exercise that is running first.";
@@ -50,14 +52,18 @@ enum Command {
         exercise: Exercise,
         bpm: u32,
         mode: SessionMode,
-        /// Tone pitch when listening.
-        listen_frequency: Option<f32>,
+        /// When listening: tone frequency per played note (one = same pitch
+        /// for every note).
+        listen: Option<Vec<f32>>,
     },
     StopRhythm,
     StartPitch(PitchExerciseKind),
     StopPitch,
     SkipPitchTask,
     ReplayPitchTask,
+    /// Sight reading at your own pace.
+    StartReading(ReadingExercise),
+    StopReading,
 }
 
 struct Shared {
@@ -65,6 +71,7 @@ struct Shared {
     calibration: Mutex<CalibrationState>,
     practice: Mutex<PracticeState>,
     pitch: Mutex<PitchPracticeState>,
+    reading: Mutex<ReadingState>,
     /// Subscribed webviews, keyed by subscription id.
     subscribers: Mutex<Vec<(u64, Channel<EngineEvent>)>>,
     next_subscriber: AtomicU64,
@@ -119,6 +126,19 @@ impl Shared {
         }
     }
 
+    fn set_reading(&self, reading: ReadingState) {
+        let mut current = lock(&self.reading);
+        if *current != reading {
+            *current = reading.clone();
+            drop(current);
+            self.broadcast(&EngineEvent::Reading { reading });
+        }
+    }
+
+    fn reading_running(&self) -> bool {
+        matches!(*lock(&self.reading), ReadingState::Running { .. })
+    }
+
     fn calibration_running(&self) -> bool {
         matches!(*lock(&self.calibration), CalibrationState::Running { .. })
     }
@@ -135,7 +155,7 @@ impl Shared {
     fn update_settings(&self, change: impl FnOnce(&mut Settings)) -> Result<Settings, String> {
         let result = self.settings.update(change);
         self.broadcast(&EngineEvent::Settings {
-            settings: self.settings.get(),
+            settings: Box::new(self.settings.get()),
         });
         result
     }
@@ -165,6 +185,7 @@ impl AudioEngine {
             calibration: Mutex::new(CalibrationState::Idle),
             practice: Mutex::new(PracticeState::Idle),
             pitch: Mutex::new(PitchPracticeState::Idle),
+            reading: Mutex::new(ReadingState::Idle),
             subscribers: Mutex::new(Vec::new()),
             next_subscriber: AtomicU64::new(1),
             gain: AtomicU32::new(dsp::meter::db_to_gain(initial.gain_db).to_bits()),
@@ -192,6 +213,7 @@ impl AudioEngine {
             calibration: lock(&self.shared.calibration).clone(),
             practice: lock(&self.shared.practice).clone(),
             pitch: lock(&self.shared.pitch).clone(),
+            reading: lock(&self.shared.reading).clone(),
         }
     }
 
@@ -250,7 +272,10 @@ impl AudioEngine {
         if lock(&self.shared.status).state != EngineState::Running {
             return Err("Select a working input device before calibrating.".into());
         }
-        if self.shared.practice_running() || self.shared.pitch_running() {
+        if self.shared.practice_running()
+            || self.shared.pitch_running()
+            || self.shared.reading_running()
+        {
             return Err("Stop the practice session before calibrating.".into());
         }
         let _ = self.commands.send(Command::StartCalibration);
@@ -293,7 +318,7 @@ impl AudioEngine {
         if self.shared.calibration_running() {
             return Err("Wait for the calibration to finish first.".into());
         }
-        if self.shared.pitch_running() {
+        if self.shared.pitch_running() || self.shared.reading_running() {
             return Err(BUSY_MESSAGE.into());
         }
         let bpm = self.shared.settings.get().practice.rhythm.bpm;
@@ -301,7 +326,7 @@ impl AudioEngine {
             exercise,
             bpm,
             mode: SessionMode::Practice,
-            listen_frequency: None,
+            listen: None,
         });
         Ok(())
     }
@@ -316,7 +341,7 @@ impl AudioEngine {
         if self.shared.calibration_running() {
             return Err("Wait for the calibration to finish first.".into());
         }
-        if self.shared.pitch_running() {
+        if self.shared.pitch_running() || self.shared.reading_running() {
             return Err(BUSY_MESSAGE.into());
         }
         let bpm = self.shared.settings.get().practice.rhythm.bpm;
@@ -329,7 +354,7 @@ impl AudioEngine {
             exercise,
             bpm,
             mode: SessionMode::Listen { note },
-            listen_frequency: Some(frequency),
+            listen: Some(vec![frequency]),
         });
         Ok(())
     }
@@ -352,7 +377,7 @@ impl AudioEngine {
         if self.shared.calibration_running() {
             return Err("Wait for the calibration to finish first.".into());
         }
-        if self.shared.practice_running() {
+        if self.shared.practice_running() || self.shared.reading_running() {
             return Err(BUSY_MESSAGE.into());
         }
         let _ = self.commands.send(Command::StartPitch(kind));
@@ -371,6 +396,76 @@ impl AudioEngine {
     /// Play the current task's notes (again); the task restarts.
     pub fn replay_pitch_task(&self) {
         let _ = self.commands.send(Command::ReplayPitchTask);
+    }
+
+    /// Save the sight-reading settings (tempo and melody options).
+    pub fn set_reading_settings(
+        &self,
+        reading: ReadingPracticeSettings,
+    ) -> Result<Settings, String> {
+        self.shared
+            .update_settings(|s| s.practice.reading = reading)
+    }
+
+    /// A new sight-reading melody for the saved options and instrument.
+    pub fn generate_reading_exercise(&self) -> Result<ReadingExercise, String> {
+        let practice = self.shared.settings.get().practice;
+        theory::generate_reading(
+            &practice.reading.melody,
+            practice.pitch.instrument,
+            seed_from_clock(),
+        )
+        .map_err(|e| e.to_string())
+    }
+
+    /// Check that a session may start now: a running input and no other
+    /// session.
+    fn can_start_session(&self) -> Result<(), String> {
+        if lock(&self.shared.status).state != EngineState::Running {
+            return Err("Select a working input device first.".into());
+        }
+        if self.shared.calibration_running() {
+            return Err("Wait for the calibration to finish first.".into());
+        }
+        if self.shared.practice_running()
+            || self.shared.pitch_running()
+            || self.shared.reading_running()
+        {
+            return Err(BUSY_MESSAGE.into());
+        }
+        Ok(())
+    }
+
+    /// Play `exercise` back at its pitches, with count-in and metronome at
+    /// the saved reading tempo (a rhythm session in listen mode).
+    pub fn listen_to_reading(&self, exercise: ReadingExercise) -> Result<(), String> {
+        exercise.validate().map_err(|e| e.to_string())?;
+        self.can_start_session()?;
+        let bpm = self.shared.settings.get().practice.reading.bpm;
+        let frequencies = exercise
+            .notes
+            .iter()
+            .map(|n| dsp::note::midi_to_frequency(n.midi))
+            .collect();
+        let _ = self.commands.send(Command::StartRhythm {
+            exercise: exercise.rhythm,
+            bpm,
+            mode: SessionMode::Melody,
+            listen: Some(frequencies),
+        });
+        Ok(())
+    }
+
+    /// Play `exercise` at your own pace, judged note by note by pitch.
+    pub fn start_reading_practice(&self, exercise: ReadingExercise) -> Result<(), String> {
+        exercise.validate().map_err(|e| e.to_string())?;
+        self.can_start_session()?;
+        let _ = self.commands.send(Command::StartReading(exercise));
+        Ok(())
+    }
+
+    pub fn stop_reading_practice(&self) {
+        let _ = self.commands.send(Command::StopReading);
     }
 }
 
@@ -404,6 +499,7 @@ struct Runner {
     /// Mode of the running rhythm session.
     mode: SessionMode,
     pitch: Option<PitchSession>,
+    reading: Option<ReadingSession>,
     next_attempt: Instant,
     /// Whether the last stream ended by failing (vs. never opened).
     was_running: bool,
@@ -419,6 +515,7 @@ fn run(shared: Arc<Shared>, commands: mpsc::Receiver<Command>, wanted: Option<De
         practice: None,
         mode: SessionMode::Practice,
         pitch: None,
+        reading: None,
         next_attempt: Instant::now(),
         was_running: false,
         clock: Instant::now(),
@@ -447,6 +544,7 @@ impl Runner {
                 self.stop_calibration(Some("the input device was changed"));
                 self.stop_practice(Some("the input device was changed"));
                 self.stop_pitch(Some("the input device was changed"));
+                self.stop_reading(Some("the input device was changed"));
                 // Release the old device before opening the new one.
                 self.input = None;
                 self.shared.set_status(EngineStatus {
@@ -466,7 +564,7 @@ impl Runner {
                         .set_calibration(failed("No input device is running.", None));
                     return;
                 };
-                if self.practice.is_some() || self.pitch.is_some() {
+                if self.practice.is_some() || self.pitch.is_some() || self.reading.is_some() {
                     return self.shared.set_calibration(failed(
                         "Stop the practice session before calibrating.",
                         None,
@@ -489,7 +587,7 @@ impl Runner {
                 exercise,
                 bpm,
                 mode,
-                listen_frequency,
+                listen,
             } => {
                 let Some((_, analyzer)) = &self.input else {
                     return self.shared.set_practice(PracticeState::Failed {
@@ -501,7 +599,7 @@ impl Runner {
                         message: "Wait for the calibration to finish first.".into(),
                     });
                 }
-                if self.pitch.is_some() {
+                if self.pitch.is_some() || self.reading.is_some() {
                     return self.shared.set_practice(PracticeState::Failed {
                         message: BUSY_MESSAGE.into(),
                     });
@@ -509,7 +607,8 @@ impl Runner {
                 // Restarting replaces the previous session (and its clicks).
                 self.practice = None;
                 let latency_ms = self.shared.settings.get().latency.map(|l| l.ms);
-                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer, listen_frequency) {
+                match RhythmSession::start(&exercise, bpm, latency_ms, analyzer, listen.as_deref())
+                {
                     Ok(session) => {
                         self.mode = mode.clone();
                         self.shared.set_practice(PracticeState::Running {
@@ -544,6 +643,34 @@ impl Runner {
                     }
                 }
             }
+            Command::StartReading(exercise) => {
+                let Some((_, analyzer)) = &self.input else {
+                    return self.shared.set_reading(ReadingState::Failed {
+                        message: "No input device is running.".into(),
+                    });
+                };
+                if self.calibration.is_some() || self.practice.is_some() || self.pitch.is_some() {
+                    return self.shared.set_reading(ReadingState::Failed {
+                        message: BUSY_MESSAGE.into(),
+                    });
+                }
+                let session = ReadingSession::start(exercise, analyzer);
+                self.shared.set_reading(session.state());
+                self.reading = Some(session);
+            }
+            Command::StopReading => self.stop_reading(None),
+        }
+    }
+
+    /// End a sight-reading session: back to idle, or failed with `reason`.
+    fn stop_reading(&mut self, reason: Option<&str>) {
+        if self.reading.take().is_some() {
+            self.shared.set_reading(match reason {
+                Some(reason) => ReadingState::Failed {
+                    message: format!("Practice stopped: {reason}."),
+                },
+                None => ReadingState::Idle,
+            });
         }
     }
 
@@ -553,7 +680,7 @@ impl Runner {
                 message: "No input device is running.".into(),
             });
         }
-        if self.calibration.is_some() || self.practice.is_some() {
+        if self.calibration.is_some() || self.practice.is_some() || self.reading.is_some() {
             return self.shared.set_pitch(PitchPracticeState::Failed {
                 message: BUSY_MESSAGE.into(),
             });
@@ -629,14 +756,26 @@ impl Runner {
             self.stop_calibration(Some("the input device was lost"));
             self.stop_practice(Some("the input device was lost"));
             self.stop_pitch(Some("the input device was lost"));
+            self.stop_reading(Some("the input device was lost"));
             return;
         }
 
         let now = self.clock.elapsed().as_secs_f64();
         let frame = analyzer.process(stream, self.shared.gain(), now);
-        // The note on screen, for the pitch session's "Hearing …" line.
-        let display_note = self.pitch.as_ref().and_then(|_| frame.note.clone());
+        // The note on screen, for the "Hearing …" line of pitch exercises
+        // and sight reading.
+        let display_note = (self.pitch.is_some() || self.reading.is_some())
+            .then(|| frame.note.clone())
+            .flatten();
         self.shared.broadcast(&EngineEvent::Frame { frame });
+
+        if let Some(session) = &mut self.reading {
+            let state = session.tick(analyzer, display_note.as_ref());
+            if !matches!(state, ReadingState::Running { .. }) {
+                self.reading = None;
+            }
+            self.shared.set_reading(state);
+        }
 
         if let Some(session) = &mut self.pitch {
             match session.tick(analyzer, display_note.as_ref()) {

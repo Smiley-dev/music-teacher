@@ -8,7 +8,7 @@ use rhythm::{CustomMode, Difficulty, NoteValue, RhythmOptions, Symbol, TimeSigna
 use serde::{Deserialize, Serialize};
 use theory::{
     ChordOptions, EarOptions, Instrument, IntervalOptions, NoteReadingOptions, PitchExercise,
-    PitchExerciseKind, ScaleOptions,
+    PitchExerciseKind, ReadingOptions, ScaleOptions,
 };
 
 /// Allowed input gain range in dB.
@@ -115,11 +115,31 @@ impl PitchPracticeSettings {
     }
 }
 
+/// Sight reading choices (ADR 0012), see docs/features/practice.md. The
+/// instrument is `PitchPracticeSettings::instrument`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ReadingPracticeSettings {
+    /// Tempo for listening and playing with the metronome (quarter = beat).
+    pub bpm: u32,
+    pub melody: ReadingOptions,
+}
+
+impl Default for ReadingPracticeSettings {
+    fn default() -> Self {
+        Self {
+            bpm: DEFAULT_BPM,
+            melody: ReadingOptions::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PracticeSettings {
     pub rhythm: RhythmPracticeSettings,
     pub pitch: PitchPracticeSettings,
+    pub reading: ReadingPracticeSettings,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -208,6 +228,22 @@ fn sanitize(mut s: Settings) -> Settings {
         .ear
         .notes
         .clamp(theory::MIN_EAR_NOTES, theory::MAX_EAR_NOTES);
+    let reading = &mut s.practice.reading;
+    reading.bpm = reading.bpm.clamp(MIN_BPM, MAX_BPM);
+    let melody = &mut reading.melody;
+    melody.bars = melody
+        .bars
+        .clamp(rhythm::MIN_BARS, theory::MAX_READING_BARS);
+    if TimeSignature::new(melody.time_signature.beats_per_bar).is_err() {
+        melody.time_signature = TimeSignature::default();
+    }
+    melody.max_accidentals = melody.max_accidentals.min(theory::MAX_KEY_ACCIDENTALS);
+    melody.scales.sort();
+    melody.scales.dedup();
+    melody.intervals.sort();
+    melody.intervals.dedup();
+    melody.rhythm.values.sort();
+    melody.rhythm.values.dedup();
     s
 }
 
@@ -373,6 +409,42 @@ mod tests {
         let ear = SettingsStore::load(path.clone()).get().practice.pitch.ear;
         assert_eq!(ear.notes, theory::MAX_EAR_NOTES, "clamped");
         assert!(ear.chromatic && !ear.show_first && !ear.any_octave);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn reading_defaults_and_clamping() {
+        let path = temp_path("reading");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, r#"{"gainDb": 0}"#).unwrap();
+        let reading = SettingsStore::load(path.clone()).get().practice.reading;
+        assert_eq!(reading, ReadingPracticeSettings::default());
+        assert_eq!(reading.bpm, DEFAULT_BPM);
+
+        let raw = r#"{"practice": {"reading": {"bpm": 5, "melody": {
+            "bars": 99, "maxAccidentals": 12, "timeSignature": {"beatsPerBar": 9},
+            "intervals": ["third", "second", "third"],
+            "rhythm": {"values": ["quarter", "half", "quarter"], "dotted": true, "rests": false}}}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let reading = SettingsStore::load(path.clone()).get().practice.reading;
+        assert_eq!(reading.bpm, MIN_BPM);
+        let melody = reading.melody;
+        assert_eq!(melody.bars, theory::MAX_READING_BARS);
+        assert_eq!(melody.max_accidentals, theory::MAX_KEY_ACCIDENTALS);
+        assert_eq!(melody.time_signature, TimeSignature::default());
+        assert_eq!(
+            melody.intervals,
+            vec![theory::IntervalSize::Second, theory::IntervalSize::Third]
+        );
+        assert_eq!(
+            melody.rhythm.values,
+            vec![NoteValue::Half, NoteValue::Quarter]
+        );
+        assert_eq!(
+            melody.scales,
+            ReadingOptions::default().scales,
+            "missing = default"
+        );
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 }

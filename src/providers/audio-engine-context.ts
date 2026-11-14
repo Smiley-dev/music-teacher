@@ -11,6 +11,9 @@ import type {
   PitchPracticeSettings,
   PitchPracticeState,
   PracticeState,
+  ReadingExercise,
+  ReadingPracticeSettings,
+  ReadingState,
   RhythmPracticeSettings,
   Settings,
 } from "@/lib/engine";
@@ -36,6 +39,12 @@ export type EngineContextValue = {
   skipPitchTask: () => Promise<void>;
   /** Play the current task's notes (again). */
   replayPitchTask: () => Promise<void>;
+  setReadingSettings: (reading: ReadingPracticeSettings) => Promise<void>;
+  /** Play a sight-reading melody back with count-in and metronome. */
+  listenToReading: (exercise: ReadingExercise) => Promise<void>;
+  /** Play a sight-reading melody at your own pace, judged by pitch. */
+  startReadingPractice: (exercise: ReadingExercise) => Promise<void>;
+  stopReadingPractice: () => Promise<void>;
 };
 
 /** Rarely changing engine state and actions. */
@@ -56,6 +65,8 @@ export const PracticeContext = createContext<PracticeContextValue>({
 });
 /** Pitch practice session state; updates when a note is judged or heard. */
 export const PitchPracticeContext = createContext<PitchPracticeState>({ phase: "idle" });
+/** Sight reading at your own pace; updates when a note is judged or heard. */
+export const ReadingContext = createContext<ReadingState>({ phase: "idle" });
 
 export function useEngine(): EngineContextValue {
   const value = useContext(EngineContext);
@@ -81,6 +92,11 @@ export function usePracticeJudgements(): Judgement[] {
 /** The pitch practice session (note reading, intervals …): task and score. */
 export function usePitchPractice(): PitchPracticeState {
   return useContext(PitchPracticeContext);
+}
+
+/** Sight reading at your own pace: progress, last wrong note, heard note. */
+export function useReading(): ReadingState {
+  return useContext(ReadingContext);
 }
 
 export function useSettings(): Settings {

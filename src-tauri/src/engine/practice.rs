@@ -27,8 +27,10 @@ fn accents(beats_per_bar: u32, bars: u32) -> Vec<bool> {
     count_in.chain(exercise).collect()
 }
 
-/// The exercise's notes as tones, after the count-in (rests are silent).
-fn exercise_tones(exercise: &Exercise, beat_secs: f64, frequency: f32) -> Vec<Tone> {
+/// The exercise's notes as tones after the count-in, the n-th played note
+/// at `frequencies[n]` (the last frequency repeats if there are fewer, so a
+/// rhythm can be played on one pitch). Rests are silent.
+fn exercise_tones(exercise: &Exercise, beat_secs: f64, frequencies: &[f32]) -> Vec<Tone> {
     let bar_beats = exercise.time_signature.beats_per_bar as f64;
     let per_beat = SIXTEENTHS_PER_BEAT as f64;
     exercise
@@ -38,11 +40,17 @@ fn exercise_tones(exercise: &Exercise, beat_secs: f64, frequency: f32) -> Vec<To
         .flat_map(|(bar, b)| {
             b.symbols.iter().filter(|s| !s.symbol.rest).map(move |s| {
                 let beat = bar as f64 * bar_beats + s.start as f64 / per_beat;
-                Tone {
-                    start_secs: LEAD_IN_SECS + (COUNT_IN_CLICKS as f64 + beat) * beat_secs,
-                    duration_secs: s.duration as f64 / per_beat * beat_secs,
-                    frequency,
-                }
+                let start_secs = LEAD_IN_SECS + (COUNT_IN_CLICKS as f64 + beat) * beat_secs;
+                (start_secs, s.duration as f64 / per_beat * beat_secs)
+            })
+        })
+        .enumerate()
+        .filter_map(|(i, (start_secs, duration_secs))| {
+            let frequency = *frequencies.get(i).or(frequencies.last())?;
+            Some(Tone {
+                start_secs,
+                duration_secs,
+                frequency,
             })
         })
         .collect()
@@ -79,14 +87,14 @@ impl RhythmSession {
     /// Start the metronome and listen to `analyzer`'s input from its next
     /// frame. `latency_ms` is the saved calibration (`None` = 0).
     ///
-    /// With `listen_frequency`, the exercise is played back as tones at that
-    /// pitch instead of being judged.
+    /// With `listen` (one frequency per played note, see `exercise_tones`),
+    /// the exercise is played back as tones instead of being judged.
     pub fn start(
         exercise: &Exercise,
         bpm: u32,
         latency_ms: Option<f64>,
         analyzer: &Analyzer,
-        listen_frequency: Option<f32>,
+        listen: Option<&[f32]>,
     ) -> Result<Self, String> {
         let beats_per_bar = exercise.time_signature.beats_per_bar;
         let bars = exercise.bars.len() as u32;
@@ -95,8 +103,8 @@ impl RhythmSession {
             lead_in_secs: LEAD_IN_SECS,
             interval_secs: beat_secs,
             accents: accents(beats_per_bar, bars),
-            tones: listen_frequency
-                .map(|hz| exercise_tones(exercise, beat_secs, hz))
+            tones: listen
+                .map(|frequencies| exercise_tones(exercise, beat_secs, frequencies))
                 .unwrap_or_default(),
         })
         .map_err(|e| format!("could not play the metronome: {e}"))?;
@@ -109,7 +117,7 @@ impl RhythmSession {
         Ok(Self {
             player,
             detector: OnsetDetector::new(analyzer.info.sample_rate, analyzer.frames()),
-            judge: listen_frequency
+            judge: listen
                 .is_none()
                 .then(|| TimingJudge::new(exercise, bpm as f64)),
             beat_secs,
@@ -228,11 +236,19 @@ mod tests {
             }],
         };
         // 120 BPM: beat = 0.5 s. Count-in = 4 beats = 2 s after the lead-in.
-        let tones = exercise_tones(&exercise, 0.5, 220.0);
+        let tones = exercise_tones(&exercise, 0.5, &[220.0]);
         assert_eq!(tones.len(), 2, "rests are silent");
         assert!((tones[0].start_secs - (LEAD_IN_SECS + 2.0 + 0.5)).abs() < 1e-9);
         assert!((tones[0].duration_secs - 0.25).abs() < 1e-9);
         assert!((tones[1].start_secs - (LEAD_IN_SECS + 2.75)).abs() < 1e-9);
+        assert_eq!(tones[1].frequency, 220.0, "one pitch repeats for a rhythm");
+
+        // A melody: one frequency per played note.
+        let melody = exercise_tones(&exercise, 0.5, &[220.0, 330.0]);
+        assert_eq!(
+            melody.iter().map(|t| t.frequency).collect::<Vec<_>>(),
+            [220.0, 330.0]
+        );
     }
 
     #[test]

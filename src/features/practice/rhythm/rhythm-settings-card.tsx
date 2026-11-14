@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,13 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { NOTE_VALUE_LABELS } from "@/features/practice/practice-labels";
+import { TempoField } from "@/features/practice/tempo-field";
 import {
   type Difficulty,
   MAX_BARS,
-  MAX_BPM,
   MIN_BARS,
-  MIN_BPM,
   NOTE_VALUES,
   type NoteValue,
   type CustomMode,
@@ -52,14 +50,6 @@ const DIFFICULTIES: { id: Difficulty; label: string; description: string }[] = [
   },
 ];
 
-const VALUE_LABELS: Record<NoteValue, string> = {
-  whole: "Whole",
-  half: "Half",
-  quarter: "Quarter",
-  eighth: "Eighth",
-  sixteenth: "Sixteenth",
-};
-
 type RhythmSettingsCardProps = {
   disabled: boolean;
   /** The current exercise; shown by the editor for written rhythms. */
@@ -71,7 +61,6 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
   const { settings, setRhythmSettings } = useEngine();
   const rhythm = settings.practice.rhythm;
   const [error, setError] = useState<string | null>(null);
-  const [bpmDrag, setBpmDrag] = useState<number | null>(null);
   const [barsText, setBarsText] = useState(String(rhythm.bars));
   useEffect(() => setBarsText(String(rhythm.bars)), [rhythm.bars]);
 
@@ -79,10 +68,8 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
     setError(null);
     setRhythmSettings({ ...rhythm, ...change }).catch((e) => setError(String(e)));
   };
-  const bpm = bpmDrag ?? rhythm.bpm;
   /** Written rhythms set their own length; the bar count does not apply. */
   const writing = rhythm.difficulty === "custom" && rhythm.customMode === "written";
-  const setBpm = (value: number) => update({ bpm: Math.min(MAX_BPM, Math.max(MIN_BPM, value)) });
 
   const toggleValue = (value: NoteValue, on: boolean) => {
     const values = on
@@ -168,7 +155,7 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
                 <CheckboxField
                   key={value}
                   id={`value-${value}`}
-                  label={VALUE_LABELS[value]}
+                  label={NOTE_VALUE_LABELS[value]}
                   checked={rhythm.custom.values.includes(value)}
                   onChange={(on) => toggleValue(value, on)}
                 />
@@ -192,45 +179,12 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
         )}
 
         <div className="grid gap-6 sm:grid-cols-[1fr_auto_auto]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="tempo">Tempo</Label>
-              <span className="font-mono text-sm tabular-nums">{bpm} BPM</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Slower"
-                disabled={disabled || bpm <= MIN_BPM}
-                onClick={() => setBpm(bpm - 1)}
-              >
-                <Minus />
-              </Button>
-              <Slider
-                id="tempo"
-                min={MIN_BPM}
-                max={MAX_BPM}
-                step={1}
-                value={[bpm]}
-                disabled={disabled}
-                onValueChange={([v]) => setBpmDrag(v)}
-                onValueCommit={([v]) => {
-                  setBpmDrag(null);
-                  setBpm(v);
-                }}
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Faster"
-                disabled={disabled || bpm >= MAX_BPM}
-                onClick={() => setBpm(bpm + 1)}
-              >
-                <Plus />
-              </Button>
-            </div>
-          </div>
+          <TempoField
+            id="tempo"
+            bpm={rhythm.bpm}
+            onChange={(bpm) => update({ bpm })}
+            disabled={disabled}
+          />
 
           <div className="flex flex-col gap-3">
             <Label htmlFor="time-signature">Time signature</Label>

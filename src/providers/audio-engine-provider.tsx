@@ -2,7 +2,13 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import * as engine from "@/lib/engine";
-import type { EngineEvent, EngineSnapshot, Frame, PitchPracticeState } from "@/lib/engine";
+import type {
+  EngineEvent,
+  EngineSnapshot,
+  Frame,
+  PitchPracticeState,
+  ReadingState,
+} from "@/lib/engine";
 import {
   EngineContext,
   type EngineContextValue,
@@ -10,6 +16,7 @@ import {
   PitchPracticeContext,
   PracticeContext,
   type PracticeContextValue,
+  ReadingContext,
 } from "./audio-engine-context";
 
 /** Practice state plus the judgements collected for the current session. */
@@ -25,10 +32,14 @@ function applyPracticeEvent(p: PracticeContextValue, event: EngineEvent): Practi
 }
 
 /** Rarely changing state; frames and practice progress live separately. */
-type State = Omit<EngineSnapshot, "subscriptionId" | "practice" | "pitch">;
+type State = Omit<EngineSnapshot, "subscriptionId" | "practice" | "pitch" | "reading">;
 
 function applyPitchEvent(p: PitchPracticeState, event: EngineEvent): PitchPracticeState {
   return event.type === "pitchPractice" ? event.pitch : p;
+}
+
+function applyReadingEvent(r: ReadingState, event: EngineEvent): ReadingState {
+  return event.type === "reading" ? event.reading : r;
 }
 
 function applyEvent(state: State, event: EngineEvent): State {
@@ -43,6 +54,7 @@ function applyEvent(state: State, event: EngineEvent): State {
     case "practice":
     case "practiceJudged":
     case "pitchPractice":
+    case "reading":
       return state;
   }
 }
@@ -60,6 +72,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     judgements: [],
   });
   const [pitch, setPitch] = useState<PitchPracticeState>({ phase: "idle" });
+  const [reading, setReading] = useState<ReadingState>({ phase: "idle" });
   const [connectError, setConnectError] = useState<string | null>(null);
   // Events that arrive before the snapshot are replayed on top of it.
   const pending = useRef<EngineEvent[]>([]);
@@ -84,6 +97,10 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         setPractice((p) => applyPracticeEvent(p, event));
         return;
       }
+      if (event.type === "reading") {
+        setReading(event.reading);
+        return;
+      }
       if (event.type === "pitchPractice") {
         setPitch(event.pitch);
         return;
@@ -93,7 +110,8 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
     engine
       .subscribeEngine(onEvent)
-      .then(({ subscriptionId: id, practice: initialPractice, pitch: initialPitch, ...snapshot }) => {
+      .then((full) => {
+        const { subscriptionId: id, practice: initialPractice, pitch, reading, ...snapshot } = full;
         subscriptionId = id;
         if (!active) {
           engine.unsubscribeEngine(id).catch(() => {});
@@ -108,7 +126,8 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
           judgements: initialPractice.phase === "finished" ? initialPractice.report.judgements : [],
         };
         setPractice(queued.reduce(applyPracticeEvent, initial));
-        setPitch(queued.reduce(applyPitchEvent, initialPitch));
+        setPitch(queued.reduce(applyPitchEvent, pitch));
+        setReading(queued.reduce(applyReadingEvent, reading));
       })
       .catch((e) => active && setConnectError(String(e)));
 
@@ -140,6 +159,10 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       stopPitchPractice: () => run(engine.stopPitchPractice()),
       skipPitchTask: () => run(engine.skipPitchTask()),
       replayPitchTask: () => run(engine.replayPitchTask()),
+      setReadingSettings: (reading) => run(engine.setReadingSettings(reading)),
+      listenToReading: (exercise) => run(engine.listenToReading(exercise)),
+      startReadingPractice: (exercise) => run(engine.startReadingPractice(exercise)),
+      stopReadingPractice: () => run(engine.stopReadingPractice()),
     };
   }, [state]);
 
@@ -165,7 +188,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     <EngineContext.Provider value={value}>
       <FrameContext.Provider value={frame}>
         <PracticeContext.Provider value={practice}>
-          <PitchPracticeContext.Provider value={pitch}>{children}</PitchPracticeContext.Provider>
+          <PitchPracticeContext.Provider value={pitch}>
+            <ReadingContext.Provider value={reading}>{children}</ReadingContext.Provider>
+          </PitchPracticeContext.Provider>
         </PracticeContext.Provider>
       </FrameContext.Provider>
     </EngineContext.Provider>

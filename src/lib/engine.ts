@@ -183,8 +183,12 @@ export type TimingReport = {
   summary: TimingSummary;
 };
 
-/** What a rhythm session does: judge the user, or play the exercise back. */
-export type SessionMode = { kind: "practice" } | { kind: "listen"; note: string };
+/** What a rhythm session does: judge the user, play the exercise back on one
+ * note, or play a sight-reading melody back. */
+export type SessionMode =
+  | { kind: "practice" }
+  | { kind: "listen"; note: string }
+  | { kind: "melody" };
 
 export type PracticeState =
   | { phase: "idle" }
@@ -433,6 +437,86 @@ export type PitchPracticeState =
   | { phase: "finished"; exercise: PitchExerciseKind; score: PitchScore }
   | { phase: "failed"; message: string };
 
+// ---- sight reading (crates/theory/src/reading.rs, ADR 0012) ----
+
+/** Distance between neighbouring notes in letters (unison = repeated note). */
+export type IntervalSize =
+  | "unison"
+  | "second"
+  | "third"
+  | "fourth"
+  | "fifth"
+  | "sixth"
+  | "seventh"
+  | "octave";
+
+/** Smallest to largest; must match `IntervalSize::ALL`. */
+export const INTERVAL_SIZES: readonly IntervalSize[] = [
+  "unison",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh",
+  "octave",
+];
+
+/** Must match `MAX_KEY_ACCIDENTALS` / `MAX_READING_BARS` in `crates/theory`. */
+export const MAX_KEY_ACCIDENTALS = 7;
+export const MAX_READING_BARS = 16;
+
+/** Named by the major key with this signature; `accidentals` > 0 sharps, < 0 flats. */
+export type KeySignature = { major: Pitch; accidentals: number };
+
+/** A played note of a melody: its rhythm slot and pitch. */
+export type ReadingNote = { bar: number; symbol: number; written: Pitch; midi: number };
+
+export type ReadingExercise = {
+  rhythm: Exercise;
+  clef: Clef;
+  key: KeySignature;
+  scale: ScaleKind;
+  /** The scale's root (octave meaningless). */
+  root: Pitch;
+  /** Every played note in order; rests have none. */
+  notes: ReadingNote[];
+};
+
+export type ReadingOptions = {
+  scales: ScaleKind[];
+  /** Most sharps or flats in the key signature, 0..MAX_KEY_ACCIDENTALS. */
+  maxAccidentals: number;
+  intervals: IntervalSize[];
+  rhythm: RhythmOptions;
+  timeSignature: TimeSignature;
+  bars: number;
+  ledgerLines: boolean;
+};
+
+export type ReadingPracticeSettings = {
+  /** Tempo for listening and playing with the metronome. */
+  bpm: number;
+  melody: ReadingOptions;
+};
+
+/** Sight reading at your own pace. */
+export type ReadingState =
+  | { phase: "idle" }
+  | {
+      phase: "running";
+      /** Notes played correctly so far. */
+      progress: number;
+      total: number;
+      /** Last wrong note, as written (e.g. "F#4"). */
+      wrong: string | null;
+      /** The note heard right now, as written. */
+      heard: string | null;
+      mistakes: number;
+    }
+  | { phase: "finished"; notes: number; mistakes: number; seconds: number }
+  | { phase: "failed"; message: string };
+
 // ---- settings ----
 
 /** Must match `MIN_GAIN_DB` / `MAX_GAIN_DB` in `src-tauri/src/settings.rs`. */
@@ -456,7 +540,11 @@ export type Settings = {
   inputDevice: DeviceId | null;
   gainDb: number;
   latency: LatencyCalibration | null;
-  practice: { rhythm: RhythmPracticeSettings; pitch: PitchPracticeSettings };
+  practice: {
+    rhythm: RhythmPracticeSettings;
+    pitch: PitchPracticeSettings;
+    reading: ReadingPracticeSettings;
+  };
 };
 
 // ---- engine ----
@@ -493,6 +581,7 @@ export type EngineEvent =
   | { type: "practice"; practice: PracticeState }
   | { type: "practiceJudged"; judgements: Judgement[] }
   | { type: "pitchPractice"; pitch: PitchPracticeState }
+  | { type: "reading"; reading: ReadingState }
   | { type: "settings"; settings: Settings };
 
 export type EngineSnapshot = {
@@ -502,6 +591,7 @@ export type EngineSnapshot = {
   calibration: CalibrationState;
   practice: PracticeState;
   pitch: PitchPracticeState;
+  reading: ReadingState;
 };
 
 // ---- commands ----
@@ -564,3 +654,19 @@ export const replayPitchTask = () => invoke<void>("replay_pitch_task");
 
 export const openMicrophonePrivacySettings = () =>
   invoke<void>("open_microphone_privacy_settings");
+
+export const setReadingSettings = (reading: ReadingPracticeSettings) =>
+  invoke<Settings>("set_reading_settings", { reading });
+
+/** A new melody for the saved sight-reading options and instrument. */
+export const generateReadingExercise = () => invoke<ReadingExercise>("generate_reading_exercise");
+
+/** Play the melody back with count-in and metronome (a rhythm session, mode "melody"). */
+export const listenToReading = (exercise: ReadingExercise) =>
+  invoke<void>("listen_to_reading", { exercise });
+
+/** Play the melody at your own pace, judged by pitch. */
+export const startReadingPractice = (exercise: ReadingExercise) =>
+  invoke<void>("start_reading_practice", { exercise });
+
+export const stopReadingPractice = () => invoke<void>("stop_reading_practice");

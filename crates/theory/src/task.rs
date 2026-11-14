@@ -97,20 +97,26 @@ impl PitchTask {
     /// spelled like the task's note of the same name if there is one (B♭,
     /// not A♯, when the task shows B♭), otherwise with sharps.
     pub fn name_of(&self, midi: i32) -> Pitch {
-        let same_name = self
-            .notes
-            .iter()
-            .find(|n| (midi - n.midi).rem_euclid(12) == 0);
-        if let Some(n) = same_name {
-            let octaves = (midi - n.midi) / 12;
+        name_like(self.notes.iter().map(|n| (n.written, n.midi)), midi)
+    }
+}
+
+/// Name a played (sounding) `midi` like the first of `notes` (written,
+/// sounding) with the same note name, in the played octave; otherwise with
+/// sharps, transposed like the notes.
+pub(crate) fn name_like(notes: impl Iterator<Item = (Pitch, i32)>, midi: i32) -> Pitch {
+    let mut transposition = 0;
+    for (written, sounding) in notes {
+        transposition = sounding - written.midi();
+        if (midi - sounding).rem_euclid(12) == 0 {
+            let octaves = (midi - sounding) / 12;
             return Pitch {
-                octave: n.written.octave + octaves as i8,
-                ..n.written
+                octave: written.octave + octaves as i8,
+                ..written
             };
         }
-        let transposition = self.notes.first().map_or(0, |n| n.midi - n.written.midi());
-        Pitch::from_midi(midi - transposition)
     }
+    Pitch::from_midi(midi - transposition)
 }
 
 #[cfg(test)]

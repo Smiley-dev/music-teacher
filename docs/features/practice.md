@@ -1,8 +1,9 @@
 # Practice
 
-Practice has subsections, shown as tabs: **Rhythm** (timing) and the pitch
-exercises: **Notes**, **Intervals**, **Scales**, **Chords** and **Ear
-training**. More are added through the `PRACTICE_SECTIONS` registry, see
+Practice has subsections, shown as tabs: **Rhythm** (timing), **Reading**
+(sight reading: rhythm and pitch together) and the pitch exercises:
+**Notes**, **Intervals**, **Scales**, **Chords** and **Ear training**. More
+are added through the `PRACTICE_SECTIONS` registry, see
 [CODING_RULES.md](../CODING_RULES.md); ideas are listed in
 [exercise-catalog.md](exercise-catalog.md).
 
@@ -331,3 +332,66 @@ note twice in a row, steps of at most a perfect 5th (`MAX_LEAP`). Keys are
 the 13 major keys with up to six sharps or flats, spelled by the key;
 chromatic notes are spelled with sharps going up and flats going down. A
 task never starts on the previous task's last note.
+
+## Reading (sight reading, ADR 0012)
+
+A short melody in standard notation, generated from your choices: read it,
+listen to it, then play it on your instrument.
+
+### Options (saved)
+
+| Option | Values | Default |
+| --- | --- | --- |
+| Instrument | Shared with the pitch exercises (clef, transposition, range) | guitar |
+| Scales and keys | Any of the scales and modes of the Scales tab | major |
+| Most sharps or flats in the key signature | none … 7 | 1 |
+| Intervals between neighbouring notes | repeated note, 2nd, 3rd, 4th, 5th, 6th, 7th, octave (counted in letters) | 2nd, 3rd |
+| Note lengths | whole … sixteenth, dotted notes, rests (as in rhythm practice) | whole, half, quarter |
+| Ledger lines | Notes above and below the staff, up to the instrument's range | off |
+| Tempo | 40–200 BPM, for listening | 80 |
+| Time signature | 2/4, 3/4, 4/4 | 4/4 |
+| Bars | 1–16 | 4 |
+
+A new melody is made whenever an option (or the instrument) changes, or
+with **New melody**; the tempo does not change the melody.
+
+### The melody (`theory::reading`)
+
+- The rhythm is generated like a rhythm exercise (same rules, ADR 0006).
+- One scale is picked from the selection (each equally likely), with a root
+  whose key signature has at most the chosen number of sharps or flats.
+  Modes and minors use their parent major's signature (D dorian: none,
+  E minor: one sharp); harmonic and melodic minor show their raised notes
+  as accidentals.
+- The notes walk over that scale within the staff (or the instrument's
+  range with ledger lines). The first note is the tonic, every step is one
+  of the chosen intervals (each chosen size equally likely), and the last
+  note is the tonic when a chosen interval reaches it.
+
+### Notation
+
+VexFlow, one stave per bar: clef and key signature at the start of every
+line, the time signature on the first, beams per beat, rests on the middle
+line, dots. Accidentals follow the usual rules (only where the key needs
+them; they last to the bar line). The description above the score names the
+key and scale, e.g. "C mixolydian · 4/4 · 8 bars · 72 BPM".
+
+### Listen
+
+Plays the melody at its pitches (soft tones) after 4 count-in clicks, with
+the metronome, at the chosen tempo; the note being played is highlighted.
+It is a rhythm session in `melody` mode.
+
+### Play at my own pace
+
+No metronome: play the notes in order, as slowly as you like. The next note
+is blue; once it has been heard steadily it turns green and the following
+note turns blue. A wrong note held for a moment is named ("Not quite: that
+was F♯4") and counted, and the melody waits for the right note. Repeated
+notes count again when you pick them again (an onset re-arms the judge).
+The status line shows the note number, the note being heard and the wrong
+notes. At the end: the number of notes, the time taken and the wrong notes.
+Pitch must be exact (octave included), as written for the instrument.
+
+Leaving the tab stops listening or playing. Needs a running input device;
+it cannot run together with calibration or another practice session.

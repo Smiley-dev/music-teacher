@@ -31,8 +31,13 @@ pub enum EngineEvent {
     PitchPractice {
         pitch: PitchPracticeState,
     },
+    /// Sight reading at your own pace, whenever it changes.
+    Reading {
+        reading: ReadingState,
+    },
     Settings {
-        settings: Settings,
+        /// Boxed: much larger than the other events, which are sent 30x/s.
+        settings: Box<Settings>,
     },
 }
 
@@ -117,6 +122,40 @@ pub enum SessionMode {
     Practice,
     /// The exercise is played back as tones on `note` (e.g. "E3").
     Listen { note: String },
+    /// A sight-reading melody is played back at its pitches.
+    Melody,
+}
+
+/// Sight reading at your own pace (ADR 0012), sent whenever it changes.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(
+    tag = "phase",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum ReadingState {
+    Idle,
+    Running {
+        /// Notes of the melody played correctly so far.
+        progress: usize,
+        total: usize,
+        /// The last wrong note, as written (e.g. "F#4"); cleared by the next
+        /// correct note.
+        wrong: Option<String>,
+        /// The note heard right now, as written.
+        heard: Option<String>,
+        mistakes: u32,
+    },
+    /// Every note played.
+    Finished {
+        notes: usize,
+        mistakes: u32,
+        /// From the first tick to the last note, on the audio clock.
+        seconds: f64,
+    },
+    Failed {
+        message: String,
+    },
 }
 
 /// Rhythm practice session state, sent every engine tick while running.
@@ -217,6 +256,7 @@ pub struct EngineSnapshot {
     pub calibration: CalibrationState,
     pub practice: PracticeState,
     pub pitch: PitchPracticeState,
+    pub reading: ReadingState,
 }
 
 #[cfg(test)]
@@ -426,6 +466,43 @@ mod tests {
             json!({"kind": "echo", "key": null})
         );
         assert_eq!(serde_json::to_value(PitchExerciseKind::Ear).unwrap(), "ear");
+    }
+
+    #[test]
+    fn reading_types_are_camel_case() {
+        let running = ReadingState::Running {
+            progress: 2,
+            total: 8,
+            wrong: Some("F#4".into()),
+            heard: None,
+            mistakes: 1,
+        };
+        assert_eq!(
+            serde_json::to_value(EngineEvent::Reading { reading: running }).unwrap(),
+            json!({"type": "reading", "reading": {"phase": "running", "progress": 2,
+                "total": 8, "wrong": "F#4", "heard": null, "mistakes": 1}})
+        );
+        assert_eq!(
+            serde_json::to_value(SessionMode::Melody).unwrap(),
+            json!({"kind": "melody"})
+        );
+
+        let options = theory::ReadingOptions::default();
+        let melody = theory::generate_reading(&options, theory::Instrument::Guitar, 1).unwrap();
+        let value = serde_json::to_value(&melody).unwrap();
+        for key in ["rhythm", "clef", "key", "scale", "root", "notes"] {
+            assert!(value.get(key).is_some(), "missing {key}");
+        }
+        assert!(value["key"]["major"]["letter"].is_string());
+        assert!(value["key"]["accidentals"].is_number());
+        let note = &value["notes"][0];
+        for key in ["bar", "symbol", "written", "midi"] {
+            assert!(note.get(key).is_some(), "missing notes[].{key}");
+        }
+        assert_eq!(value["rhythm"]["timeSignature"]["beatsPerBar"], 4);
+        // It comes back from the UI unchanged.
+        let back: theory::ReadingExercise = serde_json::from_value(value).unwrap();
+        assert_eq!(back, melody);
     }
 
     #[test]

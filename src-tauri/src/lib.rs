@@ -38,6 +38,11 @@ pub fn run() {
             commands::stop_pitch_practice,
             commands::skip_pitch_task,
             commands::replay_pitch_task,
+            commands::set_reading_settings,
+            commands::generate_reading_exercise,
+            commands::listen_to_reading,
+            commands::start_reading_practice,
+            commands::stop_reading_practice,
             commands::open_microphone_privacy_settings,
         ])
         .run(tauri::generate_context!())

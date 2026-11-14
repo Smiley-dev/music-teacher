@@ -164,3 +164,26 @@
 .pitch-staff .vf-answer {
   color: var(--color-amber-500);
 }
+/* Sight reading (render-reading.ts): note states are classes on the note. */
+.reading-score .vf-stave path {
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+.reading-score .vf-correct,
+.reading-score .vf-onTime {
+  color: var(--color-emerald-500);
+}
+.reading-score .vf-early,
+.reading-score .vf-late {
+  color: var(--color-amber-500);
+}
+.reading-score .vf-missed {
+  color: var(--color-red-500);
+}
+.reading-score .vf-wrongPitch {
+  color: var(--color-fuchsia-500);
+}
+/* Last, so the note being played wins over a result colour. */
+.reading-score .vf-active {
+  color: var(--color-sky-500);
+}
