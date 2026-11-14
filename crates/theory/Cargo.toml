@@ -4,6 +4,7 @@ edition.workspace = true
 version.workspace = true
 
 [dependencies]
+rhythm = { path = "../rhythm" }
 serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2"
 

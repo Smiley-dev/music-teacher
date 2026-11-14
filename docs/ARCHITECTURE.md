@@ -21,7 +21,8 @@ crates/
     generate.rs        Seeded exercise generator (exact bar filling, readability rules)
     judge.rs           TimingJudge: onsets vs notes, timing report (ADR 0008)
     written.rs         layout(): user-written symbol sequence into bars (ADR 0009)
-  theory/              Pure music theory + pitch exercises (ADR 0011). Same rules.
+  theory/              Pure music theory + pitch exercises (ADR 0011). Same rules;
+                       uses `rhythm` for sight-reading melodies.
     pitch.rs           Pitch: letter/accidental/octave, MIDI, correct transposition
     instrument.rs      Clef, Instrument presets (clef, transposition, range)
     task.rs            PitchTask/TaskNote/Prompt/Matching: one question of an exercise
@@ -32,6 +33,8 @@ crates/
     scale.rs           ScaleKind (scales and modes, spelled by degree), scale generator
     chord.rs           ChordKind (triads, sevenths, inversions), chord generator
     ear.rs             Ear training generator (melodies in a key or chromatic)
+    key.rs             KeySignature: a scale's signature (parent major)
+    reading.rs         Sight-reading melodies: rhythm + scale walk (ADR 0012)
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers

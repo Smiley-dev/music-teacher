@@ -50,6 +50,12 @@ pub enum TheoryError {
     NothingSelected(&'static str),
     #[error("No {0} fits the range of this instrument.")]
     OutOfRange(&'static str),
+    /// The rhythm of a sight-reading melody could not be made.
+    #[error("Rhythm: {0}.")]
+    Rhythm(#[from] rhythm::RhythmError),
+    /// A melody received from outside does not match its rhythm.
+    #[error("The melody does not match its rhythm.")]
+    Malformed,
 }
 
 /// Whether a task starting on `midi` would start on the previous task's last
