@@ -1,4 +1,4 @@
-import type { ChordKind, Instrument, IntervalName, Pitch, ScaleKind } from "@/lib/engine";
+import type { ChordKind, Degree, Instrument, IntervalName, Pitch, ScaleKind } from "@/lib/engine";
 
 const ACCIDENTAL_SIGNS: Record<number, string> = { [-2]: "𝄫", [-1]: "♭", 1: "♯", 2: "𝄪" };
 
@@ -6,6 +6,11 @@ const ACCIDENTAL_SIGNS: Record<number, string> = { [-2]: "𝄫", [-1]: "♭", 1:
 export function pitchLabel(p: Pitch, withOctave = true): string {
   const sign = ACCIDENTAL_SIGNS[p.accidental] ?? "";
   return `${p.letter.toUpperCase()}${sign}${withOctave ? p.octave : ""}`;
+}
+
+/** A degree as in scale and chord formulas: "♭3", "5", "𝄫7". */
+export function degreeLabel(d: Degree): string {
+  return `${ACCIDENTAL_SIGNS[d.alteration] ?? ""}${d.number}`;
 }
 
 /** Engine note names ("D#4", "Bb3", "F##4") with proper signs. */

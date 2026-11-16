@@ -1,10 +1,10 @@
 import { EngineStatusBanner } from "@/components/engine-status-banner";
+import { InstrumentSelect } from "@/components/instrument-select";
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { NoteReadingOptions } from "@/lib/engine";
-import { InstrumentSelect } from "@/features/practice/pitch/instrument-select";
-import { OptionCheckbox } from "@/features/practice/pitch/option-checkbox";
+import { usePitchSettings } from "@/components/use-pitch-settings";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
-import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
+import type { NoteReadingOptions } from "@/lib/engine";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
 
 /** Note reading: a note appears on the staff, play it. */

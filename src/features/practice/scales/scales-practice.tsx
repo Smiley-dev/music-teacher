@@ -1,12 +1,12 @@
 import { EngineStatusBanner } from "@/components/engine-status-banner";
+import { InstrumentSelect } from "@/components/instrument-select";
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InstrumentSelect } from "@/features/practice/pitch/instrument-select";
-import { OptionCheckbox } from "@/features/practice/pitch/option-checkbox";
+import { usePitchSettings } from "@/components/use-pitch-settings";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
-import { SCALE_LABELS, pitchLabel } from "@/features/practice/pitch/pitch-labels";
-import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { type PitchTask, SCALE_KINDS, type ScaleOptions } from "@/lib/engine";
+import { SCALE_LABELS, pitchLabel } from "@/lib/pitch-labels";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
 
 function describe(task: PitchTask): string {

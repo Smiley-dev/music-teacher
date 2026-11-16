@@ -43,7 +43,8 @@ crates/
     input.rs           InputStream: samples + capture timestamps via ring buffers
     output.rs          ClickPlayer/ClickTrack: sample-accurate clicks with accents
                        + playback timestamps, optional tones (exercise playback),
-                       origin() = playback instant of the first output frame
+                       origin() = playback instant of the first output frame,
+                       is_finished() once everything scheduled has been rendered
 src-tauri/src/
   lib.rs               Tauri builder: plugins, state, command registration
   commands.rs          Thin #[tauri::command] wrappers around the engine/settings
@@ -56,6 +57,7 @@ src-tauri/src/
   engine/reading.rs    Sight reading at your own pace (NoteJudge + onsets)
   engine/pitch.rs      Pitch practice session (task after task, NoteJudge on the
                        raw pitch, reference playback, score)
+  engine/example.rs    Theory example playback (tones only, nothing judged)
   engine/events.rs     EngineEvent / EngineStatus types sent to the UI
   settings.rs          Settings model + JSON persistence
 src/
@@ -64,6 +66,10 @@ src/
   sections.ts          Registry of menu sections (SECTIONS)
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
   lib/theme.ts         Theme preference (system/light/dark): load, save, apply
+  lib/pitch-labels.ts  Display names: notes, degrees, intervals, scales, chords,
+                       instruments
+  lib/notation.ts      VexFlow helpers shared by every renderer (keys, key
+                       signatures, theme colours)
   providers/
     audio-engine-provider.tsx  Subscribes once; holds engine state, latest frame,
                                rhythm, pitch and reading state in five contexts
@@ -76,16 +82,21 @@ src/
     reading/           Sight reading: options, VexFlow melody score, listen/play
     tempo-field.tsx    Tempo control shared by rhythm and reading
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
-                       instrument select, option checklist/buttons,
-                       usePitchSettings
+                       option checklist
     notes/             Note reading tab
     intervals/         Intervals tab
     scales/            Scales tab
     chords/            Chords tab
     ear/               Ear training tab
+  features/theory/     Theory topics (THEORY_TOPICS, ADR 0013): one *-theory.tsx
+                       per tab, VexFlow example renderer, explorers (interval,
+                       scale, chord), Listen button, keyboard and circle-of-
+                       fifths diagrams
   components/          Shared: level meter, waveform canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice),
-                       theme toggle + useTheme
+                       theme toggle + useTheme, instrument select +
+                       usePitchSettings, choice buttons, option checkbox
+                       (Practice + Theory)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
 
@@ -135,7 +146,7 @@ flowchart LR
 | cpal input callback | cpal | Copy samples + timestamps into rings (real-time) |
 | `audio-input` | `InputStream` | Owns the cpal input stream (streams are not `Send` everywhere) |
 | cpal output callback | cpal | Render clicks, record their playback instants (real-time) |
-| `click-output` | `ClickPlayer` | Owns the cpal output stream during calibration, rhythm practice or a pitch exercise playing its notes |
+| `click-output` | `ClickPlayer` | Owns the cpal output stream during calibration, rhythm practice, a pitch exercise playing its notes, or a Theory example |
 | `audio-engine` | `AudioEngine` | Commands, reconnects, analysis, calibration, events |
 | main / webview | Tauri | Commands from the UI and rendering |
 
@@ -159,7 +170,10 @@ flowchart LR
 - **UI-only state** stays in React, remembered in localStorage: the selected
   section and the theme (system, light or dark; applied as the `.dark` class
   on `<html>` and to the window title bar, re-applied when the OS theme
-  changes while set to system).
+  changes while set to system). Theory explorer choices are not remembered.
+- **Theory examples** are spelled on request (`theory_example`, a pure
+  command) and played with `play_theory_example`; the engine holds the
+  playing `ClickPlayer` until it has finished or a session starts (ADR 0013).
 - Practice (and anything else) reads the latency through `useLatency()` in the
   UI or `AudioEngine::latency()` in Rust.
 

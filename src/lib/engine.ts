@@ -470,6 +470,38 @@ export const MAX_READING_BARS = 16;
 /** Named by the major key with this signature; `accidentals` > 0 sharps, < 0 flats. */
 export type KeySignature = { major: Pitch; accidentals: number };
 
+/** A note name without octave (the root of a Theory example). `accidental`: -1, 0 or 1. */
+export type NoteName = { letter: Letter; accidental: number };
+
+/** What a Theory example spells (`theory::ExampleRequest`). `inversion`: 0 root position. */
+export type ExampleRequest =
+  | { kind: "interval"; interval: IntervalName; direction: Direction; root: NoteName }
+  | { kind: "scale"; scale: ScaleKind; root: NoteName; upAndDown: boolean }
+  | { kind: "chord"; chord: ChordKind; root: NoteName; inversion: number };
+
+/** A degree compared with the major scale's: ♭3 = { number: 3, alteration: -1 }. */
+export type Degree = { number: number; alteration: number };
+
+export type ExampleNote = {
+  written: Pitch;
+  /** Sounding MIDI note on the instrument. */
+  midi: number;
+  /** Degree from the root; null in an interval. */
+  degree: Degree | null;
+  /** Letters from the previous note (negative = down; 0 for the first). */
+  steps: number;
+  /** Half steps from the previous note (negative = down; 0 for the first). */
+  semitones: number;
+};
+
+/** An interval, scale or chord spelled and placed for the instrument. */
+export type TheoryExample = {
+  clef: Clef;
+  notes: ExampleNote[];
+  /** A scale's key signature; null for intervals, chords and keys beyond 7 accidentals. */
+  key: KeySignature | null;
+};
+
 /** A played note of a melody: its rhythm slot and pitch. */
 export type ReadingNote = { bar: number; symbol: number; written: Pitch; midi: number };
 
@@ -699,3 +731,11 @@ export const stopReadingPractice = () => invoke<void>("stop_reading_practice");
 /** Play the melody with count-in and metronome; timing and pitch are judged. */
 export const startReadingWithMetronome = (exercise: ReadingExercise) =>
   invoke<void>("start_reading_with_metronome", { exercise });
+
+/** Spell a Theory example and place it on the instrument's staff. */
+export const theoryExample = (instrument: Instrument, request: ExampleRequest) =>
+  invoke<TheoryExample>("theory_example", { instrument, request });
+
+/** Play a Theory example's notes as the instrument sounds them (no input needed). */
+export const playTheoryExample = (instrument: Instrument, request: ExampleRequest) =>
+  invoke<void>("play_theory_example", { instrument, request });

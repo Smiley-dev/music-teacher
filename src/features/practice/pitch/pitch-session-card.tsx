@@ -20,10 +20,10 @@ import type {
   PitchTask,
   TaskStage,
 } from "@/lib/engine";
+import { prettyNoteName } from "@/lib/pitch-labels";
 import { cn } from "@/lib/utils";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
 
-import { prettyNoteName } from "./pitch-labels";
 import { type NoteState, PitchStaff } from "./pitch-staff";
 
 type PitchSessionCardProps = {

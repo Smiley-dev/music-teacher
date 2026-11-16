@@ -44,6 +44,8 @@ pub fn run() {
             commands::start_reading_practice,
             commands::stop_reading_practice,
             commands::start_reading_with_metronome,
+            commands::theory_example,
+            commands::play_theory_example,
             commands::open_microphone_privacy_settings,
         ])
         .run(tauri::generate_context!())

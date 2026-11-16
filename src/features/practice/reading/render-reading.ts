@@ -17,8 +17,8 @@ import {
   Voice,
 } from "vexflow/bravura";
 
-import { vexKey } from "@/features/practice/pitch/render-staff";
-import type { Clef, KeySignature, NoteValue, Pitch, ReadingExercise } from "@/lib/engine";
+import type { Clef, NoteValue, Pitch, ReadingExercise } from "@/lib/engine";
+import { followTheme, keySpec, vexKey } from "@/lib/notation";
 
 /** Height of one line of staves, px: room for ledger lines and stems. */
 const ROW_HEIGHT = 140;
@@ -40,12 +40,6 @@ const DURATIONS: Record<NoteValue, string> = {
 
 /** Rests sit on the middle line of each clef. */
 const REST_KEYS: Record<Clef, string> = { treble: "b/4", bass: "d/3", alto: "c/4" };
-
-/** VexFlow key-signature spec, named by the major key: "Bb", "F#", "C". */
-export function keySpec(key: KeySignature): string {
-  const sign = key.major.accidental > 0 ? "#" : key.major.accidental < 0 ? "b" : "";
-  return key.major.letter.toUpperCase() + sign;
-}
 
 export type RenderedReading = {
   /** SVG group per symbol, `[bar][symbol]`. */
@@ -122,13 +116,6 @@ export function renderReading(
     barTops.push(y);
   });
 
-  // Follow the theme: VexFlow draws in black.
-  for (const el of container.querySelectorAll<SVGElement>("[fill],[stroke]")) {
-    for (const attr of ["fill", "stroke"]) {
-      const v = el.getAttribute(attr)?.toLowerCase();
-      if (v === "black" || v === "#000" || v === "#000000") el.setAttribute(attr, "currentColor");
-    }
-  }
-
+  followTheme(container);
   return { notes, barTops };
 }

@@ -1,12 +1,12 @@
+import { ChoiceButtons } from "@/components/choice-buttons";
 import { EngineStatusBanner } from "@/components/engine-status-banner";
+import { InstrumentSelect } from "@/components/instrument-select";
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChoiceButtons } from "@/features/practice/pitch/choice-buttons";
-import { InstrumentSelect } from "@/features/practice/pitch/instrument-select";
-import { OptionCheckbox } from "@/features/practice/pitch/option-checkbox";
+import { usePitchSettings } from "@/components/use-pitch-settings";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
-import { pitchLabel } from "@/features/practice/pitch/pitch-labels";
-import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { type EarOptions, MAX_EAR_NOTES, MIN_EAR_NOTES, type PitchTask } from "@/lib/engine";
+import { pitchLabel } from "@/lib/pitch-labels";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
 
 const COUNTS = Array.from({ length: MAX_EAR_NOTES - MIN_EAR_NOTES + 1 }, (_, i) => {

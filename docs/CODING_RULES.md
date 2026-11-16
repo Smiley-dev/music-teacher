@@ -120,6 +120,23 @@ a generator in `crates/theory`, a `PitchExerciseKind`/`PitchExercise`
 variant, its options in `PitchPracticeSettings`, and a tab that uses
 `PitchSessionCard` from `src/features/practice/pitch/`.
 
+A concept new to Practice (a new note value, scale, chord, option) gets
+explained in the matching Theory topic in the same change.
+
+## Adding a Theory topic
+
+1. Create `src/features/theory/<id>-theory.tsx` exporting `<Id>Theory`,
+   built from `PractiseIn`, `TheoryCard`, `TheoryTable`, `InTheApp` and
+   `Bullets` (`topic-parts.tsx`).
+2. Add an entry to `THEORY_TOPICS` in
+   `src/features/theory/theory-topics.ts`.
+3. Fixed examples are `ExampleStaff` scores written with the helpers in
+   `score-notes.ts` (`note("F#4", "F♯")`, `chord`, `beat`, `rest`). Anything
+   spelled on a chosen root comes from `theory::spell_example` through
+   `useTheoryExample`; extend `ExampleRequest` in Rust rather than spelling
+   in TypeScript. `ListenButton` plays any `ExampleRequest`.
+4. Document it in `docs/features/theory.md`.
+
 ## Commits
 
 One logical step per commit, imperative subject line. Each commit builds and

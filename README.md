@@ -15,6 +15,10 @@ analysed live.
   generated melodies in standard notation (choose scales, key signatures,
   intervals, note lengths, time signature), to hear and to play at your own
   pace or with the metronome (timing and pitch judged).
+- **Theory**: the theory behind every exercise (notes and clefs, rhythm,
+  intervals, scales and modes, keys, chords, sight reading, ear training),
+  with examples in notation and explorers that spell any interval, scale or
+  chord for your instrument and play it.
 - **Theme**: light, dark or follow the system (bottom of the menu).
 
 Built with Tauri 2, React 19, Tailwind v4 + shadcn/ui, and Rust (cpal for
@@ -51,4 +55,4 @@ cargo run -p audio-engine --example monitor_levels
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): modules, audio data flow, state
 - [docs/CODING_RULES.md](docs/CODING_RULES.md): how code is written here
 - [docs/adr/](docs/adr/README.md): architecture decisions
-- [docs/features/](docs/features/): Tuner, Settings, Practice
+- [docs/features/](docs/features/): Tuner, Settings, Practice, Theory

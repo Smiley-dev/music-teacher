@@ -1,8 +1,8 @@
 import { Lightbulb } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { pitchLabel, prettyNoteName } from "@/features/practice/pitch/pitch-labels";
 import type { PitchCheck, PitchReport, PitchResult, ReadingExercise } from "@/lib/engine";
+import { pitchLabel, prettyNoteName } from "@/lib/pitch-labels";
 import { cn } from "@/lib/utils";
 
 /** Wrong notes listed by name; more are only counted. */

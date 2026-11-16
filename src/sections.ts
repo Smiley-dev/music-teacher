@@ -1,8 +1,9 @@
 import type { ComponentType } from "react";
-import { Dumbbell, Gauge, type LucideIcon, Settings } from "lucide-react";
+import { BookOpen, Dumbbell, Gauge, type LucideIcon, Settings } from "lucide-react";
 
 import { PracticeScreen } from "@/features/practice/practice-screen";
 import { SettingsScreen } from "@/features/settings/settings-screen";
+import { TheoryScreen } from "@/features/theory/theory-screen";
 import { TunerScreen } from "@/features/tuner/tuner-screen";
 
 export type Section = {
@@ -29,6 +30,13 @@ export const SECTIONS = [
     description: "Rhythm and note exercises that listen to your instrument.",
     icon: Dumbbell,
     Screen: PracticeScreen,
+  },
+  {
+    id: "theory",
+    label: "Theory",
+    description: "The music theory behind every exercise, with examples to see and hear.",
+    icon: BookOpen,
+    Screen: TheoryScreen,
   },
   {
     id: "settings",

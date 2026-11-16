@@ -1,6 +1,5 @@
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Button } from "@/components/ui/button";
-
-import { OptionCheckbox } from "./option-checkbox";
 
 type OptionChecklistProps<T extends string> = {
   legend: string;

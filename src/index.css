@@ -187,3 +187,11 @@
 .reading-score .vf-active {
   color: var(--color-sky-500);
 }
+/* Theory examples (render-example.ts): faded staff, muted labels. */
+.theory-staff .vf-stave path {
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+.theory-staff .vf-label {
+  color: var(--muted-foreground);
+}

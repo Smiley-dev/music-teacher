@@ -16,6 +16,7 @@ import {
 } from "vexflow/bravura";
 
 import type { Exercise, NoteValue } from "@/lib/engine";
+import { followTheme } from "@/lib/notation";
 
 /** Height of one line of staves, px. */
 const ROW_HEIGHT = 110;
@@ -109,14 +110,7 @@ export function renderScore(container: HTMLElement, exercise: Exercise, width: n
     barTops.push(y);
   });
 
-  // Follow the theme: VexFlow draws in black.
-  for (const el of container.querySelectorAll<SVGElement>("[fill],[stroke]")) {
-    for (const attr of ["fill", "stroke"]) {
-      const v = el.getAttribute(attr)?.toLowerCase();
-      if (v === "black" || v === "#000" || v === "#000000") el.setAttribute(attr, "currentColor");
-    }
-  }
-
+  followTheme(container);
   return { notes, barTops };
 }
 

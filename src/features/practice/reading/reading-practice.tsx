@@ -14,7 +14,6 @@ import {
 import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SCALE_LABELS, pitchLabel, prettyNoteName } from "@/features/practice/pitch/pitch-labels";
 import { FastNotesWarning, minGapMs } from "@/features/practice/rhythm/accuracy-notice";
 import { LatencyStatus } from "@/features/practice/rhythm/latency-status";
 import { symbolAt } from "@/features/practice/rhythm/render-score";
@@ -26,6 +25,7 @@ import type {
   ReadingExercise,
   ReadingState,
 } from "@/lib/engine";
+import { SCALE_LABELS, pitchLabel, prettyNoteName } from "@/lib/pitch-labels";
 import { cn } from "@/lib/utils";
 import {
   useEngine,

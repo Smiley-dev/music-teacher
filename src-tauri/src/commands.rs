@@ -12,7 +12,7 @@ use crate::settings::{
     PitchPracticeSettings, ReadingPracticeSettings, RhythmPracticeSettings, Settings,
 };
 use rhythm::{Exercise, ExerciseDraft};
-use theory::{PitchExerciseKind, ReadingExercise};
+use theory::{ExampleRequest, Instrument, PitchExerciseKind, ReadingExercise, TheoryExample};
 
 /// Windows Settings page that controls microphone access for desktop apps.
 const MICROPHONE_PRIVACY_URL: &str = "ms-settings:privacy-microphone";
@@ -187,6 +187,27 @@ pub fn start_reading_with_metronome(
     engine: State<'_, AudioEngine>,
 ) -> Result<(), String> {
     engine.start_reading_with_metronome(exercise)
+}
+
+/// An interval, scale or chord spelled on a root and placed on the
+/// instrument's staff, for the Theory section (pure; no audio).
+#[tauri::command]
+pub fn theory_example(
+    instrument: Instrument,
+    request: ExampleRequest,
+) -> Result<TheoryExample, String> {
+    theory::spell_example(&request, instrument).map_err(|e| e.to_string())
+}
+
+/// Play a Theory example's notes on the default output. Async so opening the
+/// output stream does not block the main thread.
+#[tauri::command]
+pub async fn play_theory_example(
+    instrument: Instrument,
+    request: ExampleRequest,
+    engine: State<'_, AudioEngine>,
+) -> Result<(), String> {
+    engine.play_theory_example(instrument, request)
 }
 
 #[tauri::command]

@@ -7,8 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { INSTRUMENTS, type Instrument } from "@/lib/engine";
-
-import { INSTRUMENT_INFO } from "./pitch-labels";
+import { INSTRUMENT_INFO } from "@/lib/pitch-labels";
 
 type InstrumentSelectProps = {
   value: Instrument;
@@ -38,7 +37,7 @@ export function InstrumentSelect({ value, onChange, disabled }: InstrumentSelect
         </SelectContent>
       </Select>
       <p className="text-sm text-muted-foreground">
-        {INSTRUMENT_INFO[value].hint} Used by every note exercise.
+        {INSTRUMENT_INFO[value].hint} Used by every note exercise and the Theory examples.
       </p>
     </div>
   );

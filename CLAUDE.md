@@ -7,7 +7,7 @@ Before writing or changing code, read and follow:
 
 - [docs/CODING_RULES.md](docs/CODING_RULES.md): how code is written here (mandatory).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): modules, audio data flow, state and persistence.
-- [docs/features/](docs/features/): behaviour of each section (Tuner, Practice, Settings).
+- [docs/features/](docs/features/): behaviour of each section (Tuner, Practice, Theory, Settings).
 
 Any change to the architecture (new module boundaries, threads, IPC shape,
 persistence, algorithms) needs a new ADR in [docs/adr/](docs/adr/) and updated docs

@@ -1,11 +1,13 @@
 //! The one shared audio engine (ADR 0005). Owns the input stream, gain,
-//! device selection, reconnects, analysis, calibration and practice sessions
-//! (rhythm, pitch and sight reading) on a single `audio-engine` thread, and
-//! broadcasts `EngineEvent`s to every subscribed webview.
+//! device selection, reconnects, analysis, calibration, practice sessions
+//! (rhythm, pitch and sight reading) and Theory example playback on a single
+//! `audio-engine` thread, and broadcasts `EngineEvent`s to every subscribed
+//! webview.
 
 mod analysis;
 mod calibration;
 pub mod events;
+mod example;
 mod pitch;
 mod practice;
 mod reading;
@@ -14,12 +16,12 @@ use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc};
 use std::time::{Duration, Instant};
 
-use audio_engine::{AudioError, DeviceId, InputStream};
+use audio_engine::{AudioError, ClickPlayer, DeviceId, InputStream};
 use dsp::calibration::{BEATS_PER_BAR, CLICK_COUNT};
 use tauri::ipc::Channel;
 
 use rhythm::{CustomMode, Difficulty, Exercise, ExerciseDraft};
-use theory::{MelodyPitchJudge, PitchExerciseKind, ReadingExercise};
+use theory::{ExampleRequest, Instrument, MelodyPitchJudge, PitchExerciseKind, ReadingExercise};
 
 use crate::settings::{
     LatencyCalibration, LatencySource, PitchPracticeSettings, ReadingPracticeSettings,
@@ -66,6 +68,22 @@ enum Command {
     /// Sight reading at your own pace.
     StartReading(ReadingExercise),
     StopReading,
+    /// A Theory example already playing; replaces the previous one.
+    PlayExample(ClickPlayer),
+}
+
+impl Command {
+    /// Starts something that plays clicks or judges the input, which a
+    /// Theory example must not play over.
+    fn starts_session(&self) -> bool {
+        matches!(
+            self,
+            Self::StartCalibration
+                | Self::StartRhythm { .. }
+                | Self::StartPitch(_)
+                | Self::StartReading(_)
+        )
+    }
 }
 
 struct Shared {
@@ -490,6 +508,29 @@ impl AudioEngine {
     pub fn stop_reading_practice(&self) {
         let _ = self.commands.send(Command::StopReading);
     }
+
+    /// Play a Theory example's notes on the default output, as `instrument`
+    /// sounds them. Replaces an example still playing; refused while a
+    /// session or calibration runs. Needs no input device.
+    pub fn play_theory_example(
+        &self,
+        instrument: Instrument,
+        request: ExampleRequest,
+    ) -> Result<(), String> {
+        let spelled = theory::spell_example(&request, instrument).map_err(|e| e.to_string())?;
+        if self.shared.calibration_running() {
+            return Err("Wait for the calibration to finish first.".into());
+        }
+        if self.shared.practice_running()
+            || self.shared.pitch_running()
+            || self.shared.reading_running()
+        {
+            return Err(BUSY_MESSAGE.into());
+        }
+        let player = example::play(&spelled)?;
+        let _ = self.commands.send(Command::PlayExample(player));
+        Ok(())
+    }
 }
 
 /// A seed for random exercises, from the system clock.
@@ -523,6 +564,8 @@ struct Runner {
     mode: SessionMode,
     pitch: Option<PitchSession>,
     reading: Option<ReadingSession>,
+    /// A Theory example playing (ADR 0013).
+    example: Option<ClickPlayer>,
     next_attempt: Instant,
     /// Whether the last stream ended by failing (vs. never opened).
     was_running: bool,
@@ -539,6 +582,7 @@ fn run(shared: Arc<Shared>, commands: mpsc::Receiver<Command>, wanted: Option<De
         mode: SessionMode::Practice,
         pitch: None,
         reading: None,
+        example: None,
         next_attempt: Instant::now(),
         was_running: false,
         clock: Instant::now(),
@@ -562,6 +606,9 @@ fn failed(message: impl Into<String>, matched: Option<usize>) -> CalibrationStat
 
 impl Runner {
     fn handle(&mut self, command: Command) {
+        if command.starts_session() {
+            self.example = None;
+        }
         match command {
             Command::SetDevice(device) => {
                 self.stop_calibration(Some("the input device was changed"));
@@ -690,6 +737,7 @@ impl Runner {
                 self.reading = Some(session);
             }
             Command::StopReading => self.stop_reading(None),
+            Command::PlayExample(player) => self.example = Some(player),
         }
     }
 
@@ -770,6 +818,15 @@ impl Runner {
     }
 
     fn tick(&mut self) {
+        // Release the output once an example has played (or failed).
+        if self
+            .example
+            .as_ref()
+            .is_some_and(|p| p.is_finished() || p.take_error().is_some())
+        {
+            self.example = None;
+        }
+
         let Some((stream, analyzer)) = &mut self.input else {
             if Instant::now() >= self.next_attempt {
                 self.open();

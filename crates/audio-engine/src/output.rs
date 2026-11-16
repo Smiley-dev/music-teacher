@@ -3,6 +3,7 @@
 //! reported on the audio clock.
 
 use std::f32::consts::TAU;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
 use std::thread::JoinHandle;
 
@@ -84,29 +85,39 @@ struct ClickTrack {
     tone_sounds: Vec<Vec<f32>>,
     tone_next: usize,
     frame: u64,
+    /// First frame after the last click or tone has finished sounding.
+    end: u64,
 }
 
 impl ClickTrack {
     fn new(schedule: &ClickSchedule, sample_rate: u32) -> Self {
         let sr = sample_rate as f64;
+        let starts: Vec<u64> = (0..schedule.accents.len())
+            .map(|k| {
+                ((schedule.lead_in_secs + k as f64 * schedule.interval_secs) * sr).round() as u64
+            })
+            .collect();
+        let normal = click_sound(sample_rate, NORMAL_HZ);
+        let end = starts.last().map_or(0, |&s| s + normal.len() as u64);
         Self {
-            starts: (0..schedule.accents.len())
-                .map(|k| {
-                    ((schedule.lead_in_secs + k as f64 * schedule.interval_secs) * sr).round()
-                        as u64
-                })
-                .collect(),
+            starts,
             accents: schedule.accents.clone(),
             accent: click_sound(sample_rate, ACCENT_HZ),
-            normal: click_sound(sample_rate, NORMAL_HZ),
+            normal,
             next: 0,
             tone_starts: Vec::new(),
             tone_sound: Vec::new(),
             tone_sounds: Vec::new(),
             tone_next: 0,
             frame: 0,
+            end,
         }
         .with_tones(&schedule.tones, sample_rate)
+    }
+
+    /// Whether everything scheduled has been rendered (only silence follows).
+    fn finished(&self) -> bool {
+        self.frame >= self.end
     }
 
     fn with_tones(mut self, tones: &[Tone], sample_rate: u32) -> Self {
@@ -121,7 +132,9 @@ impl ClickTrack {
                     .push(tone_sound(sample_rate, tone.frequency, frames));
                 keys.len() - 1
             });
-            self.tone_starts.push((tone.start_secs * sr).round() as u64);
+            let start = (tone.start_secs * sr).round() as u64;
+            self.end = self.end.max(start + frames as u64);
+            self.tone_starts.push(start);
             self.tone_sound.push(index);
         }
         self
@@ -187,13 +200,21 @@ pub struct ClickTimestamp {
     pub playback: StreamInstant,
 }
 
+/// What the output stream reports back to its player.
+#[derive(Clone, Default)]
+struct Reports {
+    error: Arc<Mutex<Option<AudioError>>>,
+    /// Set by the callback once every click and tone has been rendered.
+    finished: Arc<AtomicBool>,
+}
+
 /// Plays a click schedule on the default output device. Dropping it stops.
 pub struct ClickPlayer {
     clicks: Consumer<ClickTimestamp>,
     /// Receives the playback time of the stream's first frame, once.
     origin_rx: Consumer<StreamInstant>,
     origin: Option<StreamInstant>,
-    error: Arc<Mutex<Option<AudioError>>>,
+    reports: Reports,
     stop_tx: Option<mpsc::Sender<()>>,
     thread: Option<JoinHandle<()>>,
 }
@@ -202,12 +223,12 @@ impl ClickPlayer {
     pub fn start(schedule: ClickSchedule) -> Result<Self, AudioError> {
         let (ready_tx, ready_rx) = mpsc::channel();
         let (stop_tx, stop_rx) = mpsc::channel::<()>();
-        let error = Arc::new(Mutex::new(None));
-        let thread_error = Arc::clone(&error);
+        let reports = Reports::default();
+        let thread_reports = reports.clone();
 
         let thread = std::thread::Builder::new()
             .name("click-output".into())
-            .spawn(move || match open_stream(schedule, thread_error) {
+            .spawn(move || match open_stream(schedule, thread_reports) {
                 Ok((stream, rings)) => {
                     let _ = ready_tx.send(Ok(rings));
                     let _ = stop_rx.recv();
@@ -224,10 +245,17 @@ impl ClickPlayer {
             clicks,
             origin_rx,
             origin: None,
-            error,
+            reports,
             stop_tx: Some(stop_tx),
             thread: Some(thread),
         })
+    }
+
+    /// Whether every click and tone of the schedule has been rendered, so
+    /// the player can be dropped without cutting anything off (give or take
+    /// the output's buffering).
+    pub fn is_finished(&self) -> bool {
+        self.reports.finished.load(Ordering::Relaxed)
     }
 
     /// Append clicks rendered since the last call.
@@ -248,7 +276,8 @@ impl ClickPlayer {
     }
 
     pub fn take_error(&self) -> Option<AudioError> {
-        self.error
+        self.reports
+            .error
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .take()
@@ -303,7 +332,7 @@ type Rings = (Consumer<ClickTimestamp>, Consumer<StreamInstant>);
 
 fn open_stream(
     schedule: ClickSchedule,
-    error: Arc<Mutex<Option<AudioError>>>,
+    reports: Reports,
 ) -> Result<(cpal::Stream, Rings), AudioError> {
     let device = cpal::default_host()
         .default_output_device()
@@ -315,7 +344,7 @@ fn open_stream(
     let (origin_tx, origin_rx) = RingBuffer::new(1);
 
     use cpal::SampleFormat as F;
-    let (d, c, s, e) = (&device, &config, &schedule, error);
+    let (d, c, s, e) = (&device, &config, &schedule, reports);
     let t = (tx, origin_tx);
     let stream = match format {
         F::F32 => build::<f32>(d, c, s, t, e)?,
@@ -335,7 +364,7 @@ fn build<T>(
     config: &cpal::StreamConfig,
     schedule: &ClickSchedule,
     (mut clicks_tx, mut origin_tx): (Producer<ClickTimestamp>, Producer<StreamInstant>),
-    error: Arc<Mutex<Option<AudioError>>>,
+    Reports { error, finished }: Reports,
 ) -> Result<cpal::Stream, AudioError>
 where
     T: SizedSample + FromSample<f32>,
@@ -368,6 +397,9 @@ where
                     });
                 },
             );
+            if track.finished() {
+                finished.store(true, Ordering::Relaxed);
+            }
         },
         move |err| {
             *error.lock().unwrap_or_else(PoisonError::into_inner) = Some(err.into());
@@ -462,5 +494,36 @@ mod tests {
         assert!(samples[33_700..35_900].iter().all(|&v| v == 0.0), "gap");
         assert!(loud(36_100..37_000), "second tone");
         assert!(samples[..].iter().all(|v| v.abs() <= TONE_AMPLITUDE + 1e-6));
+    }
+
+    #[test]
+    fn finished_once_the_last_sound_has_been_rendered() {
+        let tones = ClickSchedule {
+            lead_in_secs: 0.0,
+            interval_secs: 1.0,
+            accents: vec![],
+            tones: vec![Tone {
+                start_secs: 0.5,
+                duration_secs: 0.5,
+                frequency: 220.0,
+            }],
+        };
+        let mut track = ClickTrack::new(&tones, SR);
+        // The tone sounds for 90% of its length: frames 24 000 .. 45 600.
+        track.render(45_599, |_, _| {}, |_, _| {});
+        assert!(!track.finished(), "last frame of the tone still to come");
+        track.render(1, |_, _| {}, |_, _| {});
+        assert!(track.finished());
+
+        let clicks = ClickSchedule::regular(0.1, 0.25, 2, 2);
+        let mut track = ClickTrack::new(&clicks, SR);
+        let last_click_end = 4_800 + 12_000 + click_sound(SR, NORMAL_HZ).len();
+        track.render(last_click_end - 1, |_, _| {}, |_, _| {});
+        assert!(!track.finished());
+        track.render(1, |_, _| {}, |_, _| {});
+        assert!(track.finished());
+
+        let silent = ClickSchedule::regular(0.0, 1.0, 0, 1);
+        assert!(ClickTrack::new(&silent, SR).finished(), "nothing to play");
     }
 }

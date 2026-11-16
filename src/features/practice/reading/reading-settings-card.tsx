@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { ChoiceButtons } from "@/components/choice-buttons";
+import { InstrumentSelect } from "@/components/instrument-select";
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,12 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChoiceButtons } from "@/features/practice/pitch/choice-buttons";
-import { InstrumentSelect } from "@/features/practice/pitch/instrument-select";
-import { OptionCheckbox } from "@/features/practice/pitch/option-checkbox";
+import { usePitchSettings } from "@/components/use-pitch-settings";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
-import { SCALE_LABELS } from "@/features/practice/pitch/pitch-labels";
-import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { NOTE_VALUE_LABELS } from "@/features/practice/practice-labels";
 import { TempoField } from "@/features/practice/tempo-field";
 import {
@@ -30,6 +29,7 @@ import {
   SCALE_KINDS,
   SUPPORTED_BEATS_PER_BAR,
 } from "@/lib/engine";
+import { SCALE_LABELS } from "@/lib/pitch-labels";
 import { useEngine } from "@/providers/audio-engine-context";
 
 const INTERVAL_SIZE_LABELS: Record<IntervalSize, { name: string; hint: string }> = {

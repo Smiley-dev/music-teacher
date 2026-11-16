@@ -5,6 +5,7 @@
 import { Accidental, Formatter, Renderer, Stave, StaveNote, Voice } from "vexflow/bravura";
 
 import type { Clef, Pitch } from "@/lib/engine";
+import { ACCIDENTAL_CODES, followTheme, vexKey } from "@/lib/notation";
 
 /** Largest drawing scale: few notes are drawn big so they are easy to read. */
 const MAX_SCALE = 1.5;
@@ -19,13 +20,6 @@ const NOTE_WIDTH = 56;
 /** Fewest note slots the stave is sized for, so one note is not cramped. */
 const MIN_SLOTS = 3;
 const PADDING = 8;
-
-export const ACCIDENTAL_CODES: Record<number, string> = { [-2]: "bb", [-1]: "b", 1: "#", 2: "##" };
-
-/** VexFlow key such as "c#/4". */
-export function vexKey(p: Pitch): string {
-  return `${p.letter}${ACCIDENTAL_CODES[p.accidental] ?? ""}/${p.octave}`;
-}
 
 /** Draw `notes` on a `clef` stave; returns each note's SVG group (for colouring). */
 export function renderStaff(
@@ -62,12 +56,6 @@ export function renderStaff(
     elements = staveNotes.map((n) => n.getSVGElement());
   }
 
-  // Follow the theme: VexFlow draws in black.
-  for (const el of container.querySelectorAll<SVGElement>("[fill],[stroke]")) {
-    for (const attr of ["fill", "stroke"]) {
-      const v = el.getAttribute(attr)?.toLowerCase();
-      if (v === "black" || v === "#000" || v === "#000000") el.setAttribute(attr, "currentColor");
-    }
-  }
+  followTheme(container);
   return elements;
 }
