@@ -72,7 +72,7 @@ export function ReadingPractice() {
   const { bpm, melody } = settings.practice.reading;
   const { exercise, error: generateError, regenerate } = useReadingExercise(
     melody,
-    settings.practice.pitch.instrument,
+    settings.instrument,
   );
   // Results belong to the exercise that was played; a new one hides them.
   const [played, setPlayed] = useState<{ exercise: ReadingExercise; action: Action } | null>(

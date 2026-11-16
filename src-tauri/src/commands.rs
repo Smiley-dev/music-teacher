@@ -102,7 +102,16 @@ pub fn stop_rhythm_practice(engine: State<'_, AudioEngine>) {
     engine.stop_rhythm_practice();
 }
 
-/// Save pitch practice settings (instrument, exercise options).
+/// Save the instrument used by every section; refused while an exercise runs.
+#[tauri::command]
+pub fn set_instrument(
+    instrument: Instrument,
+    engine: State<'_, AudioEngine>,
+) -> Result<Settings, String> {
+    engine.set_instrument(instrument)
+}
+
+/// Save pitch practice settings (exercise options).
 #[tauri::command]
 pub fn set_pitch_settings(
     pitch: PitchPracticeSettings,

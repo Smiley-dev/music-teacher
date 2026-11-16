@@ -32,7 +32,8 @@ impl Clef {
     }
 }
 
-/// The instrument the user plays. Shared by every pitch exercise.
+/// The instrument the user plays, chosen once for the whole app: every
+/// exercise and example is written and judged for it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Instrument {

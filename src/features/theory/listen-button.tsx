@@ -18,7 +18,7 @@ export function ListenButton({ request, label = "Listen", variant = "outline" }:
   const [error, setError] = useState<string | null>(null);
   const listen = () => {
     setError(null);
-    playTheoryExample(settings.practice.pitch.instrument, request).catch((e) => setError(String(e)));
+    playTheoryExample(settings.instrument, request).catch((e) => setError(String(e)));
   };
   return (
     <div className="flex flex-col gap-1">

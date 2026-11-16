@@ -1,6 +1,6 @@
 # 0013. Theory section: reference pages with examples spelled and played by the engine
 
-- Status: Accepted
+- Status: Accepted (instrument select moved to the main menu by ADR 0015)
 - Date: 2026-11-16
 
 ## Context

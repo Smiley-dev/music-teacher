@@ -6,6 +6,7 @@ import type {
   EngineStatus,
   Exercise,
   Frame,
+  Instrument,
   Judgement,
   PitchCheck,
   PitchExerciseKind,
@@ -34,6 +35,8 @@ export type EngineContextValue = {
   /** Play the exercise back so the user can hear it. */
   listenToRhythm: (exercise: Exercise) => Promise<void>;
   stopRhythmPractice: () => Promise<void>;
+  /** Refused (rejects) while an exercise runs. */
+  setInstrument: (instrument: Instrument) => Promise<void>;
   setPitchSettings: (pitch: PitchPracticeSettings) => Promise<void>;
   startPitchPractice: (exercise: PitchExerciseKind) => Promise<void>;
   stopPitchPractice: () => Promise<void>;
@@ -73,6 +76,9 @@ export const PracticeContext = createContext<PracticeContextValue>({
 export const PitchPracticeContext = createContext<PitchPracticeState>({ phase: "idle" });
 /** Sight reading at your own pace; updates when a note is judged or heard. */
 export const ReadingContext = createContext<ReadingState>({ phase: "idle" });
+/** Whether any exercise (rhythm, pitch, sight reading) is running; changes
+ * only when one starts or ends, unlike the practice state. */
+export const ExerciseRunningContext = createContext(false);
 
 export function useEngine(): EngineContextValue {
   const value = useContext(EngineContext);
@@ -109,6 +115,12 @@ export function usePitchPractice(): PitchPracticeState {
 /** Sight reading at your own pace: progress, last wrong note, heard note. */
 export function useReading(): ReadingState {
   return useContext(ReadingContext);
+}
+
+/** True while any exercise runs (settings it depends on, like the
+ * instrument, cannot change then). Cheap: no re-render per practice tick. */
+export function useExerciseRunning(): boolean {
+  return useContext(ExerciseRunningContext);
 }
 
 export function useSettings(): Settings {

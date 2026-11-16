@@ -34,8 +34,8 @@ Intervals, Scales and Chords end with a card to try any example:
 
 - Roots: C, C♯, D♭, D, D♯, E♭, E, F, F♯, G♭, G, G♯, A♭, A, A♯, B♭, B.
 - Examples are spelled by the engine (`theory::spell_example`) and written
-  for the saved instrument (clef, range, transposition; the card has the
-  same instrument select as the note exercises and changes it for them too).
+  for the instrument chosen in the main menu (clef, range, transposition;
+  ADR 0015). Changing it there updates the examples on the page.
   The octave is chosen to stay in the instrument's range with the fewest
   ledger lines.
 - Unlike Practice, double sharps and flats are shown (G♯ major has F𝄪, C

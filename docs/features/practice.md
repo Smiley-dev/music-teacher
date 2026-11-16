@@ -184,7 +184,14 @@ In these exercises *which* note you play matters, not when. Each page has its
 options and a **Read and play**-style card; they share how tasks are shown,
 judged and scored.
 
-### Instrument (saved, shared by every pitch exercise)
+### Instrument (saved, chosen in the main menu)
+
+The instrument is chosen once for the whole app, in the select at the top
+of the main menu (ADR 0015). Every pitch exercise, sight reading and the
+Theory examples use it. Each of their pages shows which instrument it is
+written for and the range it uses. The select is locked while an exercise
+runs ("Stop the exercise to change it."), because the running exercise was
+made for the instrument it started with.
 
 Notation is written for the instrument and judged on what sounds:
 
@@ -345,7 +352,6 @@ metronome.
 
 | Option | Values | Default |
 | --- | --- | --- |
-| Instrument | Shared with the pitch exercises (clef, transposition, range) | guitar |
 | Scales and keys | Any of the scales and modes of the Scales page | major |
 | Most sharps or flats in the key signature | none … 7 | 1 |
 | Intervals between neighbouring notes | repeated note, 2nd, 3rd, 4th, 5th, 6th, 7th, octave (counted in letters) | 2nd, 3rd |
@@ -355,8 +361,10 @@ metronome.
 | Time signature | 2/4, 3/4, 4/4 | 4/4 |
 | Bars | 1–16 | 4 |
 
-A new melody is made whenever an option (or the instrument) changes, or
-with **New melody**; the tempo does not change the melody.
+The melody is written for the instrument chosen in the main menu (clef,
+transposition, range; see Instrument above). A new melody is made whenever
+an option or the instrument changes, or with **New melody**; the tempo does
+not change the melody.
 
 ### The melody (`theory::reading`)
 

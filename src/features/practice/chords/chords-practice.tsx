@@ -1,10 +1,10 @@
 import { EngineStatusBanner } from "@/components/engine-status-banner";
-import { InstrumentSelect } from "@/components/instrument-select";
 import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePitchSettings } from "@/components/use-pitch-settings";
+import { InstrumentNote } from "@/features/practice/instrument-note";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
+import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { CHORD_KINDS, type ChordOptions, type PitchTask } from "@/lib/engine";
 import { CHORD_LABELS, ordinal, pitchLabel } from "@/lib/pitch-labels";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
@@ -34,11 +34,7 @@ export function ChordsPractice() {
           <CardTitle>Exercise</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          <InstrumentSelect
-            value={pitch.instrument}
-            onChange={(instrument) => update({ instrument })}
-            disabled={running}
-          />
+          <InstrumentNote />
           <OptionChecklist
             legend="Chords"
             idPrefix="chord"

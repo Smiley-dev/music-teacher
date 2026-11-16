@@ -12,7 +12,6 @@ import {
 import { SCALE_LABELS, degreeLabel, pitchLabel } from "@/lib/pitch-labels";
 
 import { ExampleStaff } from "./example-staff";
-import { ExplorerInstrument } from "./explorer-instrument";
 import { keyAccidentals } from "./key-signatures";
 import { KeyboardDiagram } from "./keyboard-diagram";
 import { KindSelect } from "./kind-select";
@@ -139,7 +138,6 @@ function ScaleExplorer() {
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <ListenButton request={request} />
-      <ExplorerInstrument />
     </TheoryCard>
   );
 }

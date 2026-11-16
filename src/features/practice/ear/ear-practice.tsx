@@ -1,10 +1,10 @@
 import { ChoiceButtons } from "@/components/choice-buttons";
 import { EngineStatusBanner } from "@/components/engine-status-banner";
-import { InstrumentSelect } from "@/components/instrument-select";
 import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePitchSettings } from "@/components/use-pitch-settings";
+import { InstrumentNote } from "@/features/practice/instrument-note";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
+import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { type EarOptions, MAX_EAR_NOTES, MIN_EAR_NOTES, type PitchTask } from "@/lib/engine";
 import { pitchLabel } from "@/lib/pitch-labels";
 import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
@@ -44,11 +44,7 @@ export function EarPractice() {
           <CardTitle>Exercise</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          <InstrumentSelect
-            value={pitch.instrument}
-            onChange={(instrument) => update({ instrument })}
-            disabled={running}
-          />
+          <InstrumentNote />
           <div className="flex flex-wrap gap-x-10 gap-y-6">
             <ChoiceButtons
               label="Notes per task"

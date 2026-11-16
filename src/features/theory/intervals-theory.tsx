@@ -13,7 +13,6 @@ import {
 import { INTERVAL_LABELS, pitchLabel } from "@/lib/pitch-labels";
 
 import { ExampleStaff } from "./example-staff";
-import { ExplorerInstrument } from "./explorer-instrument";
 import { KindSelect } from "./kind-select";
 import { ListenButton } from "./listen-button";
 import { RootSelect } from "./root-select";
@@ -98,7 +97,6 @@ function IntervalExplorer() {
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <ListenButton request={request} />
-      <ExplorerInstrument />
     </TheoryCard>
   );
 }

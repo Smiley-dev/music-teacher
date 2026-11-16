@@ -39,6 +39,9 @@ use reading::ReadingSession;
 
 /// Shown when a session is started while another one runs.
 const BUSY_MESSAGE: &str = "Stop the exercise that is running first.";
+/// Shown when the instrument is changed while an exercise runs: the running
+/// one was written and is judged for the old instrument.
+const INSTRUMENT_BUSY_MESSAGE: &str = "Stop the exercise before changing the instrument.";
 
 /// Engine tick: how often audio is analysed and frames are sent (~30 Hz).
 const TICK: Duration = Duration::from_millis(33);
@@ -385,7 +388,19 @@ impl AudioEngine {
         let _ = self.commands.send(Command::StopRhythm);
     }
 
-    /// Save the pitch practice settings (instrument and exercise options).
+    /// Save the instrument used by the whole app (ADR 0015). Refused while an
+    /// exercise runs, since that exercise was made for the old instrument.
+    pub fn set_instrument(&self, instrument: Instrument) -> Result<Settings, String> {
+        if self.shared.practice_running()
+            || self.shared.pitch_running()
+            || self.shared.reading_running()
+        {
+            return Err(INSTRUMENT_BUSY_MESSAGE.into());
+        }
+        self.shared.update_settings(|s| s.instrument = instrument)
+    }
+
+    /// Save the pitch practice settings (exercise options).
     pub fn set_pitch_settings(&self, pitch: PitchPracticeSettings) -> Result<Settings, String> {
         self.shared.update_settings(|s| s.practice.pitch = pitch)
     }
@@ -431,10 +446,10 @@ impl AudioEngine {
 
     /// A new sight-reading melody for the saved options and instrument.
     pub fn generate_reading_exercise(&self) -> Result<ReadingExercise, String> {
-        let practice = self.shared.settings.get().practice;
+        let settings = self.shared.settings.get();
         theory::generate_reading(
-            &practice.reading.melody,
-            practice.pitch.instrument,
+            &settings.practice.reading.melody,
+            settings.instrument,
             seed_from_clock(),
         )
         .map_err(|e| e.to_string())
@@ -766,9 +781,9 @@ impl Runner {
         }
         // Restarting replaces the previous session.
         self.pitch = None;
-        let settings = self.shared.settings.get().practice.pitch;
+        let settings = self.shared.settings.get();
         match PitchSession::start(
-            settings.exercise(kind),
+            settings.practice.pitch.exercise(kind),
             settings.instrument,
             seed_from_clock(),
         ) {

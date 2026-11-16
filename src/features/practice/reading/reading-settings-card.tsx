@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { ChoiceButtons } from "@/components/choice-buttons";
-import { InstrumentSelect } from "@/components/instrument-select";
 import { OptionCheckbox } from "@/components/option-checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePitchSettings } from "@/components/use-pitch-settings";
+import { InstrumentNote } from "@/features/practice/instrument-note";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { NOTE_VALUE_LABELS } from "@/features/practice/practice-labels";
 import { TempoField } from "@/features/practice/tempo-field";
@@ -53,7 +52,6 @@ export function ReadingSettingsCard({ disabled }: { disabled: boolean }) {
   const { settings, setReadingSettings } = useEngine();
   const reading = settings.practice.reading;
   const melody = reading.melody;
-  const { pitch, update: updatePitch, error: pitchError } = usePitchSettings();
   const [error, setError] = useState<string | null>(null);
   const [barsText, setBarsText] = useState(String(melody.bars));
   useEffect(() => setBarsText(String(melody.bars)), [melody.bars]);
@@ -79,11 +77,7 @@ export function ReadingSettingsCard({ disabled }: { disabled: boolean }) {
         <CardTitle>Melody</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <InstrumentSelect
-          value={pitch.instrument}
-          onChange={(instrument) => updatePitch({ instrument })}
-          disabled={disabled}
-        />
+        <InstrumentNote />
 
         <OptionChecklist
           legend="Scales and keys"
@@ -197,7 +191,7 @@ export function ReadingSettingsCard({ disabled }: { disabled: boolean }) {
             />
           </div>
         </div>
-        {(error ?? pitchError) && <p className="text-sm text-destructive">{error ?? pitchError}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );

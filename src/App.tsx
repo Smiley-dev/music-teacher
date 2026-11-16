@@ -1,13 +1,15 @@
 import { AudioLines, ChevronRight } from "lucide-react";
 
+import { InstrumentSelect } from "@/components/instrument-select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigation } from "@/providers/navigation-context";
 import { subsectionsOf } from "@/sections";
 
-/** App shell: main menu (sections, and the selected section's subsections)
- * plus the page shown. Audio is unaffected by navigation. */
+/** App shell: main menu (the instrument, sections, and the selected
+ * section's subsections) plus the page shown. Audio is unaffected by
+ * navigation. */
 function App() {
   const { sections, section, subsection, go } = useNavigation();
   const Content = subsection?.Component ?? section.Screen;
@@ -22,6 +24,7 @@ function App() {
           <AudioLines className="size-5 text-emerald-500" />
           Music Teacher
         </div>
+        <InstrumentSelect className="mb-3 border-b pb-4" />
         <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1">
           {sections.map((s) => {
             const Icon = s.icon;

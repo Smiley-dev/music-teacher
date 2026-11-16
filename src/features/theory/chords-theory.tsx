@@ -5,7 +5,6 @@ import { CHORD_KINDS, type ChordKind, type ExampleRequest, type NoteName } from 
 import { CHORD_LABELS, degreeLabel, pitchLabel } from "@/lib/pitch-labels";
 
 import { ExampleStaff } from "./example-staff";
-import { ExplorerInstrument } from "./explorer-instrument";
 import { KindSelect } from "./kind-select";
 import { ListenButton } from "./listen-button";
 import { RootSelect, noteNameLabel } from "./root-select";
@@ -96,7 +95,6 @@ function ChordExplorer() {
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <ListenButton request={request} />
-      <ExplorerInstrument />
     </TheoryCard>
   );
 }

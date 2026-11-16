@@ -6,7 +6,7 @@ import { useEngine } from "@/providers/audio-engine-context";
 /** `request` spelled by the engine for the saved instrument; refreshed when
  * either changes. */
 export function useTheoryExample(request: ExampleRequest) {
-  const instrument = useEngine().settings.practice.pitch.instrument;
+  const instrument = useEngine().settings.instrument;
   const [example, setExample] = useState<TheoryExample | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Requests are built inline; ask again only when one differs.

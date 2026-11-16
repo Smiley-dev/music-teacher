@@ -400,7 +400,6 @@ export type EarOptions = {
 export type PitchExerciseKind = "notes" | "intervals" | "scales" | "chords" | "ear";
 
 export type PitchPracticeSettings = {
-  instrument: Instrument;
   notes: NoteReadingOptions;
   intervals: IntervalOptions;
   scales: ScaleOptions;
@@ -596,6 +595,8 @@ export type Settings = {
   inputDevice: DeviceId | null;
   gainDb: number;
   latency: LatencyCalibration | null;
+  /** Chosen once for the whole app (ADR 0015). */
+  instrument: Instrument;
   practice: {
     rhythm: RhythmPracticeSettings;
     pitch: PitchPracticeSettings;
@@ -693,6 +694,11 @@ export const listenToRhythm = (exercise: Exercise) =>
   invoke<void>("listen_to_rhythm", { exercise });
 
 export const stopRhythmPractice = () => invoke<void>("stop_rhythm_practice");
+
+/** Save the instrument every section writes, plays and judges for; refused
+ * while an exercise runs. */
+export const setInstrument = (instrument: Instrument) =>
+  invoke<Settings>("set_instrument", { instrument });
 
 export const setPitchSettings = (pitch: PitchPracticeSettings) =>
   invoke<Settings>("set_pitch_settings", { pitch });

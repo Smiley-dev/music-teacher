@@ -12,6 +12,7 @@ import type {
 import {
   EngineContext,
   type EngineContextValue,
+  ExerciseRunningContext,
   FrameContext,
   PitchPracticeContext,
   PracticeContext,
@@ -172,6 +173,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       startRhythmPractice: (exercise) => run(engine.startRhythmPractice(exercise)),
       listenToRhythm: (exercise) => run(engine.listenToRhythm(exercise)),
       stopRhythmPractice: () => run(engine.stopRhythmPractice()),
+      setInstrument: (instrument) => run(engine.setInstrument(instrument)),
       setPitchSettings: (pitch) => run(engine.setPitchSettings(pitch)),
       startPitchPractice: (exercise) => run(engine.startPitchPractice(exercise)),
       stopPitchPractice: () => run(engine.stopPitchPractice()),
@@ -184,6 +186,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       startReadingWithMetronome: (exercise) => run(engine.startReadingWithMetronome(exercise)),
     };
   }, [state]);
+
+  const exerciseRunning =
+    practice.state.phase === "running" || pitch.phase === "running" || reading.phase === "running";
 
   if (!value) {
     return (
@@ -208,7 +213,11 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       <FrameContext.Provider value={frame}>
         <PracticeContext.Provider value={practice}>
           <PitchPracticeContext.Provider value={pitch}>
-            <ReadingContext.Provider value={reading}>{children}</ReadingContext.Provider>
+            <ReadingContext.Provider value={reading}>
+              <ExerciseRunningContext.Provider value={exerciseRunning}>
+                {children}
+              </ExerciseRunningContext.Provider>
+            </ReadingContext.Provider>
           </PitchPracticeContext.Provider>
         </PracticeContext.Provider>
       </FrameContext.Provider>

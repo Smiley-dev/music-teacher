@@ -63,8 +63,9 @@ src-tauri/src/
 src/
   main.tsx             Entry; applies the saved theme; mounts <AudioEngineProvider>
                        and <NavigationProvider>
-  App.tsx              App shell: main menu (sections; the selected one expanded
-                       to its subsections) + the page shown + theme toggle
+  App.tsx              App shell: main menu (instrument select, sections; the
+                       selected one expanded to its subsections) + the page
+                       shown + theme toggle
   sections.ts          Registry of menu sections (SECTIONS): a screen, or
                        subsections (Practice, Theory); SubsectionId type
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
@@ -75,9 +76,11 @@ src/
                        signatures, theme colours)
   providers/
     audio-engine-provider.tsx  Subscribes once; holds engine state, latest frame,
-                               rhythm, pitch and reading state in five contexts
+                               rhythm, pitch and reading state in five contexts,
+                               plus whether any exercise runs
     audio-engine-context.ts    useEngine / useFrame / usePractice / usePitchPractice /
-                               useReading / useSettings / useLatency
+                               useReading / useExerciseRunning / useSettings /
+                               useLatency
     navigation-provider.tsx    Selected section + last subsection of each, in
                                localStorage (ADR 0014)
     navigation-context.ts      useNavigation: where the app is, go(section, sub)
@@ -87,8 +90,9 @@ src/
     rhythm/            Rhythm practice: settings, VexFlow score, transport
     reading/           Sight reading: options, VexFlow melody score, listen/play
     tempo-field.tsx    Tempo control shared by rhythm and reading
+    instrument-note.tsx  Which instrument (and range) a page is written for
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
-                       option checklist
+                       option checklist, usePitchSettings
     notes/             Note reading page
     intervals/         Intervals page
     scales/            Scales page
@@ -100,8 +104,8 @@ src/
                        fifths diagrams
   components/          Shared: level meter, waveform canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice),
-                       theme toggle + useTheme, instrument select +
-                       usePitchSettings, choice buttons, option checkbox
+                       theme toggle + useTheme, instrument select (main menu,
+                       ADR 0015), choice buttons, option checkbox
                        (Practice + Theory)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```
@@ -167,8 +171,10 @@ flowchart LR
   calls `unsubscribe_engine(id)` on unmount; channels that fail to receive
   (reloaded or closed webview) are dropped automatically.
 - **Settings** (`Settings`: input device, gain in dB, latency calibration,
+  the instrument used by every section (ADR 0015; older files that kept it
+  in `practice.pitch` are migrated on load),
   `practice.rhythm` tempo/difficulty/custom/time signature/bars,
-  `practice.pitch` instrument and pitch exercise options, `practice.reading`
+  `practice.pitch` pitch exercise options, `practice.reading`
   tempo and melody options) are
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on

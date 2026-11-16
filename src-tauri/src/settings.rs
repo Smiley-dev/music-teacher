@@ -92,9 +92,6 @@ impl RhythmPracticeSettings {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PitchPracticeSettings {
-    /// The instrument played: clef, transposition and range of every pitch
-    /// exercise.
-    pub instrument: Instrument,
     pub notes: NoteReadingOptions,
     pub intervals: IntervalOptions,
     pub scales: ScaleOptions,
@@ -116,7 +113,7 @@ impl PitchPracticeSettings {
 }
 
 /// Sight reading choices (ADR 0012), see docs/features/practice.md. The
-/// instrument is `PitchPracticeSettings::instrument`.
+/// instrument is `Settings::instrument`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ReadingPracticeSettings {
@@ -149,6 +146,10 @@ pub struct Settings {
     pub input_device: Option<DeviceId>,
     pub gain_db: f32,
     pub latency: Option<LatencyCalibration>,
+    /// The instrument played, chosen once for the whole app (ADR 0015): clef,
+    /// transposition and range of everything written or judged for it (pitch
+    /// exercises, sight reading, Theory examples).
+    pub instrument: Instrument,
     pub practice: PracticeSettings,
 }
 
@@ -162,7 +163,7 @@ impl SettingsStore {
     /// Load from `path`; a missing or unreadable file gives defaults.
     pub fn load(path: PathBuf) -> Self {
         let settings = match std::fs::read_to_string(&path) {
-            Ok(text) => serde_json::from_str(&text).unwrap_or_else(|e| {
+            Ok(text) => parse(&text).unwrap_or_else(|e| {
                 eprintln!("[settings] ignoring invalid {}: {e}", path.display());
                 Settings::default()
             }),
@@ -192,6 +193,29 @@ impl SettingsStore {
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Settings> {
         self.settings.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Read a settings file, upgrading older layouts first.
+fn parse(text: &str) -> serde_json::Result<Settings> {
+    let mut value: serde_json::Value = serde_json::from_str(text)?;
+    migrate(&mut value);
+    serde_json::from_value(value)
+}
+
+/// Files written before the instrument became app-wide (ADR 0015) keep it in
+/// `practice.pitch.instrument`; move it to the top level unless one is there.
+fn migrate(value: &mut serde_json::Value) {
+    let Some(root) = value.as_object_mut() else {
+        return;
+    };
+    let legacy = root
+        .get_mut("practice")
+        .and_then(|practice| practice.get_mut("pitch"))
+        .and_then(serde_json::Value::as_object_mut)
+        .and_then(|pitch| pitch.remove("instrument"));
+    if let Some(instrument) = legacy {
+        root.entry("instrument").or_insert(instrument);
     }
 }
 
@@ -344,16 +368,11 @@ mod tests {
         std::fs::write(&path, r#"{"practice": {"rhythm": {"bpm": 90}}}"#).unwrap();
         let store = SettingsStore::load(path.clone());
         assert_eq!(store.get().practice.pitch, PitchPracticeSettings::default());
-        assert_eq!(store.get().practice.pitch.instrument, Instrument::Guitar);
 
         store
-            .update(|s| {
-                s.practice.pitch.instrument = Instrument::Viola;
-                s.practice.pitch.notes.ledger_lines = true;
-            })
+            .update(|s| s.practice.pitch.notes.ledger_lines = true)
             .unwrap();
         let pitch = SettingsStore::load(path.clone()).get().practice.pitch;
-        assert_eq!(pitch.instrument, Instrument::Viola);
         assert_eq!(
             pitch.exercise(PitchExerciseKind::Notes),
             PitchExercise::Notes(NoteReadingOptions {
@@ -409,6 +428,44 @@ mod tests {
         let ear = SettingsStore::load(path.clone()).get().practice.pitch.ear;
         assert_eq!(ear.notes, theory::MAX_EAR_NOTES, "clamped");
         assert!(ear.chromatic && !ear.show_first && !ear.any_octave);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn instrument_is_app_wide_and_migrated() {
+        let path = temp_path("instrument");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, r#"{"gainDb": 0}"#).unwrap();
+        let store = SettingsStore::load(path.clone());
+        assert_eq!(store.get().instrument, Instrument::Guitar, "default");
+        store.update(|s| s.instrument = Instrument::Cello).unwrap();
+        assert_eq!(
+            SettingsStore::load(path.clone()).get().instrument,
+            Instrument::Cello
+        );
+
+        // Before ADR 0015 the instrument was a pitch practice option.
+        let raw = r#"{"practice": {"pitch": {"instrument": "viola",
+            "notes": {"ledgerLines": true}}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        let store = SettingsStore::load(path.clone());
+        let settings = store.get();
+        assert_eq!(settings.instrument, Instrument::Viola);
+        assert!(settings.practice.pitch.notes.ledger_lines, "rest kept");
+        store.update(|_| {}).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(saved["instrument"], "viola");
+        assert!(saved["practice"]["pitch"].get("instrument").is_none());
+
+        // A top-level instrument wins over a stale nested one.
+        let raw = r#"{"instrument": "bassGuitar",
+            "practice": {"pitch": {"instrument": "violin"}}}"#;
+        std::fs::write(&path, raw).unwrap();
+        assert_eq!(
+            SettingsStore::load(path.clone()).get().instrument,
+            Instrument::BassGuitar
+        );
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 

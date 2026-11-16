@@ -1,6 +1,6 @@
 # 0011. Pitch exercises: theory crate, note judge and pitch sessions
 
-- Status: Accepted
+- Status: Accepted (instrument setting moved to the top level by ADR 0015)
 - Date: 2026-11-13
 
 ## Context
