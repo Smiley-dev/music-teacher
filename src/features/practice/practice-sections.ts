@@ -14,7 +14,7 @@ export type PracticeSection = {
   Component: ComponentType;
 };
 
-/** Practice subsections, in tab order. See docs/CODING_RULES.md to add one. */
+/** Practice subsections, in menu order. See docs/CODING_RULES.md to add one. */
 export const PRACTICE_SECTIONS = [
   { id: "rhythm", label: "Rhythm", Component: RhythmPractice },
   { id: "reading", label: "Reading", Component: ReadingPractice },

@@ -1,19 +1,32 @@
 import type { ComponentType } from "react";
 import { BookOpen, Dumbbell, Gauge, type LucideIcon, Settings } from "lucide-react";
 
-import { PracticeScreen } from "@/features/practice/practice-screen";
+import { PRACTICE_SECTIONS } from "@/features/practice/practice-sections";
 import { SettingsScreen } from "@/features/settings/settings-screen";
-import { TheoryScreen } from "@/features/theory/theory-screen";
+import { THEORY_TOPICS } from "@/features/theory/theory-topics";
 import { TunerScreen } from "@/features/tuner/tuner-screen";
 
-export type Section = {
+/** A page inside a section, listed under it in the main menu. */
+export type Subsection = {
+  id: string;
+  label: string;
+  Component: ComponentType;
+};
+
+type SectionBase = {
   id: string;
   label: string;
   /** One line shown under the screen title. */
   description: string;
   icon: LucideIcon;
-  Screen: ComponentType;
 };
+
+/** A main menu entry: one screen, or subsections listed under it. */
+export type Section = SectionBase &
+  (
+    | { Screen: ComponentType; subsections?: never }
+    | { subsections: readonly Subsection[]; Screen?: never }
+  );
 
 /** Main menu entries, in display order. See docs/CODING_RULES.md to add one. */
 export const SECTIONS = [
@@ -29,14 +42,14 @@ export const SECTIONS = [
     label: "Practice",
     description: "Rhythm and note exercises that listen to your instrument.",
     icon: Dumbbell,
-    Screen: PracticeScreen,
+    subsections: PRACTICE_SECTIONS,
   },
   {
     id: "theory",
     label: "Theory",
     description: "The music theory behind every exercise, with examples to see and hear.",
     icon: BookOpen,
-    Screen: TheoryScreen,
+    subsections: THEORY_TOPICS,
   },
   {
     id: "settings",
@@ -48,3 +61,16 @@ export const SECTIONS = [
 ] as const satisfies readonly Section[];
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
+
+/** Subsection ids of section `Id` ("rhythm", "reading" … for "practice"). */
+export type SubsectionId<Id extends SectionId> =
+  Extract<(typeof SECTIONS)[number], { id: Id }> extends {
+    subsections: readonly (infer S extends { id: string })[];
+  }
+    ? S["id"]
+    : never;
+
+/** The subsections of `section` (empty for a single screen). */
+export function subsectionsOf(section: Section): readonly Subsection[] {
+  return section.subsections ?? [];
+}

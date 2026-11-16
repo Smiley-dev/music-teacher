@@ -1,11 +1,13 @@
 # Practice
 
-Practice has subsections, shown as tabs: **Rhythm** (timing), **Reading**
-(sight reading: rhythm and pitch together) and the pitch exercises:
-**Notes**, **Intervals**, **Scales**, **Chords** and **Ear training**. More
-are added through the `PRACTICE_SECTIONS` registry, see
-[CODING_RULES.md](../CODING_RULES.md); ideas are listed in
-[exercise-catalog.md](exercise-catalog.md).
+Practice has subsections, listed under it in the main menu when Practice is
+selected (ADR 0014): **Rhythm** (timing), **Reading** (sight reading: rhythm
+and pitch together) and the pitch exercises: **Notes**, **Intervals**,
+**Scales**, **Chords** and **Ear training**. Practice opens on the one last
+shown (remembered across restarts). More are added through the
+`PRACTICE_SECTIONS` registry, see [CODING_RULES.md](../CODING_RULES.md);
+ideas are listed in [exercise-catalog.md](exercise-catalog.md). The theory
+behind each is in the Theory section ([theory.md](theory.md)).
 
 ## Rhythm
 
@@ -178,7 +180,7 @@ previous results.
 
 ## Pitch exercises (ADR 0011)
 
-In these exercises *which* note you play matters, not when. Each tab has its
+In these exercises *which* note you play matters, not when. Each page has its
 options and a **Read and play**-style card; they share how tasks are shown,
 judged and scored.
 
@@ -216,8 +218,8 @@ when the staff shows B♭), otherwise with sharps.
    output and restarts the task; judging resumes 0.3 s after the last tone
    so a microphone hearing the speakers is not judged.
    **Skip** shows the answer in amber for 3 s, then moves on.
-5. **Stop** ends the session and shows the score. Leaving the tab (or the
-   Practice screen) stops it too.
+5. **Stop** ends the session and shows the score. Going to any other page
+   stops it too.
 
 The live line shows the note being heard ("Hearing G♯3"). The score counts
 tasks solved, solved without a wrong note ("first try"), skipped, and wrong
@@ -344,7 +346,7 @@ metronome.
 | Option | Values | Default |
 | --- | --- | --- |
 | Instrument | Shared with the pitch exercises (clef, transposition, range) | guitar |
-| Scales and keys | Any of the scales and modes of the Scales tab | major |
+| Scales and keys | Any of the scales and modes of the Scales page | major |
 | Most sharps or flats in the key signature | none … 7 | 1 |
 | Intervals between neighbouring notes | repeated note, 2nd, 3rd, 4th, 5th, 6th, 7th, octave (counted in letters) | 2nd, 3rd |
 | Note lengths | whole … sixteenth, dotted notes, rests (as in rhythm practice) | whole, half, quarter |
@@ -422,5 +424,5 @@ share of right notes, right / wrong / unclear counts, the wrong notes by bar
 ("Bar 2: F♯4 instead of C5", up to 8), and tips (play it at your own pace
 first; let notes ring, play louder or slower when many are unclear).
 
-Leaving the tab stops listening or playing. Needs a running input device;
+Going to another page stops listening or playing. Needs a running input device;
 it cannot run together with calibration or another practice session.

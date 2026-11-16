@@ -3,6 +3,9 @@ import { Dumbbell, Lightbulb } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useNavigation } from "@/providers/navigation-context";
+// Types only: `@/sections` imports the topics, which import this file.
+import type { SectionId, SubsectionId } from "@/sections";
 
 type TheoryCardProps = {
   title: string;
@@ -24,17 +27,55 @@ export function TheoryCard({ title, description, children, className }: TheoryCa
   );
 }
 
-/** Where a topic is practised, shown at the top of the topic. */
-export function PractiseIn({ tabs, children }: { tabs: string[]; children: ReactNode }) {
+type SectionLinkProps<Id extends SectionId> = {
+  section: Id;
+  subsection?: SubsectionId<Id>;
+  children: ReactNode;
+};
+
+/** Text that takes the user to another page of the app. */
+export function SectionLink<Id extends SectionId>({
+  section,
+  subsection,
+  children,
+}: SectionLinkProps<Id>) {
+  const { go } = useNavigation();
+  return (
+    <button
+      type="button"
+      className="cursor-pointer font-medium text-foreground underline decoration-muted-foreground/50 underline-offset-4 hover:decoration-foreground"
+      onClick={() => go(section, subsection)}
+    >
+      {children}
+    </button>
+  );
+}
+
+type PractiseInProps = {
+  /** The Practice pages that exercise this topic. */
+  exercises: SubsectionId<"practice">[];
+  children: ReactNode;
+};
+
+/** A topic's introduction, with links to the Practice pages that use it. */
+export function PractiseIn({ exercises, children }: PractiseInProps) {
+  const { sections } = useNavigation();
+  const pages = sections.find((s) => s.id === "practice")?.subsections ?? [];
+  const label = (id: string) => pages.find((s) => s.id === id)?.label ?? id;
   return (
     <div className="flex flex-col gap-2 text-sm leading-6">
       <p>{children}</p>
-      <p className="flex items-center gap-2 text-muted-foreground">
+      <p className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
         <Dumbbell className="size-4 shrink-0" />
-        <span>
-          Practise it in <strong className="font-medium text-foreground">Practice</strong>:{" "}
-          {tabs.join(", ")}.
-        </span>
+        <span>Practise it in Practice:</span>
+        {exercises.map((id, i) => (
+          <span key={id}>
+            <SectionLink section="practice" subsection={id}>
+              {label(id)}
+            </SectionLink>
+            {i < exercises.length - 1 ? "," : ""}
+          </span>
+        ))}
       </p>
     </div>
   );

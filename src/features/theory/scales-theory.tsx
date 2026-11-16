@@ -148,7 +148,7 @@ function ScaleExplorer() {
 export function ScalesTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Scales", "Reading", "Ear training"]}>
+      <PractiseIn exercises={["scales", "reading", "ear"]}>
         A scale is a set of notes in order, from a starting note to its octave. Each kind of scale
         has its own pattern of steps, which gives it its sound.
       </PractiseIn>

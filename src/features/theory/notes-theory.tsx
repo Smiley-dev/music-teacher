@@ -39,7 +39,7 @@ const letter = (name: string) => name[0];
 export function NotesTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Notes", "Reading"]}>
+      <PractiseIn exercises={["notes", "reading"]}>
         How notes are named and written down: the staff and its clefs, octaves, half and whole
         steps, sharps and flats, and why some instruments sound lower than written.
       </PractiseIn>

@@ -15,7 +15,7 @@ export type TheoryTopic = {
   Component: ComponentType;
 };
 
-/** Theory topics, in tab order (from the basics up). See docs/CODING_RULES.md to add one. */
+/** Theory topics, in menu order (from the basics up). See docs/CODING_RULES.md to add one. */
 export const THEORY_TOPICS = [
   { id: "notes", label: "Notes", Component: NotesTheory },
   { id: "rhythm", label: "Rhythm", Component: RhythmTheory },

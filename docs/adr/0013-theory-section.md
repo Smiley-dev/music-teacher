@@ -21,7 +21,8 @@ must match how Practice spells and places notes for the user's instrument.
 ## Decision
 
 - **A Theory main-menu section** (`src/features/theory/`), after Practice,
-  with one tab per topic (`THEORY_TOPICS`): Notes, Rhythm, Intervals, Scales,
+  with one page per topic (`THEORY_TOPICS`, listed in the main menu, ADR
+  0014): Notes, Rhythm, Intervals, Scales,
   Keys, Chords, Sight reading, Ear training. Each topic is static text,
   tables and notation examples, plus "In the app" notes on how Practice uses
   the concept and where to practise it.

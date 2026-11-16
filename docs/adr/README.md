@@ -21,6 +21,7 @@ one (update the old one's status).
 | [0011](0011-pitch-exercises.md) | Pitch exercises: theory crate, note judge and pitch sessions | Accepted |
 | [0012](0012-sight-reading.md) | Sight reading: generated melodies, played from the page | Accepted |
 | [0013](0013-theory-section.md) | Theory section: reference pages with examples spelled and played by the engine | Accepted |
+| [0014](0014-main-menu-subsections.md) | Subsections in the main menu, with a navigation context | Accepted |
 
 ## Template
 

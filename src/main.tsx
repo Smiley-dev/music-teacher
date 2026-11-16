@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import App from "@/App";
 import { applyTheme, followSystemTheme, loadThemePreference } from "@/lib/theme";
 import { AudioEngineProvider } from "@/providers/audio-engine-provider";
+import { NavigationProvider } from "@/providers/navigation-provider";
 import "./index.css";
 
 // Apply the saved theme (default: follow the OS) before the first render.
@@ -13,7 +14,9 @@ followSystemTheme();
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AudioEngineProvider>
-      <App />
+      <NavigationProvider>
+        <App />
+      </NavigationProvider>
     </AudioEngineProvider>
   </React.StrictMode>,
 );

@@ -6,7 +6,7 @@ import { Bullets, InTheApp, PractiseIn, TheoryCard } from "./topic-parts";
 export function ReadingTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Reading"]}>
+      <PractiseIn exercises={["reading"]}>
         Sight reading is playing music you have never seen before, straight from the page. It
         brings everything together: notes, key, rhythm and intervals.
       </PractiseIn>

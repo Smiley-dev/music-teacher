@@ -1,7 +1,14 @@
 import type { ExampleRequest, NoteName } from "@/lib/engine";
 
 import { ListenButton } from "./listen-button";
-import { Bullets, InTheApp, PractiseIn, TheoryCard, TheoryTable } from "./topic-parts";
+import {
+  Bullets,
+  InTheApp,
+  PractiseIn,
+  SectionLink,
+  TheoryCard,
+  TheoryTable,
+} from "./topic-parts";
 
 const C: NoteName = { letter: "c", accidental: 0 };
 
@@ -38,7 +45,7 @@ const PAIRS: { listenFor: string; a: [string, ExampleRequest]; b: [string, Examp
 export function EarTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Ear training", "Intervals"]}>
+      <PractiseIn exercises={["ear", "intervals"]}>
         Ear training links what you hear to notes on your instrument: you hear a note or a short
         melody and play it back.
       </PractiseIn>
@@ -102,8 +109,12 @@ export function EarTheory() {
           ])}
         />
         <p className="text-muted-foreground">
-          The Intervals topic lists a well-known tune for every interval, and lets you hear any
-          interval from any note.
+          The{" "}
+          <SectionLink section="theory" subsection="intervals">
+            Intervals
+          </SectionLink>{" "}
+          topic lists a well-known tune for every interval, and lets you hear any interval from
+          any note.
         </p>
       </TheoryCard>
     </div>

@@ -39,7 +39,7 @@ type PitchSessionCardProps = {
 };
 
 /** Start/stop, the current task on a staff, live feedback and the score of
- * a pitch exercise (ADR 0011). Leaving the tab stops the exercise. */
+ * a pitch exercise (ADR 0011). Leaving the exercise stops it. */
 export function PitchSessionCard({
   exercise,
   title,
@@ -55,7 +55,7 @@ export function PitchSessionCard({
   const running = state.phase === "running";
   const [error, setError] = useState<string | null>(null);
 
-  // Stop this exercise when the tab (or the Practice screen) goes away.
+  // Stop this exercise when the user goes to another page.
   const latest = useRef({ running, stop: stopPitchPractice });
   useEffect(() => {
     latest.current = { running, stop: stopPitchPractice };

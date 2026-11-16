@@ -6,7 +6,7 @@ import { Bullets, InTheApp, PractiseIn, TheoryCard, TheoryTable } from "./topic-
 export function RhythmTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Rhythm", "Reading"]}>
+      <PractiseIn exercises={["rhythm", "reading"]}>
         How long notes last and how music is counted: the beat, tempo, bars and time signatures,
         note values, rests and dots.
       </PractiseIn>

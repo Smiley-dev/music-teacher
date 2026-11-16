@@ -105,7 +105,7 @@ function ChordExplorer() {
 export function ChordsTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Chords"]}>
+      <PractiseIn exercises={["chords"]}>
         A chord is three or more notes sounding together. Most chords are built by stacking 3rds
         on top of a root.
       </PractiseIn>

@@ -1,15 +1,17 @@
 # Theory
 
 The music theory behind every Practice exercise (ADR 0013), in the main menu
-under Practice. Each topic is a tab; each explains its concepts with text,
-tables and examples in notation, ends its cards with "In the app" notes on
-how Practice uses the concept, and names the Practice tabs to practise it.
-New topics are added through the `THEORY_TOPICS` registry, see
-[CODING_RULES.md](../CODING_RULES.md).
+under Practice. Its topics are listed under it in the menu when Theory is
+selected (ADR 0014); it opens on the topic last shown. Each topic explains
+its concepts with text, tables and examples in notation, ends its cards with
+"In the app" notes on how Practice uses the concept, and starts with links
+to the Practice pages that exercise it ("Practise it in Practice: Intervals,
+Ear training"). New topics are added through the `THEORY_TOPICS` registry,
+see [CODING_RULES.md](../CODING_RULES.md).
 
 ## Topics
 
-| Tab | Covers | Practised in |
+| Topic | Covers | Practised in |
 | --- | --- | --- |
 | Notes | Note names, the keyboard, the staff, treble/bass/alto clefs (with mnemonics), ledger lines, middle C, octave numbers and A4 = 440 Hz, half and whole steps, sharps/flats/naturals/doubles, enharmonic notes, written vs sounding pitch per instrument | Notes, Reading |
 | Rhythm | Beat, tempo (BPM), count-in, bars, 2/4 3/4 4/4, note values, rests, dotted notes, beams and counting (1 e & a), playing in time (rushing, dragging, how timing is judged) | Rhythm, Reading |

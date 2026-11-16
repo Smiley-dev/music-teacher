@@ -19,6 +19,11 @@ add an ADR if it affects architecture) instead of silently breaking it.
   `useFrame`, `usePractice`, `usePitchPractice`, `useReading`, `useSettings`,
   `useLatency`). Only components that draw live data call `useFrame` /
   `usePractice`.
+- Navigation goes through `useNavigation()` (`src/providers/navigation-context.ts`):
+  `go(section, subsection)`. Links written in pages use `SectionLink` (or
+  `SubsectionId<"practice">` …) so their ids are type-checked. Files that
+  `src/sections.ts` imports (every section page) import only types from it,
+  to avoid an import cycle.
 - `crates/rhythm` and `crates/theory` follow the same rules as `crates/dsp`:
   pure and tested.
 
@@ -96,11 +101,16 @@ errors. Tell the user what to do, not only what failed.
 
 ## Adding a section to the main menu
 
-1. Create `src/features/<id>/<id>-screen.tsx` exporting `<Id>Screen`.
-2. Add an entry to `SECTIONS` in `src/sections.ts` (id, label, Lucide icon,
-   screen component).
+1. Create `src/features/<id>/<id>-screen.tsx` exporting `<Id>Screen`, or,
+   for a section with several pages, a registry of subsections (`id`,
+   `label`, `Component`) like `PRACTICE_SECTIONS`.
+2. Add an entry to `SECTIONS` in `src/sections.ts` (id, label, description,
+   Lucide icon, and `Screen` or `subsections`). Subsections are listed under
+   the section in the main menu when it is selected; the section opens on
+   the one last shown.
 3. Read audio state only through the provider hooks; never start your own
-   stream.
+   stream. A page that starts audio stops it when it unmounts (the user went
+   to another page).
 4. Add `docs/features/<id>.md` and link it from `docs/ARCHITECTURE.md` if the
    module map changes.
 
@@ -117,7 +127,7 @@ errors. Tell the user what to do, not only what failed.
 
 A pitch exercise (play the right notes, ADR 0011) needs no new session: add
 a generator in `crates/theory`, a `PitchExerciseKind`/`PitchExercise`
-variant, its options in `PitchPracticeSettings`, and a tab that uses
+variant, its options in `PitchPracticeSettings`, and a page that uses
 `PitchSessionCard` from `src/features/practice/pitch/`.
 
 A concept new to Practice (a new note value, scale, chord, option) gets
@@ -126,8 +136,9 @@ explained in the matching Theory topic in the same change.
 ## Adding a Theory topic
 
 1. Create `src/features/theory/<id>-theory.tsx` exporting `<Id>Theory`,
-   built from `PractiseIn`, `TheoryCard`, `TheoryTable`, `InTheApp` and
-   `Bullets` (`topic-parts.tsx`).
+   built from `PractiseIn` (with the ids of the Practice pages that use the
+   topic, shown as links), `TheoryCard`, `TheoryTable`, `InTheApp`, `Bullets`
+   and `SectionLink` (`topic-parts.tsx`).
 2. Add an entry to `THEORY_TOPICS` in
    `src/features/theory/theory-topics.ts`.
 3. Fixed examples are `ExampleStaff` scores written with the helpers in

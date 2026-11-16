@@ -107,7 +107,7 @@ function IntervalExplorer() {
 export function IntervalsTheory() {
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Intervals", "Ear training", "Reading"]}>
+      <PractiseIn exercises={["intervals", "ear", "reading"]}>
         An interval is the distance between two notes. Its name has two parts, a number and a
         quality: a <em>major third</em>, a <em>perfect fifth</em>.
       </PractiseIn>

@@ -43,7 +43,7 @@ export function KeysTheory() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PractiseIn tabs={["Reading", "Ear training"]}>
+      <PractiseIn exercises={["reading", "ear"]}>
         A piece in a <em>key</em> uses the notes of one scale and comes home to its tonic: in D
         major, D is home and the notes come from the D major scale. The key signature shows which
         notes are sharp or flat.

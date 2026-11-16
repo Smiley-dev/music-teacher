@@ -62,8 +62,11 @@ src-tauri/src/
   settings.rs          Settings model + JSON persistence
 src/
   main.tsx             Entry; applies the saved theme; mounts <AudioEngineProvider>
-  App.tsx              App shell: main menu + active section + theme toggle
-  sections.ts          Registry of menu sections (SECTIONS)
+                       and <NavigationProvider>
+  App.tsx              App shell: main menu (sections; the selected one expanded
+                       to its subsections) + the page shown + theme toggle
+  sections.ts          Registry of menu sections (SECTIONS): a screen, or
+                       subsections (Practice, Theory); SubsectionId type
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
   lib/theme.ts         Theme preference (system/light/dark): load, save, apply
   lib/pitch-labels.ts  Display names: notes, degrees, intervals, scales, chords,
@@ -75,21 +78,24 @@ src/
                                rhythm, pitch and reading state in five contexts
     audio-engine-context.ts    useEngine / useFrame / usePractice / usePitchPractice /
                                useReading / useSettings / useLatency
+    navigation-provider.tsx    Selected section + last subsection of each, in
+                               localStorage (ADR 0014)
+    navigation-context.ts      useNavigation: where the app is, go(section, sub)
   features/tuner/      Tuner screen, note display + cents gauge
   features/settings/   Device and gain cards (+ shared calibration card); useInputDevices
-  features/practice/   Practice tabs (PRACTICE_SECTIONS)
+  features/practice/   Practice pages (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
     reading/           Sight reading: options, VexFlow melody score, listen/play
     tempo-field.tsx    Tempo control shared by rhythm and reading
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
                        option checklist
-    notes/             Note reading tab
-    intervals/         Intervals tab
-    scales/            Scales tab
-    chords/            Chords tab
-    ear/               Ear training tab
+    notes/             Note reading page
+    intervals/         Intervals page
+    scales/            Scales page
+    chords/            Chords page
+    ear/               Ear training page
   features/theory/     Theory topics (THEORY_TOPICS, ADR 0013): one *-theory.tsx
-                       per tab, VexFlow example renderer, explorers (interval,
+                       per page, VexFlow example renderer, explorers (interval,
                        scale, chord), Listen button, keyboard and circle-of-
                        fifths diagrams
   components/          Shared: level meter, waveform canvas, engine status banner,
@@ -136,7 +142,7 @@ flowchart LR
    calibration), the latest frame, rhythm practice, pitch practice and sight
    reading in separate React contexts, so only live views (meters, waveform,
    note) re-render 30 times per second. Switching sections never starts or
-   stops audio (leaving a pitch exercise's or the reading tab stops what it
+   stops audio (leaving a pitch exercise's or the reading page stops what it
    started).
 
 ## Threads
@@ -168,7 +174,9 @@ flowchart LR
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
   Windows) whenever they change. See ADR 0004.
 - **UI-only state** stays in React, remembered in localStorage: the selected
-  section and the theme (system, light or dark; applied as the `.dark` class
+  section and the last subsection of Practice and Theory (`NavigationProvider`,
+  keys `music-teacher:section` and `music-teacher:subsection:<section>`), and
+  the theme (system, light or dark; applied as the `.dark` class
   on `<html>` and to the window title bar, re-applied when the OS theme
   changes while set to system). Theory explorer choices are not remembered.
 - **Theory examples** are spelled on request (`theory_example`, a pure

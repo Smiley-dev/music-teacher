@@ -1,37 +1,16 @@
-import { useState } from "react";
-import { AudioLines } from "lucide-react";
+import { AudioLines, ChevronRight } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SECTIONS, type SectionId } from "@/sections";
+import { useNavigation } from "@/providers/navigation-context";
+import { subsectionsOf } from "@/sections";
 
-const LAST_SECTION_KEY = "music-teacher:section";
-
-function initialSection(): SectionId {
-  try {
-    const saved = localStorage.getItem(LAST_SECTION_KEY);
-    const match = SECTIONS.find((s) => s.id === saved);
-    if (match) return match.id;
-  } catch {
-    // Storage unavailable: fall through to the default.
-  }
-  return SECTIONS[0].id;
-}
-
-/** App shell: main menu plus the active section. Audio is unaffected by navigation. */
+/** App shell: main menu (sections, and the selected section's subsections)
+ * plus the page shown. Audio is unaffected by navigation. */
 function App() {
-  const [active, setActive] = useState<SectionId>(initialSection);
-  const section = SECTIONS.find((s) => s.id === active) ?? SECTIONS[0];
-
-  const select = (id: SectionId) => {
-    setActive(id);
-    try {
-      localStorage.setItem(LAST_SECTION_KEY, id);
-    } catch {
-      // Not remembered across restarts; harmless.
-    }
-  };
+  const { sections, section, subsection, go } = useNavigation();
+  const Content = subsection?.Component ?? section.Screen;
 
   return (
     <div className="flex min-h-screen">
@@ -43,33 +22,78 @@ function App() {
           <AudioLines className="size-5 text-emerald-500" />
           Music Teacher
         </div>
-        {SECTIONS.map(({ id, label, icon: Icon }) => {
-          const selected = id === active;
-          return (
-            <Button
-              key={id}
-              variant={selected ? "secondary" : "ghost"}
-              aria-current={selected ? "page" : undefined}
-              className={cn(
-                "justify-start gap-3",
-                selected ? "font-semibold" : "text-muted-foreground",
-              )}
-              onClick={() => select(id)}
-            >
-              <Icon className="size-4" />
-              {label}
-            </Button>
-          );
-        })}
-        <ThemeToggle className="mt-auto" />
+        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1">
+          {sections.map((s) => {
+            const Icon = s.icon;
+            const selected = s.id === section.id;
+            const subs = subsectionsOf(s);
+            const open = selected && subs.length > 0;
+            return (
+              <div key={s.id} className="flex flex-col gap-1">
+                <Button
+                  variant={selected ? "secondary" : "ghost"}
+                  aria-current={selected && subs.length === 0 ? "page" : undefined}
+                  aria-expanded={subs.length > 0 ? open : undefined}
+                  className={cn(
+                    "justify-start gap-3",
+                    selected ? "font-semibold" : "text-muted-foreground",
+                  )}
+                  onClick={() => go(s.id)}
+                >
+                  <Icon className="size-4" />
+                  {s.label}
+                  {subs.length > 0 && (
+                    <ChevronRight
+                      className={cn("ml-auto size-4 transition-transform", open && "rotate-90")}
+                    />
+                  )}
+                </Button>
+                {open && (
+                  <ul
+                    aria-label={`${s.label} sections`}
+                    className="mb-1 ml-[1.1rem] flex flex-col gap-0.5 border-l pl-2"
+                  >
+                    {subs.map((sub) => {
+                      const current = sub.id === subsection?.id;
+                      return (
+                        <li key={sub.id}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-current={current ? "page" : undefined}
+                            className={cn(
+                              "h-8 w-full justify-start px-2 font-normal",
+                              current
+                                ? "bg-secondary font-medium text-foreground"
+                                : "text-muted-foreground",
+                            )}
+                            onClick={() => go(s.id, sub.id)}
+                          >
+                            {sub.label}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <ThemeToggle className="mt-2" />
       </nav>
 
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight">{section.label}</h1>
+          {subsection && (
+            <p className="text-sm font-medium text-muted-foreground">{section.label}</p>
+          )}
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {subsection?.label ?? section.label}
+          </h1>
           <p className="text-sm text-muted-foreground">{section.description}</p>
         </header>
-        <section.Screen />
+        {Content && <Content key={`${section.id}/${subsection?.id ?? ""}`} />}
       </main>
     </div>
   );

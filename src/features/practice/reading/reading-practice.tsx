@@ -41,7 +41,7 @@ import { NOTE_CLASSES, ReadingScore, type Slot, slotKey } from "./reading-score"
 import { ReadingSettingsCard } from "./reading-settings-card";
 import { useReadingExercise } from "./use-reading-exercise";
 
-/** What the user last started from this tab (results belong to it). */
+/** What the user last started from this page (results belong to it). */
 type Action = "listen" | "ownPace" | "metronome";
 
 function describe(exercise: ReadingExercise, bpm: number): string {
@@ -93,7 +93,7 @@ export function ReadingPractice() {
     reading.phase !== "running";
   const gapMs = minGapMs(exercise?.minNoteGapBeats ?? null, bpm);
 
-  // Stop what this tab started when the tab (or the Practice screen) goes away.
+  // Stop what this page started when the user goes to another page.
   const latest = useRef({ withClock, ownPace, stopRhythmPractice, stopReadingPractice });
   useEffect(() => {
     latest.current = { withClock, ownPace, stopRhythmPractice, stopReadingPractice };
