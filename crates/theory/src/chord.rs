@@ -56,13 +56,19 @@ impl ChordKind {
     /// lowest tones move up an octave (1st inversion starts on the 3rd).
     /// `None` if a note would need a double sharp or flat.
     pub fn notes(self, root: Pitch, inversion: usize) -> Option<Vec<Pitch>> {
+        self.spell(root, inversion)
+            .filter(|notes| notes.iter().all(|p| !p.is_double()))
+    }
+
+    /// Like `notes`, but double sharps and flats are allowed (C diminished
+    /// 7th has B𝄫). `None` only if a note would need more.
+    pub fn spell(self, root: Pitch, inversion: usize) -> Option<Vec<Pitch>> {
         let tones = self.tones();
         (0..tones.len())
             .map(|i| {
                 let (steps, semitones) = tones[(i + inversion) % tones.len()];
                 let octave = if i + inversion >= tones.len() { 1 } else { 0 };
                 root.transpose(steps + 7 * octave, semitones + 12 * octave)
-                    .filter(|p| !p.is_double())
             })
             .collect()
     }

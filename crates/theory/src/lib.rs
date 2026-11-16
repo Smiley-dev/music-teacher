@@ -6,10 +6,12 @@
 //! for transposing instruments (guitar sounds an octave lower than written).
 //!
 //! Sight reading (`reading`) combines a rhythm from `crates/rhythm` with
-//! pitches walking over a scale (ADR 0012).
+//! pitches walking over a scale (ADR 0012). `example` spells intervals,
+//! scales and chords for the Theory section (ADR 0013).
 
 mod chord;
 mod ear;
+mod example;
 mod exercise;
 mod instrument;
 mod interval;
@@ -25,6 +27,7 @@ mod task;
 
 pub use chord::{ChordKind, ChordOptions};
 pub use ear::{EarOptions, MAX_EAR_NOTES, MAX_LEAP, MIN_EAR_NOTES};
+pub use example::{Degree, ExampleNote, ExampleRequest, NoteName, TheoryExample, spell_example};
 pub use exercise::{PitchExercise, PitchExerciseKind, TheoryError, generate};
 pub use instrument::{Clef, Instrument};
 pub use interval::{Direction, Directions, IntervalName, IntervalOptions};

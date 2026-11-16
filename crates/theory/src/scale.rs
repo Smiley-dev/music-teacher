@@ -70,9 +70,14 @@ impl ScaleKind {
     /// `up_and_down`), spelled by degree. `None` if a note would need a
     /// double sharp or flat.
     pub fn notes(self, root: Pitch, up_and_down: bool) -> Option<Vec<Pitch>> {
-        let at = |&(steps, semitones): &(i32, i32)| {
-            root.transpose(steps, semitones).filter(|p| !p.is_double())
-        };
+        self.spell(root, up_and_down)
+            .filter(|notes| notes.iter().all(|p| !p.is_double()))
+    }
+
+    /// Like `notes`, but double sharps and flats are allowed (G♯ major has
+    /// F𝄪). `None` only if a note would need more.
+    pub fn spell(self, root: Pitch, up_and_down: bool) -> Option<Vec<Pitch>> {
+        let at = |&(steps, semitones): &(i32, i32)| root.transpose(steps, semitones);
         let mut notes = vec![root];
         for degree in self.degrees() {
             notes.push(at(degree)?);

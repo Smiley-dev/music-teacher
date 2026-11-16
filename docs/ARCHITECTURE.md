@@ -36,6 +36,8 @@ crates/
     key.rs             KeySignature: a scale's signature (parent major)
     reading.rs         Sight-reading melodies: rhythm + scale walk (ADR 0012)
     melody_check.rs    MelodyPitchJudge: pitch of each note played with the metronome
+    example.rs         spell_example: an interval, scale or chord on any root,
+                       placed for the instrument, with degrees (Theory, ADR 0013)
   audio-engine/        Device I/O with cpal. No analysis, no Tauri.
     lib.rs             Device listing, DeviceId, AudioError (+ error kind)
     input.rs           InputStream: samples + capture timestamps via ring buffers

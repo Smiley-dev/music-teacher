@@ -56,6 +56,12 @@ pub enum TheoryError {
     /// A melody received from outside does not match its rhythm.
     #[error("The melody does not match its rhythm.")]
     Malformed,
+    /// A theory example asked for something that does not exist.
+    #[error("{0}")]
+    Invalid(&'static str),
+    /// A theory example would need more than a double sharp or flat.
+    #[error("This cannot be written with at most double sharps or flats.")]
+    Unspellable,
 }
 
 /// Whether a task starting on `midi` would start on the previous task's last

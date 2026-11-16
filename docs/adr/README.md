@@ -20,6 +20,7 @@ one (update the old one's status).
 | [0010](0010-spectral-flux-onsets.md) | Spectral-flux onset detection | Accepted |
 | [0011](0011-pitch-exercises.md) | Pitch exercises: theory crate, note judge and pitch sessions | Accepted |
 | [0012](0012-sight-reading.md) | Sight reading: generated melodies, played from the page | Accepted |
+| [0013](0013-theory-section.md) | Theory section: reference pages with examples spelled and played by the engine | Accepted |
 
 ## Template
 
