@@ -6,7 +6,8 @@
 //! for transposing instruments (guitar sounds an octave lower than written).
 //!
 //! Sight reading (`reading`) combines a rhythm from `crates/rhythm` with
-//! pitches walking over a scale (ADR 0012). `example` spells intervals,
+//! pitches walking over a scale (ADR 0012); on guitar and bass guitar `tab`
+//! adds where to play each note (ADR 0016). `example` spells intervals,
 //! scales and chords for the Theory section (ADR 0013).
 
 mod chord;
@@ -23,6 +24,7 @@ mod pitch;
 mod reading;
 mod rng;
 mod scale;
+mod tab;
 mod task;
 
 pub use chord::{ChordKind, ChordOptions};
@@ -43,4 +45,5 @@ pub use reading::{
     IntervalSize, MAX_READING_BARS, ReadingExercise, ReadingNote, ReadingOptions, generate_reading,
 };
 pub use scale::{ScaleKind, ScaleOptions};
+pub use tab::{MAX_TAB_FRET, TabPosition, Tablature, tablature};
 pub use task::{Matching, PitchTask, Prompt, TaskNote};

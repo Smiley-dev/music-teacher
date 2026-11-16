@@ -360,11 +360,12 @@ metronome.
 | Tempo | 40–200 BPM, for listening and playing with the metronome | 80 |
 | Time signature | 2/4, 3/4, 4/4 | 4/4 |
 | Bars | 1–16 | 4 |
+| Show tab | Guitar and bass guitar only: the tab under the notation (see Tab below) | off |
 
 The melody is written for the instrument chosen in the main menu (clef,
 transposition, range; see Instrument above). A new melody is made whenever
-an option or the instrument changes, or with **New melody**; the tempo does
-not change the melody.
+an option or the instrument changes, or with **New melody**. The tempo and
+**Show tab** do not change the melody.
 
 ### The melody (`theory::reading`)
 
@@ -386,6 +387,29 @@ line, the time signature on the first, beams per beat, rests on the middle
 line, dots. Accidentals follow the usual rules (only where the key needs
 them; they last to the bar line). The description above the score names the
 key and scale, e.g. "C mixolydian · 4/4 · 8 bars · 72 BPM".
+
+### Tab (guitar and bass guitar, ADR 0016)
+
+With **Show tab** on, a tab staff sits under each line of notation: one line
+per string, the highest string on top (6 lines for guitar, 4 for bass
+guitar), and the fret number of each note right under it (0 = open string).
+Rests leave a gap. Fret numbers take the same colours as their notes while
+playing (next note, right, wrong, timing). The option only appears when the
+instrument has a tab, and the melody stays the same when it is switched.
+
+Every guitar and bass melody gets its positions from the engine
+(`theory::tablature`). Standard tuning is assumed (guitar E2 A2 D3 G3 B3 E4,
+bass guitar E1 A1 D2 G2), with frets 0–12. The positions are what a player
+reading in the lowest position would choose:
+
+- The hand sits in a position (index finger on fret *p*, one finger per
+  fret, frets *p* to *p*+3 in reach); open strings work from any position.
+- The cheapest way through the melody wins: every position shift costs
+  (more the further it goes), each note played higher up the neck costs a
+  little, and an open string is preferred to the same note fretted. So
+  melodies on the staff stay in first position with open strings, and a
+  melody that climbs to the 8th fret moves to fifth position once, rather
+  than jumping back and forth.
 
 ### Listen
 

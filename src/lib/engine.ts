@@ -504,6 +504,17 @@ export type TheoryExample = {
 /** A played note of a melody: its rhythm slot and pitch. */
 export type ReadingNote = { bar: number; symbol: number; written: Pitch; midi: number };
 
+/** Where one note is played (`theory::TabPosition`). */
+export type TabPosition = {
+  /** 1 = the highest string, the top line of the tab. */
+  string: number;
+  /** 0 = open string. */
+  fret: number;
+};
+
+/** A melody's tab (ADR 0016): one position per note, in note order. */
+export type Tablature = { strings: number; positions: TabPosition[] };
+
 export type ReadingExercise = {
   rhythm: Exercise;
   clef: Clef;
@@ -515,6 +526,8 @@ export type ReadingExercise = {
   notes: ReadingNote[];
   /** Shortest distance between two played notes, beats (null if < 2 notes). */
   minNoteGapBeats: number | null;
+  /** Guitar and bass guitar only; null for other instruments. */
+  tab: Tablature | null;
 };
 
 export type ReadingOptions = {
@@ -531,6 +544,8 @@ export type ReadingOptions = {
 export type ReadingPracticeSettings = {
   /** Tempo for listening and playing with the metronome. */
   bpm: number;
+  /** Show the tab under the notation when the melody has one. */
+  showTab: boolean;
   melody: ReadingOptions;
 };
 

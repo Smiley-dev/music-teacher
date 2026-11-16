@@ -119,6 +119,9 @@ impl PitchPracticeSettings {
 pub struct ReadingPracticeSettings {
     /// Tempo for listening and playing with the metronome (quarter = beat).
     pub bpm: u32,
+    /// Show the tab under the notation when the instrument has one (guitar,
+    /// bass guitar; ADR 0016). Display only: the melody stays the same.
+    pub show_tab: bool,
     pub melody: ReadingOptions,
 }
 
@@ -126,6 +129,7 @@ impl Default for ReadingPracticeSettings {
     fn default() -> Self {
         Self {
             bpm: DEFAULT_BPM,
+            show_tab: false,
             melody: ReadingOptions::default(),
         }
     }
@@ -477,6 +481,11 @@ mod tests {
         let reading = SettingsStore::load(path.clone()).get().practice.reading;
         assert_eq!(reading, ReadingPracticeSettings::default());
         assert_eq!(reading.bpm, DEFAULT_BPM);
+        assert!(!reading.show_tab, "notation only until asked for");
+        std::fs::write(&path, r#"{"practice": {"reading": {"showTab": true}}}"#).unwrap();
+        let reading = SettingsStore::load(path.clone()).get().practice.reading;
+        assert!(reading.show_tab);
+        assert_eq!(reading.melody, ReadingOptions::default());
 
         let raw = r#"{"practice": {"reading": {"bpm": 5, "melody": {
             "bars": 99, "maxAccidentals": 12, "timeSignature": {"beatsPerBar": 9},

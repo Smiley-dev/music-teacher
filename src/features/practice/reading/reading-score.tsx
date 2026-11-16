@@ -29,12 +29,20 @@ type ReadingScoreProps = {
   classes: ReadonlyMap<string, string>;
   /** The note being played or to play next; highlighted and kept in view. */
   active: Slot | null;
+  /** Draw the tab under the notation, if the melody has one. */
+  showTab: boolean;
   className?: string;
 };
 
-/** The melody in notation. Re-renders on exercise/width change only; note
- * states are class toggles so 30 Hz cursor updates stay cheap. */
-export function ReadingScore({ exercise, classes, active, className }: ReadingScoreProps) {
+/** The melody in notation (and tab). Re-renders on exercise/width/tab change
+ * only; note states are class toggles so 30 Hz cursor updates stay cheap. */
+export function ReadingScore({
+  exercise,
+  classes,
+  active,
+  showTab,
+  className,
+}: ReadingScoreProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendered = useRef<RenderedReading | null>(null);
   const [width, setWidth] = useState(0);
@@ -66,30 +74,30 @@ export function ReadingScore({ exercise, classes, active, className }: ReadingSc
     const el = containerRef.current;
     if (!el || width === 0 || !fontsReady) return;
     try {
-      rendered.current = renderReading(el, exercise, width);
+      rendered.current = renderReading(el, exercise, width, showTab);
       setError(null);
     } catch (e) {
       rendered.current = null;
       setError(String(e));
     }
-  }, [exercise, width, fontsReady]);
+  }, [exercise, width, fontsReady, showTab]);
 
-  // Note states, re-applied after every redraw.
+  // Note states (on the note and its tab number), re-applied after every redraw.
   useLayoutEffect(() => {
     const score = rendered.current;
     if (!score) return;
     score.notes.forEach((bar, b) =>
-      bar.forEach((el, s) => {
-        if (!el) return;
-        el.classList.remove(...ALL_CLASSES);
+      bar.forEach((elements, s) => {
         const cls = classes.get(slotKey({ bar: b, symbol: s }));
-        if (cls) el.classList.add(cls);
-        if (active && active.bar === b && active.symbol === s) {
-          el.classList.add(NOTE_CLASSES.active);
+        const isActive = active !== null && active.bar === b && active.symbol === s;
+        for (const el of elements) {
+          el.classList.remove(...ALL_CLASSES);
+          if (cls) el.classList.add(cls);
+          if (isActive) el.classList.add(NOTE_CLASSES.active);
         }
       }),
     );
-  }, [classes, active, exercise, width, fontsReady]);
+  }, [classes, active, exercise, width, fontsReady, showTab]);
 
   // Keep the active note's line in view.
   const activeBar = active?.bar ?? null;

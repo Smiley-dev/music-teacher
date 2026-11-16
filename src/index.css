@@ -169,6 +169,14 @@
   stroke-width: 0.5;
   opacity: 0.55;
 }
+/* Tab: VexFlow clears the line behind each fret number with a white box;
+   give it the card's colour so it works in both themes. */
+.reading-score .vf-tabnote rect {
+  fill: var(--color-card);
+}
+.reading-score .vf-tabnote text {
+  font-weight: 600;
+}
 .reading-score .vf-correct,
 .reading-score .vf-onTime {
   color: var(--color-emerald-500);

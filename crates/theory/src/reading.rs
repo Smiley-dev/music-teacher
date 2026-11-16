@@ -1,7 +1,8 @@
 //! Sight reading: a short melody in standard notation to play from the page.
 //! The rhythm comes from `rhythm::generate`; the pitches walk over a scale
 //! with the chosen interval sizes, starting on the tonic and ending on it
-//! when possible (ADR 0012).
+//! when possible (ADR 0012). On guitar and bass guitar every melody also
+//! gets its tab (ADR 0016); the page decides whether to show it.
 
 use rhythm::{Difficulty, Exercise, MIN_BARS, NoteValue, RhythmOptions, TimeSignature};
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,7 @@ use crate::key::{KeySignature, MAX_KEY_ACCIDENTALS};
 use crate::pitch::{Letter, Pitch};
 use crate::rng::Rng;
 use crate::scale::ScaleKind;
+use crate::tab::{Tablature, tablature};
 use crate::task::name_like;
 
 /// Longest melody, in bars.
@@ -123,15 +125,25 @@ pub struct ReadingExercise {
     /// the metronome. Informational (the engine does not use it).
     #[serde(default)]
     pub min_note_gap_beats: Option<f64>,
+    /// Where to play each note, for instruments written in tab (guitar,
+    /// bass guitar); `None` for the others. Display only.
+    #[serde(default)]
+    pub tab: Option<Tablature>,
 }
 
 impl ReadingExercise {
-    /// Check an exercise received from outside (the UI): a valid rhythm and
-    /// one pitch per played note, in order.
+    /// Check an exercise received from outside (the UI): a valid rhythm,
+    /// one pitch per played note, in order, and a tab position per note if
+    /// there is a tab.
     pub fn validate(&self) -> Result<(), TheoryError> {
         self.rhythm.validate()?;
         let slots = played_slots(&self.rhythm);
-        let matches = slots.len() == self.notes.len()
+        let tab_matches = self
+            .tab
+            .as_ref()
+            .is_none_or(|t| t.positions.len() == self.notes.len());
+        let matches = tab_matches
+            && slots.len() == self.notes.len()
             && slots.iter().zip(&self.notes).all(|(&(bar, symbol), n)| {
                 n.bar == bar
                     && n.symbol == symbol
@@ -317,7 +329,7 @@ pub fn generate_reading(
         let Some(melody) = walk(pool, *root, slots.len(), &options.intervals, &mut rng) else {
             continue;
         };
-        let notes = slots
+        let notes: Vec<ReadingNote> = slots
             .iter()
             .zip(melody)
             .map(|(&(bar, symbol), written)| ReadingNote {
@@ -328,6 +340,8 @@ pub fn generate_reading(
             })
             .collect();
         let min_note_gap_beats = rhythm.min_note_gap_beats();
+        let midis: Vec<i32> = notes.iter().map(|n| n.midi).collect();
+        let tab = tablature(instrument, &midis);
         return Ok(ReadingExercise {
             rhythm,
             clef: instrument.clef(),
@@ -336,6 +350,7 @@ pub fn generate_reading(
             root: *root,
             notes,
             min_note_gap_beats,
+            tab,
         });
     }
     Err(TheoryError::OutOfRange("melody"))
@@ -373,6 +388,40 @@ mod tests {
                     let d = (w[1].written.step() - w[0].written.step()).abs();
                     assert!(d == 1 || d == 2, "2nds and 3rds only: {w:?}");
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn tab_for_guitar_and_bass_only() {
+        let wide = ReadingOptions {
+            intervals: IntervalSize::ALL.to_vec(),
+            ledger_lines: true,
+            max_accidentals: 7,
+            bars: 8,
+            ..options()
+        };
+        for instrument in Instrument::ALL {
+            for seed in 0..20 {
+                let e = generate_reading(&wide, instrument, seed).unwrap();
+                let Some(strings) = instrument.tab_strings() else {
+                    assert_eq!(e.tab, None, "{instrument:?}");
+                    continue;
+                };
+                // The whole range fits on the neck, so every melody has a tab.
+                let tab = e.tab.as_ref().expect("fretted instruments get a tab");
+                assert_eq!(usize::from(tab.strings), strings.len());
+                assert_eq!(tab.positions.len(), e.notes.len());
+                for (note, p) in e.notes.iter().zip(&tab.positions) {
+                    let open = strings[usize::from(p.string) - 1];
+                    assert_eq!(open + i32::from(p.fret), note.midi, "plays the note");
+                }
+                e.validate().unwrap();
+                let mut short = e.clone();
+                if let Some(t) = short.tab.as_mut() {
+                    t.positions.pop();
+                }
+                assert_eq!(short.validate(), Err(TheoryError::Malformed));
             }
         }
     }

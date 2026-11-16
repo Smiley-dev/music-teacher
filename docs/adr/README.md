@@ -23,6 +23,7 @@ one (update the old one's status).
 | [0013](0013-theory-section.md) | Theory section: reference pages with examples spelled and played by the engine | Accepted (instrument: 0015) |
 | [0014](0014-main-menu-subsections.md) | Subsections in the main menu, with a navigation context | Accepted |
 | [0015](0015-app-wide-instrument.md) | One instrument for the whole app, chosen in the main menu | Accepted |
+| [0016](0016-sight-reading-tab.md) | Tab for sight reading on guitar and bass guitar | Accepted |
 
 ## Template
 

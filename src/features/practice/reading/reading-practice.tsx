@@ -130,7 +130,7 @@ export function ReadingPractice() {
   return (
     <div className="flex flex-col gap-6">
       <EngineStatusBanner status={status} />
-      <ReadingSettingsCard disabled={running} />
+      <ReadingSettingsCard disabled={running} tabAvailable={exercise?.tab != null} />
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
@@ -186,7 +186,14 @@ export function ReadingPractice() {
           {(startError ?? generateError) && (
             <p className="text-sm text-destructive">{startError ?? generateError}</p>
           )}
-          {exercise && <ReadingScore exercise={exercise} classes={classes} active={active} />}
+          {exercise && (
+            <ReadingScore
+              exercise={exercise}
+              classes={classes}
+              active={active}
+              showTab={settings.practice.reading.showTab}
+            />
+          )}
         </CardContent>
       </Card>
 

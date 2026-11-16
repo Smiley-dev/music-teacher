@@ -114,6 +114,19 @@ impl Instrument {
     pub fn written_for(self, midi: i32) -> Pitch {
         Pitch::from_midi(midi - self.transposition())
     }
+
+    /// Open strings as sounding MIDI notes, highest first (the top line of
+    /// tab first), for instruments written in tab (ADR 0016); `None` for the
+    /// others.
+    pub fn tab_strings(self) -> Option<&'static [i32]> {
+        match self {
+            // Standard tuning, E4 B3 G3 D3 A2 E2.
+            Self::Guitar => Some(&[64, 59, 55, 50, 45, 40]),
+            // G2 D2 A1 E1.
+            Self::BassGuitar => Some(&[43, 38, 33, 28]),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 import { ExampleStaff } from "./example-staff";
 import { note } from "./score-notes";
-import { Bullets, InTheApp, PractiseIn, TheoryCard } from "./topic-parts";
+import { Bullets, InTheApp, PractiseIn, TheoryCard, TheoryTable } from "./topic-parts";
 
 /** Sight reading: how to read a melody you have not seen before. */
 export function ReadingTheory() {
@@ -76,6 +76,44 @@ export function ReadingTheory() {
             Reading builds melodies like this one: they start on the tonic, move by the intervals
             you choose, and end on the tonic when they can. Start with 2nds and 3rds, then add
             larger leaps.
+          </p>
+        </InTheApp>
+      </TheoryCard>
+
+      <TheoryCard title="Tab (guitar and bass guitar)">
+        <p>
+          <strong>Tab</strong> (tablature) shows <em>where</em> to play rather than which note:
+          each line is a string, the highest string on top, and a number on a line is the fret to
+          press on that string. <strong>0</strong> is the open string. Guitar tab has six lines,
+          bass guitar tab four.
+        </p>
+        <TheoryTable
+          head={["Tab line", "Guitar string", "Bass guitar string"]}
+          rows={[
+            ["1 (top)", "High E (sounds E4)", "G (sounds G2)"],
+            ["2", "B (B3)", "D (D2)"],
+            ["3", "G (G3)", "A (A1)"],
+            ["4", "D (D3)", "Low E (E1)"],
+            ["5", "A (A2)", "–"],
+            ["6 (bottom)", "Low E (E2)", "–"],
+          ]}
+        />
+        <p>
+          The same note can often be played in more than one place: the open B string sounds the
+          same as the 4th fret on the G string. Players choose by <strong>position</strong>: with
+          the index finger on fret 1, the four fingers cover frets 1 to 4 (first position), and the
+          hand moves up the neck only when the music goes higher.
+        </p>
+        <p>
+          Tab on its own does not show rhythm or the key, and a number does not tell you the name
+          of the note. Reading it under the notation lets you check where a note is while you learn
+          to read the staff.
+        </p>
+        <InTheApp>
+          <p>
+            On guitar and bass guitar, Reading can show the tab under the notes (
+            <strong>Show tab</strong>). The positions stay as low on the neck as the melody allows,
+            use open strings where they fit, and move the hand as little as possible.
           </p>
         </InTheApp>
       </TheoryCard>

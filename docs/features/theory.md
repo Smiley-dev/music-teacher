@@ -19,7 +19,7 @@ see [CODING_RULES.md](../CODING_RULES.md).
 | Scales | Degrees and their names, the major scale (W W H W W W H, one letter per degree), natural/harmonic/melodic minor, relative and parallel minor, pentatonic scales, the seven modes; **scale explorer** | Scales, Reading, Ear training |
 | Keys | Key signatures, order of sharps and flats, naming the key, relative minor, a circle-of-fifths diagram, all 15 key signatures (treble, bass or alto clef), modes' and minors' signatures, accidentals in a bar | Reading, Ear training |
 | Chords | Triads and their qualities, seventh chords, chord symbols (incl. slash chords), inversions, arpeggios, chords in a major key (I ii iii IV V vi vii°); **chord explorer** | Chords |
-| Sight reading | What to check before playing, reading by steps and leaps (example melody with its intervals), keeping going, a practice order for Reading | Reading |
+| Sight reading | What to check before playing, reading by steps and leaps (example melody with its intervals), keeping going, a practice order for Reading, tab for guitar and bass guitar (lines = strings, numbers = frets, the string table, positions, why tab shows no rhythm) | Reading |
 | Ear training | Pitch matching, melodic dictation (shape, steps or leaps, first note, key), "Hear the difference" pairs with Listen buttons | Ear training, Intervals |
 
 ## Explorers

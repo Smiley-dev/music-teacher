@@ -47,8 +47,15 @@ const KEY_CHOICES = Array.from({ length: MAX_KEY_ACCIDENTALS + 1 }, (_, n) => ({
   label: n === 0 ? "None" : String(n),
 }));
 
-/** Sight-reading options: what the melodies are made of. */
-export function ReadingSettingsCard({ disabled }: { disabled: boolean }) {
+type ReadingSettingsCardProps = {
+  disabled: boolean;
+  /** The melody has a tab (the instrument is guitar or bass guitar). */
+  tabAvailable: boolean;
+};
+
+/** Sight-reading options: what the melodies are made of, and whether to show
+ * their tab. */
+export function ReadingSettingsCard({ disabled, tabAvailable }: ReadingSettingsCardProps) {
   const { settings, setReadingSettings } = useEngine();
   const reading = settings.practice.reading;
   const melody = reading.melody;
@@ -78,6 +85,16 @@ export function ReadingSettingsCard({ disabled }: { disabled: boolean }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <InstrumentNote />
+        {tabAvailable && (
+          <OptionCheckbox
+            id="reading-tab"
+            label="Show tab"
+            description="The string and fret of every note, under the staff. The melody stays the same."
+            checked={reading.showTab}
+            disabled={disabled}
+            onChange={(showTab) => save({ ...reading, showTab })}
+          />
+        )}
 
         <OptionChecklist
           legend="Scales and keys"

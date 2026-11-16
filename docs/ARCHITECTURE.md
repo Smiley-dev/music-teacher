@@ -24,7 +24,8 @@ crates/
   theory/              Pure music theory + pitch exercises (ADR 0011). Same rules;
                        uses `rhythm` for sight-reading melodies.
     pitch.rs           Pitch: letter/accidental/octave, MIDI, correct transposition
-    instrument.rs      Clef, Instrument presets (clef, transposition, range)
+    instrument.rs      Clef, Instrument presets (clef, transposition, range,
+                       open strings for tab)
     task.rs            PitchTask/TaskNote/Prompt/Matching: one question of an exercise
     judge.rs           NoteJudge: pitch readings vs the task's notes, in order
     exercise.rs        PitchExercise(+Kind), seeded generate(), TheoryError
@@ -34,7 +35,10 @@ crates/
     chord.rs           ChordKind (triads, sevenths, inversions), chord generator
     ear.rs             Ear training generator (melodies in a key or chromatic)
     key.rs             KeySignature: a scale's signature (parent major)
-    reading.rs         Sight-reading melodies: rhythm + scale walk (ADR 0012)
+    reading.rs         Sight-reading melodies: rhythm + scale walk (ADR 0012),
+                       with their tab on guitar and bass guitar
+    tab.rs             tablature(): string and fret per note, hand positions
+                       chosen by dynamic programming (ADR 0016)
     melody_check.rs    MelodyPitchJudge: pitch of each note played with the metronome
     example.rs         spell_example: an interval, scale or chord on any root,
                        placed for the instrument, with degrees (Theory, ADR 0013)
@@ -88,7 +92,8 @@ src/
   features/settings/   Device and gain cards (+ shared calibration card); useInputDevices
   features/practice/   Practice pages (PRACTICE_SECTIONS)
     rhythm/            Rhythm practice: settings, VexFlow score, transport
-    reading/           Sight reading: options, VexFlow melody score, listen/play
+    reading/           Sight reading: options, VexFlow melody score (+ tab staff),
+                       listen/play
     tempo-field.tsx    Tempo control shared by rhythm and reading
     instrument-note.tsx  Which instrument (and range) a page is written for
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
@@ -175,7 +180,7 @@ flowchart LR
   in `practice.pitch` are migrated on load),
   `practice.rhythm` tempo/difficulty/custom/time signature/bars,
   `practice.pitch` pitch exercise options, `practice.reading`
-  tempo and melody options) are
+  tempo, show tab and melody options) are
   owned by `settings.rs`, loaded at startup and written atomically as JSON to
   the app config folder (`%APPDATA%\com.musicteacher.app\settings.json` on
   Windows) whenever they change. See ADR 0004.

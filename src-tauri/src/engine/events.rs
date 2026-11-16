@@ -534,6 +534,11 @@ mod tests {
             assert!(note.get(key).is_some(), "missing notes[].{key}");
         }
         assert_eq!(value["rhythm"]["timeSignature"]["beatsPerBar"], 4);
+        assert_eq!(value["tab"]["strings"], 6);
+        let position = &value["tab"]["positions"][0];
+        assert!(position["string"].is_number() && position["fret"].is_number());
+        let violin = theory::generate_reading(&options, theory::Instrument::Violin, 1).unwrap();
+        assert!(serde_json::to_value(&violin).unwrap()["tab"].is_null());
         // It comes back from the UI unchanged.
         let back: theory::ReadingExercise = serde_json::from_value(value).unwrap();
         assert_eq!(back, melody);
