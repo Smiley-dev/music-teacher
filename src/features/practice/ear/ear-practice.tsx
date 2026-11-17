@@ -1,8 +1,8 @@
 import { ChoiceButtons } from "@/components/choice-buttons";
 import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { OptionCheckbox } from "@/components/option-checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InstrumentNote } from "@/features/practice/instrument-note";
+import { SplitLayout } from "@/components/rack";
+import { OptionsPanel } from "@/features/practice/options-panel";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
 import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
 import { type EarOptions, MAX_EAR_NOTES, MIN_EAR_NOTES, type PitchTask } from "@/lib/engine";
@@ -17,7 +17,7 @@ const COUNTS = Array.from({ length: MAX_EAR_NOTES - MIN_EAR_NOTES + 1 }, (_, i) 
 type NoteSet = "key" | "chromatic";
 
 const NOTE_SETS: { id: NoteSet; label: string }[] = [
-  { id: "key", label: "From a major key" },
+  { id: "key", label: "A major key" },
   { id: "chromatic", label: "Any notes" },
 ];
 
@@ -37,22 +37,29 @@ export function EarPractice() {
   const set = (change: Partial<EarOptions>) => update({ ear: { ...options, ...change } });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <EngineStatusBanner status={status} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Exercise</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <InstrumentNote />
-          <div className="flex flex-wrap gap-x-10 gap-y-6">
-            <ChoiceButtons
-              label="Notes per task"
-              options={COUNTS}
-              value={String(options.notes)}
-              disabled={running}
-              onChange={(n) => set({ notes: Number(n) })}
-            />
+      <SplitLayout
+        aside={
+          <OptionsPanel
+            locked={running}
+            error={error}
+            theory={{ topic: "ear", label: "Training your ear" }}
+          >
+            <div className="flex flex-col gap-2">
+              <ChoiceButtons
+                label="Notes per task"
+                options={COUNTS}
+                value={String(options.notes)}
+                disabled={running}
+                onChange={(n) => set({ notes: Number(n) })}
+              />
+              <p className="text-xs text-muted-foreground">
+                {options.notes === 1
+                  ? "One note: find the note you hear on your instrument (pitch matching)."
+                  : `A short melody of ${options.notes} notes, steps of at most a 5th (melodic dictation).`}
+              </p>
+            </div>
             <ChoiceButtons
               label="Notes from"
               options={NOTE_SETS}
@@ -60,13 +67,6 @@ export function EarPractice() {
               disabled={running}
               onChange={(s) => set({ chromatic: s === "chromatic" })}
             />
-          </div>
-          <p className="-mt-3 text-sm text-muted-foreground">
-            {options.notes === 1
-              ? "One note: find the note you hear on your instrument (pitch matching)."
-              : `A short melody of ${options.notes} notes, steps of at most a 5th (melodic dictation).`}
-          </p>
-          <div className="flex flex-wrap gap-x-8 gap-y-4">
             <OptionCheckbox
               id="ear-show-first"
               label="Show the first note"
@@ -83,30 +83,30 @@ export function EarPractice() {
               disabled={running}
               onChange={(anyOctave) => set({ anyOctave })}
             />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
-      <PitchSessionCard
-        exercise="ear"
-        title="Play it back"
-        description="Listen to the notes, then play them back on your instrument."
-        instructions={
-          <>
-            <p>
-              Press Start and listen: the app plays the notes, then it is your turn. Play them back
-              in order; each one appears on the staff when you get it right, and a wrong note is
-              named so you can try another. Play again repeats the notes (and starts the task
-              over); Skip shows the answer.
-            </p>
-            <p className="mt-2">
-              The notes play on your default output device. While they play, nothing you play is
-              judged, so a microphone hearing your speakers does no harm.
-            </p>
-          </>
+          </OptionsPanel>
         }
-        describe={describe}
-      />
+      >
+        <PitchSessionCard
+          exercise="ear"
+          title="Play it back"
+          description="Listen to the notes, then play them back on your instrument."
+          instructions={
+            <>
+              <p>
+                Press Start and listen: the app plays the notes, then it is your turn. Play them
+                back in order; each one appears on the staff when you get it right, and a wrong
+                note is named so you can try another. Play again repeats the notes (and starts the
+                task over); Skip shows the answer.
+              </p>
+              <p className="mt-2">
+                The notes play on your default output device. While they play, nothing you play is
+                judged, so a microphone hearing your speakers does no harm.
+              </p>
+            </>
+          }
+          describe={describe}
+        />
+      </SplitLayout>
     </div>
   );
 }
