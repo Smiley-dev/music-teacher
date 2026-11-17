@@ -71,6 +71,7 @@ function ScaleExplorer() {
 
   return (
     <TheoryCard
+      explorer
       title="Try any scale"
       description="Pick a scale and a root to see its notes, degrees and steps for your instrument, and hear it."
     >

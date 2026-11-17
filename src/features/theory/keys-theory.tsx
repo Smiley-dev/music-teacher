@@ -22,12 +22,13 @@ function KeyTile({ info, clef }: { info: KeyInfo; clef: Clef }) {
       ? "No sharps or flats"
       : `${n} ${info.accidentals > 0 ? "sharp" : "flat"}${n === 1 ? "" : "s"}`;
   return (
-    <div className="flex flex-col items-center gap-1 rounded-md border p-2">
+    <div className="flex flex-col items-center gap-1 rounded-[10px] bg-inset p-2 text-center">
       <ExampleStaff
+        className="p-0"
         label={`Key signature of ${info.major} major and ${info.minor} minor: ${keyAccidentals(info.accidentals)}.`}
         score={{ clef, key: info.spec, bars: [[]] }}
       />
-      <span className="font-medium">
+      <span className="font-bold">
         {info.major} major · {info.minor} minor
       </span>
       <span className="text-xs text-muted-foreground">{count}</span>

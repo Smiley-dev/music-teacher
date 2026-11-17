@@ -43,6 +43,7 @@ function ChordExplorer() {
 
   return (
     <TheoryCard
+      explorer
       title="Try any chord"
       description="Pick a chord, an inversion and a root to see it note by note and stacked, and hear it as an arpeggio."
     >

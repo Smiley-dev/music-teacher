@@ -64,6 +64,7 @@ function IntervalExplorer() {
   const [first, second] = example?.notes ?? [];
   return (
     <TheoryCard
+      explorer
       title="Try any interval"
       description="Pick an interval and a start note to see it written for your instrument and hear it."
     >

@@ -55,7 +55,7 @@ export function ExampleStaff({ score, label, className }: ExampleStaffProps) {
   }, [drawn, width, fontsReady]);
 
   return (
-    <div className={cn("flex w-full justify-center", className)}>
+    <div className={cn("flex w-full justify-center rounded-[10px] bg-inset px-2.5 py-3.5", className)}>
       {error && <p className="text-sm text-destructive">Could not draw the example: {error}</p>}
       <div ref={containerRef} role="img" aria-label={label} className="theory-staff text-foreground" />
     </div>
