@@ -8,13 +8,14 @@ Shows the note being played on the selected input, live.
   C = C4), e.g. `E2` for a guitar's low string.
 - **Frequency** in Hz (smoothed) and **cents** offset from the nearest
   equal-tempered note, −50 to +50.
-- **Gauge** with a marker: green within ±5 cents ("In tune"), amber within
-  ±15, red beyond, labelled "Flat (tune up)" / "Sharp (tune down)".
+- **Strobe scale**: 41 marks from −50 to +50 cents, the one nearest the note lit:
+  green within ±5 cents ("In tune"), amber within ±15, red beyond, labelled
+  "Flat ▸ tune up" / "Sharp ▸ tune down" (ADR 0017).
 - Which **input channel** the note came from (the loudest channel with a
   clear pitch).
 - Live **waveform** (~43 ms, 256 min/max points) of the channel the note
   comes from, or of the loudest channel when no note is detected, and a
-  **level meter** per channel.
+  **level meter** per channel (vertical lamps with peak hold and a CLIP lamp).
 - The engine status (opening, reconnecting, no devices, permission denied)
   above the cards when the input is not running.
 

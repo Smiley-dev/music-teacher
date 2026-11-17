@@ -21,9 +21,10 @@ one (update the old one's status).
 | [0011](0011-pitch-exercises.md) | Pitch exercises: theory crate, note judge and pitch sessions | Accepted (instrument: 0015) |
 | [0012](0012-sight-reading.md) | Sight reading: generated melodies, played from the page | Accepted |
 | [0013](0013-theory-section.md) | Theory section: reference pages with examples spelled and played by the engine | Accepted (instrument: 0015) |
-| [0014](0014-main-menu-subsections.md) | Subsections in the main menu, with a navigation context | Accepted |
-| [0015](0015-app-wide-instrument.md) | One instrument for the whole app, chosen in the main menu | Accepted |
+| [0014](0014-main-menu-subsections.md) | Subsections in the main menu, with a navigation context | Accepted (layout: 0017) |
+| [0015](0015-app-wide-instrument.md) | One instrument for the whole app, chosen in the main menu | Accepted (layout: 0017) |
 | [0016](0016-sight-reading-tab.md) | Tab for sight reading on guitar and bass guitar | Accepted |
+| [0017](0017-studio-rack-design.md) | "Studio rack" look and a top bar instead of the side menu | Accepted (menu layout of 0014 and 0015) |
 
 ## Template
 

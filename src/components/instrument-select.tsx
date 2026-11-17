@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Lock } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useEngine, useExerciseRunning } from "@/providers/audio-engine-context";
 
 /** The one instrument choice of the app (ADR 0015), always visible in the
- * main menu: Practice and Theory write, play and judge notes for it. Locked
+ * top bar: Practice and Theory write, play and judge notes for it. Locked
  * while an exercise runs, since that exercise was made for it. */
 export function InstrumentSelect({ className }: { className?: string }) {
   const { settings, setInstrument } = useEngine();
@@ -24,10 +25,11 @@ export function InstrumentSelect({ className }: { className?: string }) {
     setError(null);
     setInstrument(instrument).catch((e) => setError(String(e)));
   };
+  const info = INSTRUMENT_INFO[settings.instrument];
 
   return (
-    <div className={cn("flex flex-col gap-1.5 px-2", className)}>
-      <Label htmlFor="instrument" className="font-normal text-muted-foreground">
+    <div className={cn("flex items-center gap-2", className)}>
+      <Label htmlFor="instrument" className="rack-label tracking-[0.14em]">
         Instrument
       </Label>
       <Select
@@ -37,8 +39,8 @@ export function InstrumentSelect({ className }: { className?: string }) {
       >
         <SelectTrigger
           id="instrument"
-          className="w-full bg-background"
-          title={INSTRUMENT_INFO[settings.instrument].hint}
+          className="h-9 w-48"
+          title={running ? "Stop the exercise to change it." : info.hint}
         >
           <SelectValue />
         </SelectTrigger>
@@ -51,9 +53,17 @@ export function InstrumentSelect({ className }: { className?: string }) {
         </SelectContent>
       </Select>
       {running && (
-        <p className="text-xs text-muted-foreground">Stop the exercise to change it.</p>
+        <span className="flex items-center gap-1 font-mono text-[10px] tracking-wider text-signal">
+          <Lock className="size-3" aria-hidden />
+          LOCKED
+          <span className="sr-only">: stop the exercise to change the instrument</span>
+        </span>
       )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <span role="alert" className="max-w-48 truncate text-xs text-destructive" title={error}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }

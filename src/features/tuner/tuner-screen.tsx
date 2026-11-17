@@ -1,6 +1,5 @@
 import { EngineStatusBanner } from "@/components/engine-status-banner";
-import { ChannelMeters } from "@/components/level-meter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TallMeters } from "@/components/level-meter";
 import { Waveform } from "@/components/waveform";
 import { useEngine, useFrame } from "@/providers/audio-engine-context";
 
@@ -11,35 +10,41 @@ export function TunerScreen() {
   const frame = useFrame();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <EngineStatusBanner status={status} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Note</CardTitle>
-          <CardDescription>
-            The note you are playing, and how far it is from being in tune (A4 = 440 Hz).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="flex flex-wrap items-stretch gap-5">
+        <section
+          aria-label="Tuner display"
+          className="min-w-0 flex-[999_1_34rem] rounded-2xl border bg-card p-4"
+        >
           <NoteDisplay note={frame?.note ?? null} />
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Input signal</CardTitle>
-          <CardDescription>
-            {frame
-              ? `Waveform of input ${frame.waveformChannel + 1}. Each input lights up green when it hears something.`
-              : "Live waveform and levels appear once the input device is running."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <Waveform points={frame?.waveform ?? []} />
-          <ChannelMeters meters={frame?.meters ?? []} />
-        </CardContent>
-      </Card>
+        <aside className="flex flex-[1_1_16rem] flex-col gap-5">
+          <section
+            aria-label="Input levels"
+            className="flex min-h-64 flex-1 flex-col gap-3.5 rounded-2xl border bg-card p-[18px]"
+          >
+            <div className="rack-label">Level · peak hold</div>
+            <TallMeters meters={frame?.meters ?? []} />
+          </section>
+          <section
+            aria-label="Waveform"
+            className="flex flex-col gap-3 rounded-2xl border bg-card p-[18px]"
+          >
+            <div className="rack-label">
+              {frame ? `Wave · input ${frame.waveformChannel + 1}` : "Wave · waiting for input"}
+            </div>
+            <Waveform points={frame?.waveform ?? []} />
+          </section>
+        </aside>
+      </div>
+
+      <footer className="flex flex-wrap gap-x-7 gap-y-2 rounded-xl border bg-topbar px-5 py-3 font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
+        <span>A4 = 440 Hz</span>
+        <span>One note at a time</span>
+      </footer>
     </div>
   );
 }

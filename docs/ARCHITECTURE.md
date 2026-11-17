@@ -67,9 +67,9 @@ src-tauri/src/
 src/
   main.tsx             Entry; applies the saved theme; mounts <AudioEngineProvider>
                        and <NavigationProvider>
-  App.tsx              App shell: main menu (instrument select, sections; the
-                       selected one expanded to its subsections) + the page
-                       shown + theme toggle
+  App.tsx              App shell: sticky top bar (sections, instrument select,
+                       input status, theme toggle; the selected section's
+                       pages in a second row) + the page shown (ADR 0017)
   sections.ts          Registry of menu sections (SECTIONS): a screen, or
                        subsections (Practice, Theory); SubsectionId type
   lib/engine.ts        Typed IPC: command wrappers + types mirroring Rust
@@ -109,8 +109,8 @@ src/
                        fifths diagrams
   components/          Shared: level meter, waveform canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice),
-                       theme toggle + useTheme, instrument select (main menu,
-                       ADR 0015), choice buttons, option checkbox
+                       theme toggle + useTheme, instrument select (top bar,
+                       ADR 0015), input status lamp, choice buttons, option checkbox
                        (Practice + Theory)
   components/ui/       shadcn/ui primitives (generated, do not hand-edit)
 ```

@@ -250,7 +250,7 @@ export function NotesTheory() {
         />
         <InTheApp>
           <p>
-            Choose your instrument at the top of the main menu; every section uses it. Exercises and
+            Choose your instrument in the top bar; every section uses it. Exercises and
             examples show notes as written for it, and exercises judge what it sounds, so you read
             the music the way your instrument's music is printed.
           </p>

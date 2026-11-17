@@ -1,13 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource/archivo/500.css";
+@import "@fontsource/archivo/700.css";
+@import "@fontsource/archivo/800.css";
+@import "@fontsource/space-mono/400.css";
+@import "@fontsource/space-mono/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Archivo', system-ui, sans-serif;
+    --font-mono: 'Space Mono', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +44,13 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    /* Studio rack additions (ADR 0017): displays set into the panels, the top
+       bar, the lit "signal" colour and the selected main-menu entry. */
+    --color-inset: var(--inset);
+    --color-topbar: var(--topbar);
+    --color-signal: var(--signal);
+    --color-nav-active: var(--nav-active);
+    --color-nav-active-foreground: var(--nav-active-foreground);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -48,73 +60,125 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Studio rack, light: warm paper panels with ink-dark keys. */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --background: #ece6da;
+    --foreground: #1f1a12;
+    --card: #f7f3ea;
+    --card-foreground: #1f1a12;
+    --popover: #f7f3ea;
+    --popover-foreground: #1f1a12;
+    --primary: #ffb547;
+    --primary-foreground: #1a1206;
+    --secondary: #e4dccc;
+    --secondary-foreground: #1f1a12;
+    --muted: #e4dccc;
+    --muted-foreground: #6b5d48;
+    --accent: #e4dccc;
+    --accent-foreground: #1f1a12;
+    --destructive: #b42318;
+    --border: #d6ccb8;
+    --input: #d6ccb8;
+    --ring: #c27a00;
+    --chart-1: #ffb547;
+    --chart-2: #2f9e57;
+    --chart-3: #d64545;
+    --chart-4: #6b5d48;
+    --chart-5: #1f1a12;
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: #f7f3ea;
+    --sidebar-foreground: #1f1a12;
+    --sidebar-primary: #ffb547;
+    --sidebar-primary-foreground: #1a1206;
+    --sidebar-accent: #e4dccc;
+    --sidebar-accent-foreground: #1f1a12;
+    --sidebar-border: #d6ccb8;
+    --sidebar-ring: #c27a00;
+    --inset: #fff8e6;
+    --topbar: #f7f3ea;
+    --signal: #8a4b00;
+    --nav-active: #1f1a12;
+    --nav-active-foreground: #ffb547;
+    /* Key face edge (the 3px "bottom" of a pressed-in rack button). */
+    --key-edge: #c9bda5;
+    --key-edge-primary: #b8741a;
+    /* Status colours: the Tailwind shades the app uses, re-tuned for paper. */
+    --color-emerald-300: #2f9e57;
+    --color-emerald-400: #2f9e57;
+    --color-emerald-500: #2f9e57;
+    --color-emerald-600: #1f7a40;
+    --color-emerald-700: #1f7a40;
+    --color-amber-400: #e08a00;
+    --color-amber-500: #e08a00;
+    --color-amber-600: #8a5300;
+    --color-red-400: #d64545;
+    --color-red-500: #d64545;
+    --color-red-600: #b42318;
+    --color-violet-400: #7c4dcc;
+    --color-violet-500: #7c4dcc;
+    --color-violet-600: #6a3fb8;
+    --color-sky-400: #1b7fc4;
+    --color-sky-500: #1b7fc4;
+    --color-sky-600: #15659f;
 }
 
+/* Studio rack, dark: warm black panels, amber lamps. */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #14110d;
+    --foreground: #f3e9d7;
+    --card: #1e1a14;
+    --card-foreground: #f3e9d7;
+    --popover: #1e1a14;
+    --popover-foreground: #f3e9d7;
+    --primary: #ffa62b;
+    --primary-foreground: #1a1206;
+    --secondary: #3a3022;
+    --secondary-foreground: #f3e9d7;
+    --muted: #2a241b;
+    --muted-foreground: #b3a68f;
+    --accent: #3a3022;
+    --accent-foreground: #f3e9d7;
+    --destructive: #ff5d5d;
+    --border: #2e281f;
+    --input: #2e281f;
+    --ring: #ffa62b;
+    --chart-1: #ffa62b;
+    --chart-2: #7bd88f;
+    --chart-3: #ff5d5d;
+    --chart-4: #b3a68f;
+    --chart-5: #f3e9d7;
+    --sidebar: #1a1611;
+    --sidebar-foreground: #f3e9d7;
+    --sidebar-primary: #ffa62b;
+    --sidebar-primary-foreground: #1a1206;
+    --sidebar-accent: #3a3022;
+    --sidebar-accent-foreground: #f3e9d7;
+    --sidebar-border: #2e281f;
+    --sidebar-ring: #ffa62b;
+    --inset: #0c0a07;
+    --topbar: #1a1611;
+    --signal: #ffa62b;
+    --nav-active: #ffa62b;
+    --nav-active-foreground: #1a1206;
+    --key-edge: #0c0a07;
+    --key-edge-primary: #8a5200;
+    --color-emerald-300: #7bd88f;
+    --color-emerald-400: #7bd88f;
+    --color-emerald-500: #7bd88f;
+    --color-emerald-600: #7bd88f;
+    --color-emerald-700: #7bd88f;
+    --color-amber-400: #ffa62b;
+    --color-amber-500: #ffa62b;
+    --color-amber-600: #ffa62b;
+    --color-red-400: #ff5d5d;
+    --color-red-500: #ff5d5d;
+    --color-red-600: #ff5d5d;
+    --color-violet-400: #c792ff;
+    --color-violet-500: #c792ff;
+    --color-violet-600: #c792ff;
+    --color-sky-400: #5cc8ff;
+    --color-sky-500: #5cc8ff;
+    --color-sky-600: #5cc8ff;
 }
 
 @layer base {
@@ -128,6 +192,93 @@
     @apply font-sans;
     }
 }
+
+/* Rack hardware. shadcn's primitives in src/components/ui are generated and
+   not edited (CODING_RULES), so the studio-rack look is applied to their
+   data-slot attributes here. Unlayered on purpose: it beats the utilities
+   in their class lists. */
+[data-slot="button"] {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 0.5rem;
+  border-width: 0 0 3px 0;
+  border-bottom-color: var(--key-edge);
+}
+[data-slot="button"][data-size="default"],
+[data-slot="button"][data-size="lg"] {
+  height: 2.5rem;
+  padding-inline: 0.9rem;
+}
+[data-slot="button"][data-size="sm"] {
+  height: 2.25rem;
+  padding-inline: 0.75rem;
+}
+[data-slot="button"][data-variant="default"] {
+  border-bottom-color: var(--key-edge-primary);
+}
+[data-slot="button"][data-variant="default"]:hover {
+  background: color-mix(in oklch, var(--primary), white 12%);
+}
+[data-slot="button"][data-variant="outline"] {
+  background: var(--secondary);
+  border-color: transparent;
+  border-bottom-color: var(--key-edge);
+}
+[data-slot="button"][data-variant="outline"]:hover {
+  background: color-mix(in oklch, var(--secondary), var(--foreground) 8%);
+}
+[data-slot="button"][data-variant="ghost"],
+[data-slot="button"][data-variant="link"] {
+  border-bottom-width: 0;
+}
+[data-slot="button"]:active:not(:disabled) {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
+}
+[data-slot="button"]:disabled {
+  opacity: 1;
+  background: var(--muted);
+  color: color-mix(in oklch, var(--muted-foreground), transparent 25%);
+}
+[data-slot="button"][data-variant="ghost"]:disabled {
+  background: transparent;
+}
+/* A selected radio-style key lights its edge, like a lit rack key. */
+[data-slot="button"][role="radio"][aria-checked="true"] {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border-bottom-color: var(--primary);
+}
+[data-slot="card"] {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: none;
+  --card-spacing: calc(var(--spacing) * 5);
+}
+[data-slot="card-title"] {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+[data-slot="select-trigger"] {
+  background: var(--inset);
+  font-weight: 700;
+}
+[data-slot="badge"] {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* Small caps label used on panels and displays (mono, spaced). */
+.rack-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
 /* Rhythm notation (VexFlow draws with currentColor, see render-score.ts). */
 .rhythm-score .vf-stave path {
   stroke-width: 0.5;

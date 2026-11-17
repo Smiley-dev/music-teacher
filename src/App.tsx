@@ -1,100 +1,113 @@
-import { AudioLines, ChevronRight } from "lucide-react";
+import { AudioLines } from "lucide-react";
 
+import { InputStatus } from "@/components/input-status";
 import { InstrumentSelect } from "@/components/instrument-select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigation } from "@/providers/navigation-context";
 import { subsectionsOf } from "@/sections";
 
-/** App shell: main menu (the instrument, sections, and the selected
- * section's subsections) plus the page shown. Audio is unaffected by
+/** App shell: the top bar (sections, instrument, input, theme), the selected
+ * section's pages under it, and the page shown. Audio is unaffected by
  * navigation. */
 function App() {
   const { sections, section, subsection, go } = useNavigation();
   const Content = subsection?.Component ?? section.Screen;
+  const subs = subsectionsOf(section);
 
   return (
-    <div className="flex min-h-screen">
-      <nav
-        aria-label="Main menu"
-        className="sticky top-0 flex h-screen w-56 shrink-0 flex-col gap-1 border-r bg-muted/30 p-3"
-      >
-        <div className="mb-4 flex items-center gap-2 px-2 pt-2 font-semibold">
-          <AudioLines className="size-5 text-emerald-500" />
-          Music Teacher
-        </div>
-        <InstrumentSelect className="mb-3 border-b pb-4" />
-        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            const selected = s.id === section.id;
-            const subs = subsectionsOf(s);
-            const open = selected && subs.length > 0;
-            return (
-              <div key={s.id} className="flex flex-col gap-1">
-                <Button
-                  variant={selected ? "secondary" : "ghost"}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b bg-topbar">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-[34px] items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <AudioLines className="size-[18px]" strokeWidth={2.4} aria-hidden />
+            </span>
+            <span className="font-mono text-[13px] font-bold tracking-[0.14em]">MUSIC TEACHER</span>
+          </div>
+          <nav
+            aria-label="Main menu"
+            className="flex flex-wrap gap-1 rounded-[10px] border bg-inset p-1 font-mono text-xs font-bold tracking-[0.1em]"
+          >
+            {sections.map((s) => {
+              const selected = s.id === section.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
                   aria-current={selected && subs.length === 0 ? "page" : undefined}
-                  aria-expanded={subs.length > 0 ? open : undefined}
+                  aria-expanded={subsectionsOf(s).length > 0 ? selected : undefined}
                   className={cn(
-                    "justify-start gap-3",
-                    selected ? "font-semibold" : "text-muted-foreground",
+                    "h-9 rounded-[7px] px-4 uppercase transition-colors",
+                    "outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                    selected
+                      ? "bg-nav-active text-nav-active-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   onClick={() => go(s.id)}
                 >
-                  <Icon className="size-4" />
                   {s.label}
-                  {subs.length > 0 && (
-                    <ChevronRight
-                      className={cn("ml-auto size-4 transition-transform", open && "rotate-90")}
-                    />
-                  )}
-                </Button>
-                {open && (
-                  <ul
-                    aria-label={`${s.label} sections`}
-                    className="mb-1 ml-[1.1rem] flex flex-col gap-0.5 border-l pl-2"
-                  >
-                    {subs.map((sub) => {
-                      const current = sub.id === subsection?.id;
-                      return (
-                        <li key={sub.id}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-current={current ? "page" : undefined}
-                            className={cn(
-                              "h-8 w-full justify-start px-2 font-normal",
-                              current
-                                ? "bg-secondary font-medium text-foreground"
-                                : "text-muted-foreground",
-                            )}
-                            onClick={() => go(s.id, sub.id)}
-                          >
-                            {sub.label}
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="flex-1" />
+          <InstrumentSelect />
+          <InputStatus />
+          <ThemeToggle />
         </div>
-        <ThemeToggle className="mt-2" />
-      </nav>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
+        {subs.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-t bg-background/40 px-6 pt-2.5 pb-3">
+            <span className="mr-1.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+              {section.label} ▸
+            </span>
+            <ul
+              aria-label={`${section.label} sections`}
+              className="flex flex-wrap gap-2 font-mono text-xs font-bold tracking-[0.06em]"
+            >
+              {subs.map((sub) => {
+                const current = sub.id === subsection?.id;
+                return (
+                  <li key={sub.id}>
+                    <button
+                      type="button"
+                      aria-current={current ? "page" : undefined}
+                      onClick={() => go(section.id, sub.id)}
+                      className={cn(
+                        "flex h-[38px] items-center gap-2 rounded-lg border-b-[3px] px-3.5 uppercase transition-colors",
+                        "outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                        current
+                          ? "border-primary bg-secondary text-foreground"
+                          : "border-[var(--key-edge)] bg-muted text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "size-2 rounded-full",
+                          current
+                            ? "bg-primary shadow-[0_0_8px_var(--primary)]"
+                            : "bg-muted-foreground/40",
+                        )}
+                      />
+                      {sub.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </header>
+
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-7 pt-5 pb-8">
         <header>
-          {subsection && (
-            <p className="text-sm font-medium text-muted-foreground">{section.label}</p>
-          )}
-          <h1 className="text-2xl font-semibold tracking-tight">
+          {subsection && <p className="rack-label tracking-[0.14em]">{section.label}</p>}
+          <h1 className="text-[26px] leading-tight font-extrabold tracking-tight">
             {subsection?.label ?? section.label}
           </h1>
-          <p className="text-sm text-muted-foreground">{section.description}</p>
+          <p className="text-muted-foreground">{section.description}</p>
         </header>
         {Content && <Content key={`${section.id}/${subsection?.id ?? ""}`} />}
       </main>

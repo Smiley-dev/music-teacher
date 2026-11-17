@@ -72,7 +72,11 @@ Timing that matters (calibration, later Practice) uses the audio clock: cpal
 - Styling is Tailwind utility classes plus `cn()`. Inline `style` only for
   values computed at runtime (positions, widths). Colors use theme tokens
   (`text-muted-foreground`, `bg-muted`); semantic status colors use
-  emerald (ok), amber (warning), red (error/clip).
+  emerald (ok), amber (warning), red (error/clip); their shades are
+  defined per theme in `src/index.css` (ADR 0017). Displays use `bg-inset`,
+  the lit amber is `text-signal`, labels on panels `.rack-label`, numbers and
+  keys `font-mono`. The look of shadcn primitives is set in `index.css` by
+  `data-slot`, not by editing `components/ui`.
 - Types that mirror Rust live in `src/lib/engine.ts` and must match the Rust
   definitions field for field. Change both in the same commit.
 - `strict` TypeScript; no `any`. Handle every variant of a status union.
@@ -106,8 +110,8 @@ errors. Tell the user what to do, not only what failed.
    for a section with several pages, a registry of subsections (`id`,
    `label`, `Component`) like `PRACTICE_SECTIONS`.
 2. Add an entry to `SECTIONS` in `src/sections.ts` (id, label, description,
-   Lucide icon, and `Screen` or `subsections`). Subsections are listed under
-   the section in the main menu when it is selected; the section opens on
+   Lucide icon, and `Screen` or `subsections`). Subsections are listed in the
+   second row of the top bar when it is selected; the section opens on
    the one last shown.
 3. Read audio state only through the provider hooks; never start your own
    stream. A page that starts audio stops it when it unmounts (the user went

@@ -50,7 +50,7 @@ export function Waveform({ points, className }: WaveformProps) {
   return (
     <canvas
       ref={canvasRef}
-      className={cn("h-24 w-full rounded-md bg-muted text-emerald-500", className)}
+      className={cn("h-24 w-full rounded-lg bg-inset text-signal", className)}
       aria-label="Live waveform"
       role="img"
     />

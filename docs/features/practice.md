@@ -1,6 +1,6 @@
 # Practice
 
-Practice has subsections, listed under it in the main menu when Practice is
+Practice has subsections, listed under it in the top bar when Practice is
 selected (ADR 0014): **Rhythm** (timing), **Reading** (sight reading: rhythm
 and pitch together) and the pitch exercises: **Notes**, **Intervals**,
 **Scales**, **Chords** and **Ear training**. Practice opens on the one last
@@ -184,10 +184,10 @@ In these exercises *which* note you play matters, not when. Each page has its
 options and a **Read and play**-style card; they share how tasks are shown,
 judged and scored.
 
-### Instrument (saved, chosen in the main menu)
+### Instrument (saved, chosen in the top bar)
 
 The instrument is chosen once for the whole app, in the select at the top
-of the main menu (ADR 0015). Every pitch exercise, sight reading and the
+of the top bar (ADR 0015). Every pitch exercise, sight reading and the
 Theory examples use it. Each of their pages shows which instrument it is
 written for and the range it uses. The select is locked while an exercise
 runs ("Stop the exercise to change it."), because the running exercise was
@@ -362,7 +362,7 @@ metronome.
 | Bars | 1–16 | 4 |
 | Show tab | Guitar and bass guitar only: the tab under the notation (see Tab below) | off |
 
-The melody is written for the instrument chosen in the main menu (clef,
+The melody is written for the instrument chosen in the top bar (clef,
 transposition, range; see Instrument above). A new melody is made whenever
 an option or the instrument changes, or with **New melody**. The tempo and
 **Show tab** do not change the melody.
