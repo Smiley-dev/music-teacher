@@ -1,19 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Dices,
-  Ear,
-  Headphones,
-  Play,
-  Square,
-  Timer,
-  Trophy,
-} from "lucide-react";
+import { AlertTriangle, Dices, Headphones, Play, Square, Timer } from "lucide-react";
 
 import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Display, Lamp, Panel, Readout, SplitLayout, StatusStrip } from "@/components/rack";
 import { FastNotesWarning, minGapMs } from "@/features/practice/rhythm/accuracy-notice";
 import { LatencyStatus } from "@/features/practice/rhythm/latency-status";
 import { symbolAt } from "@/features/practice/rhythm/render-score";
@@ -128,50 +118,62 @@ export function ReadingPractice() {
     action === "metronome" && practice.phase === "finished" ? practice : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <EngineStatusBanner status={status} />
-      <ReadingSettingsCard disabled={running} tabAvailable={exercise?.tab != null} />
-
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <CardTitle>Read and play</CardTitle>
-            <CardDescription>
-              {exercise ? describe(exercise, bpm) : "Choose the options above to get a melody."}
-            </CardDescription>
+      <SplitLayout
+        asideFirst
+        aside={<ReadingSettingsCard disabled={running} tabAvailable={exercise?.tab != null} />}
+      >
+        <Panel aria-label="Melody" className="flex flex-col gap-3.5">
+          <div className="flex flex-wrap justify-between gap-2.5 font-mono text-xs tracking-[0.08em] uppercase">
+            <span className="font-bold text-signal">
+              {exercise ? describe(exercise, bpm) : "No melody yet"}
+            </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap items-center gap-2">
             {running ? (
-              <Button variant="destructive" onClick={stop}>
-                <Square />
-                Stop
-              </Button>
+              <>
+                <span className="flex h-10 items-center gap-2 rounded-lg border-b-[3px] border-primary bg-secondary px-3.5 font-mono text-xs font-bold tracking-[0.06em] uppercase">
+                  <Lamp on tone="signal" />
+                  {action === "listen"
+                    ? "Listening"
+                    : action === "ownPace"
+                      ? "At my own pace"
+                      : "With metronome"}
+                </span>
+                <div className="flex-1" />
+                <Button variant="destructive" onClick={stop}>
+                  <Square className="fill-current" />
+                  Stop
+                </Button>
+              </>
             ) : (
               <>
-                <Button variant="outline" onClick={regenerate}>
-                  <Dices />
-                  New melody
-                </Button>
                 <Button variant="outline" onClick={() => start("listen")} disabled={!canStart}>
                   <Headphones />
                   Listen
                 </Button>
                 <Button variant="outline" onClick={() => start("ownPace")} disabled={!canStart}>
                   <Play />
-                  Play at my own pace
+                  At my own pace
                 </Button>
                 <Button onClick={() => start("metronome")} disabled={!canStart}>
                   <Timer />
-                  Play with metronome
+                  With metronome
+                </Button>
+                <div className="flex-1" />
+                <Button variant="outline" onClick={regenerate}>
+                  <Dices />
+                  New melody
                 </Button>
               </>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+
           <Status exercise={exercise} action={action} practice={practice} reading={reading} />
           {action === "metronome" && rhythmRunning && (
-            <div className="flex flex-wrap gap-x-8 gap-y-2">
+            <div className="flex flex-wrap gap-2">
               <LiveTimingCounts judgements={judgements} />
               <LivePitchCounts checks={pitchChecks} />
             </div>
@@ -187,23 +189,34 @@ export function ReadingPractice() {
             <p className="text-sm text-destructive">{startError ?? generateError}</p>
           )}
           {exercise && (
-            <ReadingScore
-              exercise={exercise}
-              classes={classes}
-              active={active}
-              showTab={settings.practice.reading.showTab}
-            />
+            <Display className="px-2.5 py-4 sm:px-2.5">
+              <ReadingScore
+                exercise={exercise}
+                classes={classes}
+                active={active}
+                showTab={settings.practice.reading.showTab}
+              />
+            </Display>
           )}
-        </CardContent>
-      </Card>
+        </Panel>
+      </SplitLayout>
 
       {exercise && finishedWithMetronome && (
-        <>
-          <TimingAnalysis report={finishedWithMetronome.report} calibrated={calibrated} minGapMs={gapMs} />
+        <div className="flex flex-wrap items-start gap-5">
+          <TimingAnalysis
+            report={finishedWithMetronome.report}
+            calibrated={calibrated}
+            minGapMs={gapMs}
+            className="min-w-0 flex-[999_1_32rem]"
+          />
           {finishedWithMetronome.pitch && (
-            <PitchAnalysis report={finishedWithMetronome.pitch} exercise={exercise} />
+            <PitchAnalysis
+              report={finishedWithMetronome.pitch}
+              exercise={exercise}
+              className="min-w-0 flex-[1_1_21rem]"
+            />
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -268,13 +281,15 @@ function Status({
   if (action === "listen" || action === "metronome") {
     switch (practice.phase) {
       case "running":
-        return <ClockLine practice={practice} exercise={exercise} listening={action === "listen"} />;
+        return <ClockLine practice={practice} exercise={exercise} />;
       case "finished":
         return (
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <CheckCircle2 className="size-4 text-emerald-500" />
-            Done! See how the timing and the notes went below. Purple notes had the wrong pitch.
-          </p>
+          <StatusStrip tone="ok">
+            <Lamp on tone="ok" />
+            {action === "listen"
+              ? "That's how it goes. Now play it at your own pace or with the metronome."
+              : "Done! Timing and notes are below. Purple notes had the wrong pitch."}
+          </StatusStrip>
         );
       case "failed":
         return <ErrorLine message={practice.message} />;
@@ -288,14 +303,26 @@ function Status({
         return <OwnPaceLine reading={reading} />;
       case "finished":
         return (
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <Trophy className="size-4 text-amber-500" />
-            Done! {reading.notes} notes in {Math.round(reading.seconds)} s,{" "}
-            {reading.mistakes === 0
-              ? "without a wrong note."
-              : `${reading.mistakes} wrong ${reading.mistakes === 1 ? "note" : "notes"}.`}{" "}
-            Try it with the metronome next.
-          </p>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap gap-2 text-center">
+              <Readout label="Notes" value={reading.notes} className="flex-[1_1_5rem]" />
+              <Readout
+                label="Time taken"
+                value={minutes(reading.seconds)}
+                className="flex-[1_1_5rem]"
+              />
+              <Readout
+                label="Wrong notes"
+                value={reading.mistakes}
+                tone={reading.mistakes > 0 ? "bad" : "ok"}
+                className="flex-[1_1_5rem]"
+              />
+            </div>
+            <StatusStrip tone="ok">
+              <Lamp on tone="ok" />
+              Done! Try it with the metronome next.
+            </StatusStrip>
+          </div>
         );
       case "failed":
         return <ErrorLine message={reading.message} />;
@@ -304,33 +331,36 @@ function Status({
     }
   }
   return (
-    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-      <p>Read the melody first, then:</p>
-      <ul className="list-disc pl-5">
-        <li>
-          <span className="font-medium text-foreground">Listen</span> plays it at the tempo after 4
-          count-in clicks.
-        </li>
-        <li>
-          <span className="font-medium text-foreground">Play at my own pace</span>: play the blue
-          note; it turns green when it is right and the next one turns blue. Only the pitch counts.
-        </li>
-        <li>
-          <span className="font-medium text-foreground">Play with metronome</span>: after 4
-          count-in clicks, play along. Every note is judged for timing (green, amber, red) and
-          pitch (purple when wrong).
-        </li>
-      </ul>
-    </div>
+    <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+      <li>
+        <span className="font-bold text-foreground">Listen</span> plays the melody at the tempo
+        after 4 count-in clicks.
+      </li>
+      <li>
+        <span className="font-bold text-foreground">At my own pace</span>: play the blue note; it
+        turns green when it is right and the next one turns blue. Only the pitch counts.
+      </li>
+      <li>
+        <span className="font-bold text-foreground">With metronome</span>: after 4 count-in
+        clicks, play along. Every note is judged for timing (green, amber, red) and pitch (purple
+        when wrong).
+      </li>
+    </ul>
   );
+}
+
+/** Seconds as m:ss. */
+function minutes(seconds: number) {
+  const s = Math.round(seconds);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 function ErrorLine({ message }: { message: string }) {
   return (
-    <p className="flex items-center gap-2 text-sm text-destructive">
-      <AlertTriangle className="size-4" />
+    <StatusStrip tone="bad">
+      <AlertTriangle className="size-4 shrink-0" />
       {message}
-    </p>
+    </StatusStrip>
   );
 }
 
@@ -338,32 +368,27 @@ function ErrorLine({ message }: { message: string }) {
 function ClockLine({
   practice,
   exercise,
-  listening,
 }: {
   practice: Extract<PracticeState, { phase: "running" }>;
   exercise: ReadingExercise | null;
-  listening: boolean;
 }) {
   const pos = practice.positionBeats;
-  const Icon = listening ? Headphones : Timer;
-  const label = listening ? "Listening" : "Playing";
   if (pos === null || pos < 0) {
     const click = pos === null ? 0 : Math.floor(pos + practice.countInBeats) + 1;
     return (
-      <div className="flex items-center gap-4" aria-live="polite">
-        <span className="flex items-center gap-2 text-sm font-medium">
-          <Icon className="size-4" />
-          Count-in
+      <div className="flex items-center gap-4 self-start rounded-lg bg-inset px-3 py-2" aria-live="polite">
+        <span className="font-mono text-[10px] tracking-[0.12em] text-muted-foreground">
+          COUNT-IN
         </span>
         <div className="flex gap-2">
           {Array.from({ length: practice.countInBeats }, (_, i) => (
             <span
               key={i}
               className={cn(
-                "flex size-9 items-center justify-center rounded-md text-base",
+                "flex size-9 items-center justify-center rounded-md font-mono font-bold",
                 i < click
-                  ? "bg-emerald-500 font-semibold text-white"
-                  : "border text-muted-foreground",
+                  ? "bg-primary text-primary-foreground shadow-[0_0_10px_var(--primary)]"
+                  : "bg-muted text-muted-foreground",
               )}
             >
               {i + 1}
@@ -375,33 +400,52 @@ function ClockLine({
   }
   const beats = exercise?.rhythm.timeSignature.beatsPerBar ?? 4;
   const bars = exercise?.rhythm.bars.length ?? 0;
+  const bar = Math.min(Math.floor(pos / beats) + 1, bars);
+  const beat = Math.floor(pos % beats) + 1;
   return (
-    <p className="flex items-center gap-2 font-mono text-sm tabular-nums" aria-live="off">
-      <Icon className="size-4" />
-      {label} · bar {Math.min(Math.floor(pos / beats) + 1, bars)} of {bars} · beat{" "}
-      {Math.floor(pos % beats) + 1}
-    </p>
+    <div
+      className="flex items-center gap-3 self-start rounded-lg bg-inset px-3 py-2 font-mono"
+      aria-live="off"
+      aria-label={`Bar ${bar} of ${bars}, beat ${beat}`}
+    >
+      <span className="text-[10px] tracking-[0.1em] text-muted-foreground">BAR · BEAT</span>
+      <span className="text-[22px] font-bold text-signal tabular-nums">
+        {bar}·{beat}
+      </span>
+      <span className="text-[11px] text-muted-foreground">OF {bars}</span>
+    </div>
   );
 }
 
 function OwnPaceLine({ reading }: { reading: Extract<ReadingState, { phase: "running" }> }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-      <span className="font-medium">
-        Note {Math.min(reading.progress + 1, reading.total)} of {reading.total}
-      </span>
-      <span className={cn("font-mono tabular-nums", !reading.heard && "text-muted-foreground/60")}>
-        <Ear className="mr-1 inline size-4 align-text-bottom text-muted-foreground" />
-        {reading.heard ? `Hearing ${prettyNoteName(reading.heard)}` : "Hearing nothing"}
-      </span>
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-stretch gap-2 font-mono">
+        <div className="flex items-center gap-3 rounded-lg bg-inset px-3 py-2">
+          <span className="text-[10px] tracking-[0.1em] text-muted-foreground">NOTE</span>
+          <span className="text-[22px] font-bold text-signal tabular-nums">
+            {Math.min(reading.progress + 1, reading.total)}
+          </span>
+          <span className="text-[11px] text-muted-foreground">OF {reading.total}</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg bg-inset px-3 text-xs tracking-[0.08em] uppercase">
+          <Lamp on={reading.heard !== null} tone="signal" />
+          <span className={reading.heard ? "text-signal" : "text-muted-foreground"}>
+            {reading.heard ? `Hearing ${prettyNoteName(reading.heard)}` : "Hearing nothing"}
+          </span>
+        </div>
+        <div className="flex items-center rounded-lg bg-inset px-3 text-xs tracking-[0.08em] text-muted-foreground uppercase">
+          <span className={cn("mr-1", reading.mistakes > 0 && "font-bold text-red-500")}>
+            {reading.mistakes}
+          </span>
+          wrong {reading.mistakes === 1 ? "note" : "notes"}
+        </div>
+      </div>
       {reading.wrong && (
-        <span className="font-medium text-amber-600 dark:text-amber-400">
-          Not quite: that was {prettyNoteName(reading.wrong)}. Try again.
-        </span>
+        <StatusStrip tone="bad">
+          ✕ Not quite: that was {prettyNoteName(reading.wrong)}. Try again.
+        </StatusStrip>
       )}
-      <span className="text-muted-foreground">
-        {reading.mistakes} wrong {reading.mistakes === 1 ? "note" : "notes"}
-      </span>
     </div>
   );
 }

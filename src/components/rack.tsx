@@ -158,3 +158,13 @@ export function StatusStrip({
     </div>
   );
 }
+
+/** A piece of advice on a display, marked TIP. */
+export function Tip({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex gap-3 rounded-[10px] bg-inset px-3.5 py-3 text-sm leading-relaxed">
+      <span className="flex-none pt-0.5 font-mono text-[11px] font-bold text-signal">TIP</span>
+      <span>{children}</span>
+    </div>
+  );
+}

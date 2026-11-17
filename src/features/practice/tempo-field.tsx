@@ -24,8 +24,10 @@ export function TempoField({ id, bpm, onChange, disabled }: TempoFieldProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <Label htmlFor={id}>Tempo</Label>
-        <span className="font-mono text-sm tabular-nums">{shown} BPM</span>
+        <Label htmlFor={id} className="font-bold">
+          Tempo
+        </Label>
+        <span className="font-mono text-sm font-bold tabular-nums text-signal">{shown} BPM</span>
       </div>
       <div className="flex items-center gap-2">
         <Button

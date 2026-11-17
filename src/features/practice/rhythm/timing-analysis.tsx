@@ -1,6 +1,6 @@
-import { AlertTriangle, Lightbulb } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Display, Panel, PanelLabel, Readout, StatusStrip, Tip, type Tone } from "@/components/rack";
 import {
   type Judgement,
   FAST_NOTE_GAP_MS,
@@ -25,42 +25,36 @@ const RESULT_COLOR: Record<TimingResult, string> = {
   missed: "text-red-500",
 };
 
-/** Small live counters shown while playing. */
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Live timing read-outs while playing (one tile each, to sit in a row with
+ * other read-outs). */
 export function LiveTimingCounts({ judgements }: { judgements: Judgement[] }) {
   const count = (r: TimingResult) => judgements.filter((j) => j.result === r).length;
-  const items: { label: string; result: TimingResult; value: number }[] = [
-    { label: "On time", result: "onTime", value: count("onTime") },
-    { label: "Early", result: "early", value: count("early") },
-    { label: "Late", result: "late", value: count("late") },
-    { label: "Missed", result: "missed", value: count("missed") },
+  const items: { label: string; value: number; tone: Tone }[] = [
+    { label: "On time", value: count("onTime"), tone: "ok" },
+    { label: "Early/late", value: count("early") + count("late"), tone: "warn" },
+    { label: "Missed", value: count("missed"), tone: "bad" },
   ];
   return (
-    <div className="flex flex-wrap gap-4 text-sm">
+    <>
       {items.map((i) => (
-        <span key={i.label} className="flex items-center gap-1.5">
-          <span className={cn("size-2.5 rounded-full bg-current", RESULT_COLOR[i.result])} />
-          {i.label}
-          <span className="font-mono tabular-nums font-semibold">{i.value}</span>
-        </span>
+        <Readout
+          key={i.label}
+          label={i.label}
+          value={pad(i.value)}
+          tone={i.tone}
+          className="flex-[1_1_5rem] text-center"
+        />
       ))}
-    </div>
+    </>
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 rounded-lg border p-3">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="font-mono text-2xl font-semibold tabular-nums">{value}</span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-    </div>
-  );
-}
-
-const ms = (v: number) => `${v > 0 ? "+" : ""}${Math.round(v)} ms`;
+const ms = (v: number) => `${v > 0 ? "+" : ""}${Math.round(v)}`;
 
 function tendency(mean: number | null) {
-  if (mean === null) return undefined;
+  if (mean === null) return null;
   if (mean < -TENDENCY_MS) return "rushing (ahead of the beat)";
   if (mean > TENDENCY_MS) return "dragging (behind the beat)";
   return "centred on the beat";
@@ -122,15 +116,15 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
     .filter((i): i is number => i !== null);
 
   return (
-    <div className="flex gap-2">
-      <div className="flex flex-col justify-between py-1 text-[10px] text-muted-foreground">
+    <Display className="flex gap-2 p-2.5 sm:px-2.5 sm:py-2.5">
+      <div className="flex flex-col justify-between py-1 font-mono text-[10px] text-muted-foreground uppercase">
         <span>late</span>
         <span>on time</span>
         <span>early</span>
       </div>
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="h-40 w-full rounded-md bg-muted"
+        className="h-40 w-full"
         role="img"
         aria-label="Timing offset of each note"
         preserveAspectRatio="none"
@@ -140,9 +134,9 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
           width={width}
           y={y(ON_TIME_MS)}
           height={y(-ON_TIME_MS) - y(ON_TIME_MS)}
-          className="fill-emerald-500/15"
+          className="fill-emerald-500/10"
         />
-        <line x1={0} x2={width} y1={height / 2} y2={height / 2} className="stroke-foreground/30" />
+        <line x1={0} x2={width} y1={height / 2} y2={height / 2} className="stroke-border" />
         {barStarts.map((i) => (
           <line
             key={i}
@@ -150,7 +144,8 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
             x2={(x(i - 1) + x(i)) / 2}
             y1={0}
             y2={height}
-            className="stroke-foreground/10"
+            strokeDasharray="3 4"
+            className="stroke-border"
           />
         ))}
         {judgements.map((j, i) =>
@@ -158,9 +153,9 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
             <text
               key={i}
               x={x(i)}
-              y={height - 4}
+              y={height / 2 + 4}
               textAnchor="middle"
-              className="fill-red-500 text-[11px] font-bold"
+              className="fill-red-500 text-[13px] font-bold"
             >
               ×
             </text>
@@ -169,77 +164,87 @@ function OffsetChart({ judgements }: { judgements: Judgement[] }) {
               key={i}
               cx={x(i)}
               cy={y(j.offsetMs)}
-              r={3.5}
+              r={4.5}
               className={cn("fill-current", RESULT_COLOR[j.result])}
             >
               <title>
-                Bar {j.bar + 1}: {ms(j.offsetMs)}
+                Bar {j.bar + 1}: {ms(j.offsetMs)} ms
               </title>
             </circle>
           ),
         )}
       </svg>
-    </div>
+    </Display>
   );
 }
 
+/** After playing with the metronome: how the timing went, with a chart of
+ * every note's offset and tips. */
 export function TimingAnalysis({
   report,
   calibrated,
   minGapMs,
+  className,
 }: {
   report: TimingReport;
   calibrated: boolean;
   /** Shortest gap between notes of the played exercise, ms. */
   minGapMs: number | null;
+  className?: string;
 }) {
   const s = report.summary;
+  const trend = tendency(s.meanOffsetMs);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your timing</CardTitle>
-        <CardDescription>
-          On time = within ±{ON_TIME_MS} ms of the beat. Offsets are corrected by your calibrated
-          latency.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        {!calibrated && (
-          <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="size-4 shrink-0" />
-            Not calibrated: results include your setup's latency.
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Accuracy" value={`${Math.round(s.accuracyPercent)}%`} hint="notes on time" />
-          <Stat label="Notes played" value={`${Math.round(s.hitPercent)}%`} hint={`${s.notes - s.missed} of ${s.notes}`} />
-          <Stat
-            label="Average offset"
-            value={s.meanOffsetMs === null ? "–" : ms(s.meanOffsetMs)}
-            hint={tendency(s.meanOffsetMs)}
-          />
-          <Stat
-            label="Consistency"
-            value={s.spreadMs === null ? "–" : `±${Math.round(s.spreadMs)} ms`}
-            hint="lower is steadier"
-          />
-        </div>
-        <LiveTimingCounts judgements={report.judgements} />
-        {s.extra > 0 && (
-          <p className="text-sm text-muted-foreground">
-            {s.extra} extra hit{s.extra > 1 ? "s" : ""} that matched no note.
-          </p>
-        )}
-        <OffsetChart judgements={report.judgements} />
-        <ul className="flex flex-col gap-2">
-          {tips(s, calibrated, minGapMs).map((t) => (
-            <li key={t} className="flex items-start gap-2 text-sm">
-              <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-500" />
-              {t}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <Panel aria-label="Timing" className={cn("flex flex-col gap-3.5", className)}>
+      <PanelLabel>Timing</PanelLabel>
+      {!calibrated && (
+        <StatusStrip tone="warn">
+          <AlertTriangle className="size-4 shrink-0" />
+          Not calibrated: results include your setup's latency.
+        </StatusStrip>
+      )}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-2">
+        <Readout
+          size="lg"
+          label="Accuracy"
+          value={`${Math.round(s.accuracyPercent)}%`}
+          tone={s.accuracyPercent >= 75 ? "ok" : "warn"}
+          className="p-3"
+        />
+        <Readout
+          size="lg"
+          label="Notes played"
+          value={`${Math.round(s.hitPercent)}%`}
+          tone="signal"
+          className="p-3"
+        />
+        <Readout
+          size="lg"
+          label="Avg offset"
+          value={s.meanOffsetMs === null ? "–" : ms(s.meanOffsetMs)}
+          unit={s.meanOffsetMs === null ? undefined : "MS"}
+          className="p-3"
+        />
+        <Readout
+          size="lg"
+          label="Consistency"
+          value={s.spreadMs === null ? "–" : `±${Math.round(s.spreadMs)}`}
+          unit={s.spreadMs === null ? undefined : "MS"}
+          className="p-3"
+        />
+        <Readout size="lg" label="Extra hits" value={s.extra} className="p-3" />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        On time = within ±{ON_TIME_MS} ms of the beat, corrected by your calibrated latency.{" "}
+        {s.notes - s.missed} of {s.notes} notes played
+        {trend ? `; on average ${trend}.` : "."}
+      </p>
+      <OffsetChart judgements={report.judgements} />
+      <div className="flex flex-col gap-2">
+        {tips(s, calibrated, minGapMs).map((t) => (
+          <Tip key={t}>{t}</Tip>
+        ))}
+      </div>
+    </Panel>
   );
 }

@@ -105,7 +105,11 @@ export function RhythmPractice() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <SessionStatus practice={showResults ? practice : { phase: "idle" }} exercise={exercise} />
-          {running && !listening && <LiveTimingCounts judgements={judgements} />}
+          {running && !listening && (
+            <div className="flex flex-wrap gap-2">
+              <LiveTimingCounts judgements={judgements} />
+            </div>
+          )}
           {!running && <LatencyStatus disabled={status.state !== "running"} />}
           <FastNotesWarning gapMs={gapMs} />
           {!running && <AccuracyTips />}

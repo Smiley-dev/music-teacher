@@ -1,6 +1,4 @@
-import { Lightbulb } from "lucide-react";
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Display, Panel, PanelLabel, Readout, Tip } from "@/components/rack";
 import type { PitchCheck, PitchReport, PitchResult, ReadingExercise } from "@/lib/engine";
 import { pitchLabel, prettyNoteName } from "@/lib/pitch-labels";
 import { cn } from "@/lib/utils";
@@ -10,30 +8,27 @@ const MAX_LISTED = 8;
 /** Above this share of unclear notes (%), suggest playing louder or slower. */
 const UNCLEAR_TIP_PERCENT = 20;
 
-const RESULT_COLOR: Record<PitchResult, string> = {
-  right: "text-emerald-500",
-  wrong: "text-violet-500",
-  unclear: "text-muted-foreground",
-};
+const pad = (n: number) => String(n).padStart(2, "0");
 
-/** Small live counters shown while playing with the metronome. */
+/** Live pitch read-outs while playing with the metronome (tiles, to sit in a
+ * row with the timing ones). */
 export function LivePitchCounts({ checks }: { checks: PitchCheck[] }) {
   const count = (r: PitchResult) => checks.filter((c) => c.result === r).length;
-  const items: [string, PitchResult][] = [
-    ["Right notes", "right"],
-    ["Wrong notes", "wrong"],
-  ];
   return (
-    <div className="flex flex-wrap gap-4 text-sm">
-      {items.map(([label, result]) => (
-        <span key={label} className="flex items-center gap-1.5">
-          <span className={cn("font-mono font-semibold tabular-nums", RESULT_COLOR[result])}>
-            {count(result)}
-          </span>
-          <span className="text-muted-foreground">{label}</span>
-        </span>
-      ))}
-    </div>
+    <>
+      <Readout
+        label="Right pitch"
+        value={pad(count("right"))}
+        tone="ok"
+        className="flex-[1_1_5rem] text-center"
+      />
+      <Readout
+        label="Wrong pitch"
+        value={pad(count("wrong"))}
+        tone="pitch"
+        className="flex-[1_1_5rem] text-center"
+      />
+    </>
   );
 }
 
@@ -42,9 +37,11 @@ export function LivePitchCounts({ checks }: { checks: PitchCheck[] }) {
 export function PitchAnalysis({
   report,
   exercise,
+  className,
 }: {
   report: PitchReport;
   exercise: ReadingExercise;
+  className?: string;
 }) {
   const { summary } = report;
   const wrong = report.checks.filter((c) => c.result === "wrong");
@@ -66,59 +63,62 @@ export function PitchAnalysis({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Notes</CardTitle>
-        <CardDescription>
-          Each note's pitch, from what was heard while it should sound. Timing is above.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap gap-x-8 gap-y-3">
-          <Stat label="Right notes" value={`${Math.round(summary.rightPercent)}%`} color={RESULT_COLOR.right} />
-          <Stat label="Right" value={`${summary.right} of ${summary.notes}`} />
-          <Stat label="Wrong" value={String(summary.wrong)} color={summary.wrong > 0 ? RESULT_COLOR.wrong : undefined} />
-          <Stat label="Pitch unclear" value={String(summary.unclear)} />
+    <Panel aria-label="Notes" className={cn("flex flex-col gap-3.5", className)}>
+      <PanelLabel>Notes · pitch</PanelLabel>
+      <Display className="flex flex-wrap items-center gap-x-5 gap-y-3 px-4 py-3.5 font-mono sm:px-4 sm:py-3.5">
+        <div>
+          <div className="text-[10px] tracking-[0.12em] text-muted-foreground">RIGHT NOTES</div>
+          <div className="text-[44px] leading-tight font-bold text-emerald-500 tabular-nums">
+            {Math.round(summary.rightPercent)}%
+          </div>
         </div>
-        {wrong.length > 0 && (
-          <ul className="flex flex-col gap-1 text-sm">
-            {wrong.slice(0, MAX_LISTED).map((c) => {
-              const written = expected(c);
-              return (
-                <li key={`${c.bar}:${c.symbol}`}>
-                  <span className="text-muted-foreground">Bar {c.bar + 1}:</span>{" "}
-                  <span className="font-medium text-violet-600 dark:text-violet-400">
+        <div className="flex flex-col gap-1 text-[13px] uppercase">
+          <span>
+            <span className="font-bold text-emerald-500">{summary.right}</span> right
+          </span>
+          <span>
+            <span className="font-bold text-violet-500">{summary.wrong}</span> wrong
+          </span>
+          <span>
+            <span className="font-bold text-muted-foreground">{summary.unclear}</span> unclear
+          </span>
+        </div>
+      </Display>
+      <p className="text-xs text-muted-foreground">
+        Each note's pitch, from what was heard while it should sound.
+      </p>
+      {wrong.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="rack-label text-[10px]">Wrong notes by bar</span>
+          {wrong.slice(0, MAX_LISTED).map((c) => {
+            const written = expected(c);
+            return (
+              <div
+                key={`${c.bar}:${c.symbol}`}
+                className="flex items-center justify-between gap-3 rounded-lg bg-violet-500/10 px-3 py-2.5 font-mono text-[13px]"
+              >
+                <span className="text-muted-foreground">BAR {c.bar + 1}</span>
+                <span>
+                  <strong className="text-violet-500">
                     {c.played ? prettyNoteName(c.played) : "?"}
-                  </span>{" "}
-                  instead of <span className="font-medium">{written ? pitchLabel(written) : "?"}</span>
-                </li>
-              );
-            })}
-            {wrong.length > MAX_LISTED && (
-              <li className="text-muted-foreground">…and {wrong.length - MAX_LISTED} more.</li>
-            )}
-          </ul>
-        )}
-        {tips.length > 0 && (
-          <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-            {tips.map((t) => (
-              <li key={t} className="flex items-start gap-2">
-                <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                {t}
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className={cn("font-mono text-2xl font-semibold tabular-nums", color)}>{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
+                  </strong>{" "}
+                  instead of <strong>{written ? pitchLabel(written) : "?"}</strong>
+                </span>
+              </div>
+            );
+          })}
+          {wrong.length > MAX_LISTED && (
+            <p className="text-sm text-muted-foreground">…and {wrong.length - MAX_LISTED} more.</p>
+          )}
+        </div>
+      )}
+      {tips.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {tips.map((t) => (
+            <Tip key={t}>{t}</Tip>
+          ))}
+        </div>
+      )}
+    </Panel>
   );
 }

@@ -12,11 +12,14 @@ import { InstrumentNote } from "./instrument-note";
  * the Theory topic behind the exercise. Options are saved; they are locked
  * while the exercise runs. */
 export function OptionsPanel({
+  title = "Options",
   locked,
   error,
   theory,
   children,
 }: {
+  /** What the panel holds ("Options", "Melody"). */
+  title?: string;
   locked: boolean;
   error?: string | null;
   theory?: { topic: SubsectionId<"theory">; label: string };
@@ -24,9 +27,9 @@ export function OptionsPanel({
 }) {
   const { go } = useNavigation();
   return (
-    <Panel aria-label="Options" className="flex flex-col gap-4">
+    <Panel aria-label={title} className="flex flex-col gap-4">
       <PanelLabel tone={locked ? "signal" : "muted"}>
-        {locked ? "Options · locked while running" : "Options · saved"}
+        {`${title} · ${locked ? "locked while running" : "saved"}`}
       </PanelLabel>
       <InstrumentNote />
       <div className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:border-dashed [&>*+*]:pt-4">
