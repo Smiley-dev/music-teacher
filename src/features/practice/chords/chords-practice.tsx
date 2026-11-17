@@ -1,7 +1,7 @@
 import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { OptionCheckbox } from "@/components/option-checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InstrumentNote } from "@/features/practice/instrument-note";
+import { SplitLayout } from "@/components/rack";
+import { OptionsPanel } from "@/features/practice/options-panel";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
 import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
@@ -27,25 +27,25 @@ export function ChordsPractice() {
   const set = (change: Partial<ChordOptions>) => update({ chords: { ...options, ...change } });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <EngineStatusBanner status={status} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Exercise</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <InstrumentNote />
-          <OptionChecklist
-            legend="Chords"
-            idPrefix="chord"
-            items={CHORD_KINDS}
-            label={(c) => CHORD_LABELS[c].name}
-            description={(c) => CHORD_LABELS[c].tones}
-            selected={options.chords}
-            disabled={running}
-            onChange={(chords) => set({ chords })}
-          />
-          <div className="flex flex-wrap gap-x-8 gap-y-4">
+      <SplitLayout
+        aside={
+          <OptionsPanel
+            locked={running}
+            error={error}
+            theory={{ topic: "chords", label: "Chords and inversions" }}
+          >
+            <OptionChecklist
+              legend="Chords"
+              idPrefix="chord"
+              items={CHORD_KINDS}
+              label={(c) => CHORD_LABELS[c].name}
+              description={(c) => CHORD_LABELS[c].tones}
+              selected={options.chords}
+              disabled={running}
+              onChange={(chords) => set({ chords })}
+            />
             <OptionCheckbox
               id="chords-inversions"
               label="Inversions"
@@ -62,26 +62,26 @@ export function ChordsPractice() {
               disabled={running}
               onChange={(showNotes) => set({ showNotes })}
             />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
-      <PitchSessionCard
-        exercise="chords"
-        title="Play the chord"
-        description="Play the chord's notes one at a time, from the lowest up."
-        instructions={
-          <p>
-            Press Start. Each task names a chord, such as "A minor (Am), 1st inversion". Play its
-            notes one after another from the lowest up (an arpeggio): root position starts on the
-            root, 1st inversion on the 3rd, 2nd on the 5th, 3rd on the 7th. Any octave is fine for
-            the first note; the others must go up from it. Notes appear on the staff as you play
-            them. Hear it plays the arpeggio; Skip shows it.
-          </p>
+          </OptionsPanel>
         }
-        describe={describe}
-        blocked={options.chords.length === 0 ? "Select at least one chord." : null}
-      />
+      >
+        <PitchSessionCard
+          exercise="chords"
+          title="Play the chord"
+          description="Play the chord's notes one at a time, from the lowest up."
+          instructions={
+            <p>
+              Press Start. Each task names a chord, such as "A minor (Am), 1st inversion". Play
+              its notes one after another from the lowest up (an arpeggio): root position starts
+              on the root, 1st inversion on the 3rd, 2nd on the 5th, 3rd on the 7th. Any octave is
+              fine for the first note; the others must go up from it. Notes appear on the staff as
+              you play them. Hear it plays the arpeggio; Skip shows it.
+            </p>
+          }
+          describe={describe}
+          blocked={options.chords.length === 0 ? "Select at least one chord." : null}
+        />
+      </SplitLayout>
     </div>
   );
 }
