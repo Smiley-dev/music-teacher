@@ -4,10 +4,10 @@ import { InputGainCard } from "./input-gain-card";
 
 export function SettingsScreen() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid items-start gap-5 md:grid-cols-2">
       <InputDeviceCard />
       <InputGainCard />
-      <CalibrationCard />
+      <CalibrationCard className="md:col-span-2" />
     </div>
   );
 }

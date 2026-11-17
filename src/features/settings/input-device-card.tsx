@@ -2,9 +2,8 @@ import { useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { EngineStatusBanner } from "@/components/engine-status-banner";
-import { Badge } from "@/components/ui/badge";
+import { Lamp, Panel, PanelLabel } from "@/components/rack";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -44,19 +43,18 @@ export function InputDeviceCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Input device</CardTitle>
-        <CardDescription>The audio interface or microphone to listen to.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <Panel aria-labelledby="device-title" className="flex flex-col gap-3.5">
+      <PanelLabel>01 · Input</PanelLabel>
+      <h2 id="device-title" className="text-lg font-extrabold">
+        Input device
+      </h2>
         <div className="flex gap-2">
           <Select
             value={current ? keyOf(current) : undefined}
             onValueChange={onSelect}
             disabled={devices.length === 0}
           >
-            <SelectTrigger className="min-w-0 flex-1" aria-label="Input device">
+            <SelectTrigger className="h-11 min-w-0 flex-1" aria-label="Input device">
               <SelectValue
                 placeholder={loading ? "Loading devices…" : "No input devices found"}
               />
@@ -85,7 +83,8 @@ export function InputDeviceCard() {
           </Select>
           <Button
             variant="outline"
-            size="icon"
+            size="icon-lg"
+            className="size-11"
             onClick={refresh}
             disabled={loading}
             aria-label="Refresh devices"
@@ -95,18 +94,25 @@ export function InputDeviceCard() {
         </div>
 
         {status.stream && (
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{status.device?.host}</Badge>
-            <Badge variant="secondary">{status.stream.channels} ch</Badge>
-            <Badge variant="secondary">{status.stream.sampleRate} Hz</Badge>
-            <Badge variant="secondary">{status.stream.sampleFormat}</Badge>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg bg-inset px-3 py-2.5 font-mono text-xs">
+            <Lamp on tone="ok" />
+            <span className="text-emerald-500">
+              RUNNING · {status.stream.channels} INPUT{" "}
+              {status.stream.channels === 1 ? "CHANNEL" : "CHANNELS"}
+            </span>
+            <span className="text-muted-foreground">
+              {status.device?.host} · {status.stream.sampleRate} HZ · {status.stream.sampleFormat}
+            </span>
           </div>
         )}
         {(listError || selectError) && (
           <p className="text-sm text-destructive">{listError ?? selectError}</p>
         )}
         <EngineStatusBanner status={status} />
-      </CardContent>
-    </Card>
+        <p className="leading-relaxed text-muted-foreground">
+          The audio interface or microphone to listen to. A saved device that is unplugged shows
+          “(not connected)” and opens again by itself when it is back.
+        </p>
+    </Panel>
   );
 }

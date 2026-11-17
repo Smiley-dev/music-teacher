@@ -26,9 +26,9 @@ export function CalibrationDialog({ open, onOpenChange }: CalibrationDialogProps
 
   return (
     <Dialog open={open} onOpenChange={change}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[18px] border bg-card p-5 sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{CALIBRATION_TITLE}</DialogTitle>
+          <DialogTitle className="text-[22px] font-extrabold">{CALIBRATION_TITLE}</DialogTitle>
           <DialogDescription>{CALIBRATION_DESCRIPTION}</DialogDescription>
         </DialogHeader>
         <CalibrationPanel />
