@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ChoiceButtons } from "@/components/choice-buttons";
+import { Display } from "@/components/rack";
 import type { Clef } from "@/lib/engine";
 
 import { CircleOfFifths } from "./circle-of-fifths";
@@ -98,11 +99,15 @@ export function KeysTheory() {
           adds one flat: C, F, B♭, E♭, A♭, D♭, G♭, C♭. Arranged in a circle, the two meet at the
           bottom, where keys like F♯ and G♭ major sound the same but are written differently.
         </p>
-        <CircleOfFifths />
-        <p>
-          Neighbours on the circle share all but one note, which is why music often moves to the
-          key next door.
-        </p>
+        <div className="flex flex-wrap items-center gap-5">
+          <Display className="flex flex-[1_1_20rem] justify-center px-3 py-4 sm:px-3">
+            <CircleOfFifths />
+          </Display>
+          <p className="flex-[1_1_14rem]">
+            Majors are outside, their relative minors inside. Neighbours on the circle share all
+            but one note, which is why music often moves to the key next door.
+          </p>
+        </div>
       </TheoryCard>
 
       <TheoryCard title="All key signatures">

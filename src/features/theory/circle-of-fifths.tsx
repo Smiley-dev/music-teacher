@@ -59,7 +59,7 @@ export function CircleOfFifths() {
               x={mx}
               y={my - 2}
               textAnchor="middle"
-              className="fill-foreground text-[14px] font-semibold"
+              className="fill-foreground text-[15px] font-extrabold"
             >
               {k.major}
             </text>
@@ -67,7 +67,7 @@ export function CircleOfFifths() {
               x={mx}
               y={my + 13}
               textAnchor="middle"
-              className="fill-muted-foreground text-[10px]"
+              className="fill-signal font-mono text-[10px] font-bold"
             >
               {k.count}
             </text>
@@ -75,17 +75,17 @@ export function CircleOfFifths() {
               x={nx}
               y={ny + 4}
               textAnchor="middle"
-              className="fill-muted-foreground text-[11px]"
+              className="fill-muted-foreground text-[11px] font-bold"
             >
               {k.minor}
             </text>
           </g>
         );
       })}
-      <text x={C} y={C - 6} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+      <text x={C} y={C - 6} textAnchor="middle" className="fill-muted-foreground font-mono text-[9px] uppercase">
         ♯ clockwise
       </text>
-      <text x={C} y={C + 10} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+      <text x={C} y={C + 10} textAnchor="middle" className="fill-muted-foreground font-mono text-[9px] uppercase">
         ♭ anticlockwise
       </text>
     </svg>
