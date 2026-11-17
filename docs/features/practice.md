@@ -253,7 +253,7 @@ The next note is never the same note name as the previous one.
 
 ## Intervals
 
-A note is shown with an interval name, e.g. **Major 3rd up**: play the note,
+A note is shown with an interval name, e.g. **Major 3rd ↑** (up): play the note,
 then the note at that interval from it. The second note is hidden until it
 is played (unless **Show both notes** is on). Any octave is accepted as long
 as the second note is the right distance from the first

@@ -20,7 +20,11 @@ export function NotesPractice() {
       <EngineStatusBanner status={status} />
       <SplitLayout
         aside={
-          <OptionsPanel locked={running} error={error}>
+          <OptionsPanel
+            locked={running}
+            error={error}
+            theory={{ topic: "notes", label: "Notes on the staff" }}
+          >
             <OptionCheckbox
               id="notes-ledger"
               label="Ledger lines"

@@ -1,8 +1,8 @@
 import { ChoiceButtons } from "@/components/choice-buttons";
 import { EngineStatusBanner } from "@/components/engine-status-banner";
 import { OptionCheckbox } from "@/components/option-checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InstrumentNote } from "@/features/practice/instrument-note";
+import { SplitLayout } from "@/components/rack";
+import { OptionsPanel } from "@/features/practice/options-panel";
 import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { PitchSessionCard } from "@/features/practice/pitch/pitch-session-card";
 import { usePitchSettings } from "@/features/practice/pitch/use-pitch-settings";
@@ -24,7 +24,7 @@ const DIRECTIONS: { id: Directions; label: string }[] = [
 function describe(task: PitchTask): string {
   if (task.prompt.kind !== "interval") return "Play these notes";
   const { interval, direction } = task.prompt;
-  return `${INTERVAL_LABELS[interval].name} ${direction}`;
+  return `${INTERVAL_LABELS[interval].name} ${direction === "up" ? "↑" : "↓"}`;
 }
 
 /** Intervals: the first note is shown with an interval; play both notes. */
@@ -37,27 +37,27 @@ export function IntervalsPractice() {
     update({ intervals: { ...options, ...change } });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <EngineStatusBanner status={status} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Exercise</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <InstrumentNote />
-          <OptionChecklist
-            legend="Intervals"
-            idPrefix="interval"
-            items={INTERVAL_NAMES}
-            label={(i) => INTERVAL_LABELS[i].name}
-            description={(i) =>
-              i === "tritone" ? "A4: augmented 4th" : INTERVAL_LABELS[i].short
-            }
-            selected={options.intervals}
-            disabled={running}
-            onChange={(intervals) => set({ intervals })}
-          />
-          <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+      <SplitLayout
+        aside={
+          <OptionsPanel
+            locked={running}
+            error={error}
+            theory={{ topic: "intervals", label: "How intervals work" }}
+          >
+            <OptionChecklist
+              legend="Intervals"
+              idPrefix="interval"
+              items={INTERVAL_NAMES}
+              label={(i) => INTERVAL_LABELS[i].name}
+              description={(i) =>
+                i === "tritone" ? "A4: augmented 4th" : INTERVAL_LABELS[i].short
+              }
+              selected={options.intervals}
+              disabled={running}
+              onChange={(intervals) => set({ intervals })}
+            />
             <ChoiceButtons
               label="Direction"
               options={DIRECTIONS}
@@ -73,25 +73,25 @@ export function IntervalsPractice() {
               disabled={running}
               onChange={(showBoth) => set({ showBoth })}
             />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
-      <PitchSessionCard
-        exercise="intervals"
-        title="Build the interval"
-        description="Play the note shown, then the note at that interval from it."
-        instructions={
-          <p>
-            Press Start. Each task shows a note and an interval such as "Major 3rd up". Play the
-            note, then the note that distance above (or below) it. Any octave is fine, as long as
-            the second note is the right distance from the first. The second note appears on the
-            staff once you play it. Hear it plays both notes; Skip shows the answer.
-          </p>
+          </OptionsPanel>
         }
-        describe={describe}
-        blocked={options.intervals.length === 0 ? "Select at least one interval." : null}
-      />
+      >
+        <PitchSessionCard
+          exercise="intervals"
+          title="Build the interval"
+          description="Play the note shown, then the note at that interval from it."
+          instructions={
+            <p>
+              Press Start. Each task shows a note and an interval such as "Major 3rd ↑". Play the
+              note, then the note that distance above (or below) it. Any octave is fine, as long
+              as the second note is the right distance from the first. The second note appears on
+              the staff once you play it. Hear it plays both notes; Skip shows the answer.
+            </p>
+          }
+          describe={describe}
+          blocked={options.intervals.length === 0 ? "Select at least one interval." : null}
+        />
+      </SplitLayout>
     </div>
   );
 }
