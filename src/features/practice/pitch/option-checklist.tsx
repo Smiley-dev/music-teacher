@@ -1,21 +1,29 @@
-import { OptionCheckbox } from "@/components/option-checkbox";
-import { Button } from "@/components/ui/button";
+import { useId } from "react";
+
+import { Lamp } from "@/components/rack";
+import { cn } from "@/lib/utils";
 
 type OptionChecklistProps<T extends string> = {
   legend: string;
-  /** Unique prefix for the checkbox ids. */
+  /** Unique prefix for the choice ids. */
   idPrefix: string;
   /** All choices, in display order. */
   items: readonly T[];
   label: (item: T) => string;
+  /** Shown as the choice's tooltip. */
   description?: (item: T) => string;
   selected: readonly T[];
   disabled?: boolean;
   /** The new selection, in `items` order. */
   onChange: (selected: T[]) => void;
+  /** Columns of choices (2 fits the options panel). */
+  columns?: 2 | 3 | 4;
 };
 
-/** Several choices out of many (intervals, scales, chords), with All/None. */
+const COLUMNS = { 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4" } as const;
+
+/** Several choices out of many (intervals, scales, chords) as lit keys, with
+ * All / None. */
 export function OptionChecklist<T extends string>({
   legend,
   idPrefix,
@@ -25,33 +33,60 @@ export function OptionChecklist<T extends string>({
   selected,
   disabled,
   onChange,
+  columns = 2,
 }: OptionChecklistProps<T>) {
-  const toggle = (item: T, on: boolean) =>
-    onChange(items.filter((i) => (i === item ? on : selected.includes(i))));
+  const legendId = useId();
+  const toggle = (item: T) =>
+    onChange(items.filter((i) => (i === item ? !selected.includes(i) : selected.includes(i))));
   return (
-    <fieldset className="flex flex-col gap-3 rounded-lg border p-4" disabled={disabled}>
-      <legend className="px-1 text-sm font-medium">{legend}</legend>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-        {items.map((item) => (
-          <OptionCheckbox
-            key={item}
-            id={`${idPrefix}-${item}`}
-            label={label(item)}
-            description={description?.(item)}
-            checked={selected.includes(item)}
+    <div role="group" aria-labelledby={legendId} className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span id={legendId} className="font-bold">
+          {legend}
+        </span>
+        <span className="flex gap-1 font-mono text-[10px] font-bold tracking-[0.1em]">
+          <button
+            type="button"
             disabled={disabled}
-            onChange={(on) => toggle(item, on)}
-          />
-        ))}
+            onClick={() => onChange([...items])}
+            className="rounded px-1.5 py-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            ALL
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange([])}
+            className="rounded px-1.5 py-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            NONE
+          </button>
+        </span>
       </div>
-      <div className="flex gap-2 border-t pt-3">
-        <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onChange([...items])}>
-          Select all
-        </Button>
-        <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onChange([])}>
-          Clear
-        </Button>
+      <div className={cn("grid gap-1.5 font-mono text-[11px] font-bold", COLUMNS[columns])}>
+        {items.map((item) => {
+          const on = selected.includes(item);
+          return (
+            <button
+              key={item}
+              id={`${idPrefix}-${item}`}
+              type="button"
+              aria-pressed={on}
+              title={description?.(item)}
+              disabled={disabled}
+              onClick={() => toggle(item)}
+              className={cn(
+                "flex min-h-[34px] items-center gap-1.5 rounded-[7px] bg-muted px-2 py-1 text-left uppercase",
+                "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-60",
+                on ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <Lamp on={on} tone="signal" className="size-1.5" />
+              {label(item)}
+            </button>
+          );
+        })}
       </div>
-    </fieldset>
+    </div>
   );
 }

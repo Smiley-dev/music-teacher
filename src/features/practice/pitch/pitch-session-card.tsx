@@ -1,18 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Ear,
-  Headphones,
-  Play,
-  SkipForward,
-  Square,
-  Trophy,
-  Volume2,
-} from "lucide-react";
+import { AlertTriangle, Play, SkipForward, Square, Volume2 } from "lucide-react";
 
+import { Display, Lamp, Panel, Readout, StatusStrip } from "@/components/rack";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
   PitchExerciseKind,
   PitchPracticeState,
@@ -26,20 +16,31 @@ import { useEngine, usePitchPractice } from "@/providers/audio-engine-context";
 
 import { type NoteState, PitchStaff } from "./pitch-staff";
 
+const EXERCISE_NAMES: Record<PitchExerciseKind, string> = {
+  notes: "Notes",
+  intervals: "Intervals",
+  scales: "Scales",
+  chords: "Chords",
+  ear: "Ear training",
+};
+
 type PitchSessionCardProps = {
   exercise: PitchExerciseKind;
+  /** What to do, shown large before starting ("Read and play"). */
   title: string;
+  /** One line under the title before starting. */
   description: string;
   /** How the exercise works, shown before starting. */
   instructions: ReactNode;
-  /** The task in words, e.g. "Major 3rd up from the note shown". */
+  /** The task in words, e.g. "Major 3rd up". */
   describe: (task: PitchTask) => string;
   /** Why the exercise cannot start with the current options, if so. */
   blocked?: string | null;
 };
 
-/** Start/stop, the current task on a staff, live feedback and the score of
- * a pitch exercise (ADR 0011). Leaving the exercise stops it. */
+/** The display of a pitch exercise (ADR 0011): the current task large and
+ * on a staff, what is heard, the outcome, the transport keys and the score.
+ * Leaving the exercise stops it. */
 export function PitchSessionCard({
   exercise,
   title,
@@ -75,18 +76,36 @@ export function PitchSessionCard({
   const stage = running ? state.stage : null;
   // Ear training plays the notes first; the button then repeats them.
   const replayLabel = running && state.task.playFirst ? "Play again" : "Hear it";
+  const score = state.phase === "running" || state.phase === "finished" ? state.score : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-        <div className="flex gap-2">
+    <Panel aria-label={title} className="flex flex-col gap-4">
+      <Display className="flex flex-col gap-3.5 sm:px-[26px] sm:py-[22px]">
+        <TopLine state={state} name={EXERCISE_NAMES[exercise]} />
+        {state.phase === "running" ? (
+          <TaskView state={state} describe={describe} />
+        ) : (
+          <>
+            <h2 className="text-[clamp(2.25rem,5vw,3.75rem)] leading-none font-extrabold tracking-tight text-signal uppercase">
+              {title}
+            </h2>
+            <p className="text-muted-foreground">{description}</p>
+            <IdleBody
+              state={state}
+              instructions={instructions}
+              blocked={blocked}
+              noInput={status.state !== "running"}
+            />
+          </>
+        )}
+      </Display>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2.5">
           {running ? (
             <>
               <Button
+                size="lg"
                 variant="outline"
                 onClick={() => act(replayPitchTask)}
                 disabled={stage !== "playing"}
@@ -95,6 +114,7 @@ export function PitchSessionCard({
                 {replayLabel}
               </Button>
               <Button
+                size="lg"
                 variant="outline"
                 onClick={() => act(skipPitchTask)}
                 disabled={stage === "solved" || stage === "revealed"}
@@ -102,35 +122,27 @@ export function PitchSessionCard({
                 <SkipForward />
                 Skip
               </Button>
-              <Button variant="destructive" onClick={() => act(stopPitchPractice)}>
-                <Square />
+              <Button size="lg" variant="destructive" onClick={() => act(stopPitchPractice)}>
+                <Square className="fill-current" />
                 Stop
               </Button>
             </>
           ) : (
-            <Button onClick={() => act(() => startPitchPractice(exercise))} disabled={!canStart}>
-              <Play />
+            <Button
+              size="lg"
+              className="px-7 text-[15px]"
+              onClick={() => act(() => startPitchPractice(exercise))}
+              disabled={!canStart}
+            >
+              <Play className="fill-current" />
               Start
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {!running && blocked && (
-          <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="size-4" />
-            {blocked}
-          </p>
-        )}
-        {status.state !== "running" && (
-          <p className="text-sm text-muted-foreground">
-            Note exercises need a working input device: they listen to what you play.
-          </p>
-        )}
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <SessionBody state={state} instructions={instructions} describe={describe} />
-      </CardContent>
-    </Card>
+        {score && <ScoreTiles score={score} last={state.phase === "finished"} />}
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </Panel>
   );
 }
 
@@ -145,62 +157,158 @@ function belongsTo(state: PitchPracticeState, exercise: PitchExerciseKind) {
   }
 }
 
-function SessionBody({
-  state,
-  instructions,
-  describe,
-}: {
-  state: PitchPracticeState;
-  instructions: ReactNode;
-  describe: (task: PitchTask) => string;
-}) {
-  switch (state.phase) {
-    case "idle":
-      return <div className="text-sm text-muted-foreground">{instructions}</div>;
-    case "failed":
-      return (
-        <p className="flex items-center gap-2 text-sm text-destructive">
-          <AlertTriangle className="size-4" />
-          {state.message}
-        </p>
-      );
-    case "finished":
-      return (
-        <div className="flex flex-col gap-2">
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <Trophy className="size-4 text-amber-500" />
-            Well played! {scoreSummary(state.score)}
-          </p>
-          <p className="text-sm text-muted-foreground">Press Start to go again.</p>
-        </div>
-      );
-    case "running":
-      break;
-  }
+const pad = (n: number) => String(n).padStart(2, "0");
 
-  const { task, stage, progress } = state;
-  const states = noteStates(task, stage, progress);
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-1 text-center">
-        <p className="text-xl font-semibold tracking-tight">{describe(task)}</p>
-        <StageLine stage={stage} task={task} progress={progress} />
-      </div>
-      <PitchStaff clef={task.clef} notes={task.notes.map((n) => n.written)} states={states} />
-      <div className="flex min-h-6 flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm">
-        <span className={cn("font-mono tabular-nums", !state.heard && "text-muted-foreground/60")}>
-          <Ear className="mr-1 inline size-4 align-text-bottom text-muted-foreground" />
-          {state.heard ? `Hearing ${prettyNoteName(state.heard)}` : "Hearing nothing"}
-        </span>
-        {state.wrong && stage === "playing" && (
-          <span className="font-medium text-amber-600 dark:text-amber-400">
-            Not quite: that was {prettyNoteName(state.wrong)}. Try again.
+/** Mono line at the top of the display: which task, and what is going on. */
+function TopLine({ state, name }: { state: PitchPracticeState; name: string }) {
+  let left = `${name} · ready`;
+  let right: ReactNode = "Stopped";
+  switch (state.phase) {
+    case "finished":
+      left = `${name} · finished`;
+      break;
+    case "failed":
+      left = `${name} · could not start`;
+      break;
+    case "idle":
+      break;
+    case "running": {
+      left = `Task ${pad(state.round)} · ${name}`;
+      const { task, stage, progress } = state;
+      if (task.notes.length > 1) left += ` · ${Math.min(progress, task.notes.length)} of ${task.notes.length} notes`;
+      if (stage === "listening") {
+        right = <span className="text-sky-600 dark:text-sky-400">Judging paused while notes play</span>;
+      } else if (stage === "solved") {
+        right = <span className="text-emerald-500">Next task in a moment</span>;
+      } else {
+        right = (
+          <span className={cn("flex items-center gap-2", state.heard ? "text-signal" : undefined)}>
+            <Lamp on={state.heard !== null} tone="signal" />
+            {state.heard ? `Hearing ${prettyNoteName(state.heard)}` : "Hearing nothing"}
           </span>
-        )}
-      </div>
-      <ScoreLine round={state.round} score={state.score} />
+        );
+      }
+      break;
+    }
+  }
+  return (
+    <div className="flex flex-wrap justify-between gap-3 font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+      <span>{left}</span>
+      <span>{right}</span>
     </div>
   );
+}
+
+function IdleBody({
+  state,
+  instructions,
+  blocked,
+  noInput,
+}: {
+  state: Exclude<PitchPracticeState, { phase: "running" }>;
+  instructions: ReactNode;
+  blocked: string | null;
+  noInput: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      {state.phase === "failed" ? (
+        <StatusStrip tone="bad">
+          <AlertTriangle className="size-4 shrink-0" />
+          {state.message}
+        </StatusStrip>
+      ) : state.phase === "finished" ? (
+        <StatusStrip tone="ok">
+          <Lamp on tone="ok" />
+          Well played! {scoreSummary(state.score)} Press Start to go again.
+        </StatusStrip>
+      ) : (
+        <div className="leading-relaxed text-muted-foreground">{instructions}</div>
+      )}
+      {blocked && (
+        <StatusStrip tone="warn">
+          <AlertTriangle className="size-4 shrink-0" />
+          {blocked}
+        </StatusStrip>
+      )}
+      {noInput && (
+        <p className="text-muted-foreground">
+          Note exercises need a working input device: they listen to what you play.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function TaskView({
+  state,
+  describe,
+}: {
+  state: Extract<PitchPracticeState, { phase: "running" }>;
+  describe: (task: PitchTask) => string;
+}) {
+  const { task, stage, progress } = state;
+  const states = noteStates(task, stage, progress);
+  const listening = stage === "listening";
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        <h2
+          className={cn(
+            "text-[clamp(1.9rem,3.8vw,3rem)] leading-none font-extrabold tracking-tight uppercase",
+            listening ? "text-sky-500" : "text-signal",
+          )}
+        >
+          {listening ? "Listen…" : describe(task)}
+        </h2>
+        {listening && task.notes.length > 1 && (
+          <div className="flex gap-2.5" aria-hidden>
+            {task.notes.map((_, i) => (
+              <span
+                key={i}
+                className="flex size-10 items-center justify-center rounded-lg bg-sky-500/15 font-mono font-bold text-sky-500"
+              >
+                {i + 1}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="text-muted-foreground">
+        {listening
+          ? `${describe(task)}. Listen first; your turn comes when the notes have played.`
+          : task.notes.length > 1
+            ? `Your turn: note ${Math.min(progress + 1, task.notes.length)} of ${task.notes.length}.`
+            : "Your turn: play it."}
+      </p>
+      <PitchStaff clef={task.clef} notes={task.notes.map((n) => n.written)} states={states} />
+      <Outcome state={state} />
+    </>
+  );
+}
+
+function Outcome({ state }: { state: Extract<PitchPracticeState, { phase: "running" }> }) {
+  const stage: TaskStage = state.stage;
+  if (stage === "solved") {
+    return (
+      <StatusStrip tone="ok">
+        <Lamp on tone="ok" />
+        CORRECT!
+      </StatusStrip>
+    );
+  }
+  if (stage === "revealed") {
+    return <StatusStrip tone="warn">Here is the answer. Next one in a moment…</StatusStrip>;
+  }
+  if (state.wrong && stage === "playing") {
+    return (
+      <StatusStrip tone="bad">
+        ✕ Not quite: that was {prettyNoteName(state.wrong)}. Try again.
+      </StatusStrip>
+    );
+  }
+  // Keeps the display from jumping when a strip appears.
+  return <div className="min-h-[42px]" aria-hidden />;
 }
 
 function noteStates(task: PitchTask, stage: TaskStage, progress: number): NoteState[] {
@@ -220,47 +328,6 @@ function noteStates(task: PitchTask, stage: TaskStage, progress: number): NoteSt
   });
 }
 
-function StageLine({
-  stage,
-  task,
-  progress,
-}: {
-  stage: TaskStage;
-  task: PitchTask;
-  progress: number;
-}) {
-  switch (stage) {
-    case "listening":
-      return (
-        <p className="flex items-center gap-2 text-sm text-sky-600 dark:text-sky-400">
-          <Headphones className="size-4" />
-          Listen…
-        </p>
-      );
-    case "playing":
-      return (
-        <p className="text-sm text-muted-foreground">
-          {task.notes.length > 1
-            ? `Your turn: note ${progress + 1} of ${task.notes.length}`
-            : "Your turn: play it"}
-        </p>
-      );
-    case "solved":
-      return (
-        <p className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 className="size-4" />
-          Correct!
-        </p>
-      );
-    case "revealed":
-      return (
-        <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-          Here is the answer. Next one in a moment…
-        </p>
-      );
-  }
-}
-
 function scoreSummary(score: PitchScore): string {
   const parts = [`${score.solved} solved (${score.clean} without a mistake)`];
   if (score.skipped > 0) parts.push(`${score.skipped} skipped`);
@@ -268,22 +335,16 @@ function scoreSummary(score: PitchScore): string {
   return parts.join(", ") + ".";
 }
 
-function ScoreLine({ round, score }: { round: number; score: PitchScore }) {
-  const items: [string, number, string][] = [
-    ["Solved", score.solved, "text-emerald-600 dark:text-emerald-400"],
-    ["First try", score.clean, "text-emerald-600 dark:text-emerald-400"],
-    ["Skipped", score.skipped, "text-amber-600 dark:text-amber-400"],
-    ["Wrong notes", score.wrongNotes, "text-red-600 dark:text-red-400"],
-  ];
+function ScoreTiles({ score, last }: { score: PitchScore; last: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t pt-3 text-sm">
-      <span className="text-muted-foreground">Task {round}</span>
-      {items.map(([label, value, color]) => (
-        <span key={label} className="flex items-baseline gap-1.5">
-          <span className={cn("font-mono font-semibold tabular-nums", color)}>{value}</span>
-          <span className="text-muted-foreground">{label}</span>
-        </span>
-      ))}
+    <div className="flex flex-col gap-1.5">
+      {last && <span className="rack-label text-[10px]">Last session</span>}
+      <div className="flex flex-wrap gap-2 text-center">
+        <Readout label="Solved" value={pad(score.solved)} tone="ok" />
+        <Readout label="1st try" value={pad(score.clean)} tone="signal" />
+        <Readout label="Skipped" value={pad(score.skipped)} />
+        <Readout label="Wrong" value={pad(score.wrongNotes)} tone="bad" />
+      </div>
     </div>
   );
 }

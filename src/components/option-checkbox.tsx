@@ -1,5 +1,4 @@
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Lamp } from "@/components/rack";
 
 type OptionCheckboxProps = {
   id: string;
@@ -11,7 +10,7 @@ type OptionCheckboxProps = {
   onChange: (checked: boolean) => void;
 };
 
-/** A labelled checkbox for exercise options. */
+/** An on/off exercise option: its name and a lit ON / dark OFF switch. */
 export function OptionCheckbox({
   id,
   label,
@@ -21,20 +20,25 @@ export function OptionCheckbox({
   onChange,
 }: OptionCheckboxProps) {
   return (
-    <div className="flex items-start gap-2">
-      <Checkbox
-        id={id}
-        className="mt-0.5"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(c) => onChange(c === true)}
-      />
-      <div className="flex flex-col gap-0.5">
-        <Label htmlFor={id} className="font-normal">
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <label htmlFor={id} className="font-bold">
           {label}
-        </Label>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        </label>
+        {description && <p className="text-xs leading-snug text-muted-foreground">{description}</p>}
       </div>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className="flex h-[34px] shrink-0 items-center gap-2 rounded-[7px] border bg-inset px-3 font-mono text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-55"
+      >
+        <Lamp on={checked} />
+        <span className={checked ? undefined : "text-muted-foreground"}>{checked ? "ON" : "OFF"}</span>
+      </button>
     </div>
   );
 }

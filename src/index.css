@@ -102,6 +102,9 @@
     /* Key face edge (the 3px "bottom" of a pressed-in rack button). */
     --key-edge: #c9bda5;
     --key-edge-primary: #b8741a;
+    --stop: #d64545;
+    --stop-foreground: #ffffff;
+    --stop-edge: #8f2020;
     /* Status colours: the Tailwind shades the app uses, re-tuned for paper. */
     --color-emerald-300: #2f9e57;
     --color-emerald-400: #2f9e57;
@@ -162,6 +165,9 @@
     --nav-active-foreground: #1a1206;
     --key-edge: #0c0a07;
     --key-edge-primary: #8a5200;
+    --stop: #ff5d5d;
+    --stop-foreground: #1f0606;
+    --stop-edge: #7a1f1f;
     --color-emerald-300: #7bd88f;
     --color-emerald-400: #7bd88f;
     --color-emerald-500: #7bd88f;
@@ -206,10 +212,27 @@
   border-width: 0 0 3px 0;
   border-bottom-color: var(--key-edge);
 }
-[data-slot="button"][data-size="default"],
-[data-slot="button"][data-size="lg"] {
+[data-slot="button"][data-size="default"] {
   height: 2.5rem;
   padding-inline: 0.9rem;
+}
+/* The big transport keys (Start, Stop, Hear it). */
+[data-slot="button"][data-size="lg"] {
+  height: 3.25rem;
+  padding-inline: 1.25rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  border-bottom-width: 4px;
+  border-radius: 0.625rem;
+}
+/* Stop: a solid red key. */
+[data-slot="button"][data-variant="destructive"] {
+  background: var(--stop);
+  color: var(--stop-foreground);
+  border-bottom-color: var(--stop-edge);
+}
+[data-slot="button"][data-variant="destructive"]:hover {
+  background: color-mix(in oklch, var(--stop), white 10%);
 }
 [data-slot="button"][data-size="sm"] {
   height: 2.25rem;
