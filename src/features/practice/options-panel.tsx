@@ -16,6 +16,7 @@ export function OptionsPanel({
   locked,
   error,
   theory,
+  instrument = true,
   children,
 }: {
   /** What the panel holds ("Options", "Melody"). */
@@ -23,6 +24,8 @@ export function OptionsPanel({
   locked: boolean;
   error?: string | null;
   theory?: { topic: SubsectionId<"theory">; label: string };
+  /** Show which instrument the exercise is written for (not for rhythm). */
+  instrument?: boolean;
   children: ReactNode;
 }) {
   const { go } = useNavigation();
@@ -31,7 +34,7 @@ export function OptionsPanel({
       <PanelLabel tone={locked ? "signal" : "muted"}>
         {`${title} · ${locked ? "locked while running" : "saved"}`}
       </PanelLabel>
-      <InstrumentNote />
+      {instrument && <InstrumentNote />}
       <div className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:border-dashed [&>*+*]:pt-4">
         {children}
       </div>

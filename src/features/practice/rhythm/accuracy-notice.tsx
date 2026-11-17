@@ -17,7 +17,7 @@ export function FastNotesWarning({ gapMs }: { gapMs: number | null }) {
     <div
       role="status"
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-3 text-sm",
+        "flex items-start gap-3 rounded-[10px] border p-3 text-sm",
         tooFast ? "border-red-500/50 bg-red-500/10" : "border-amber-500/50 bg-amber-500/10",
       )}
     >
@@ -25,7 +25,7 @@ export function FastNotesWarning({ gapMs }: { gapMs: number | null }) {
         className={cn("mt-0.5 size-4 shrink-0", tooFast ? "text-red-500" : "text-amber-500")}
       />
       <div>
-        <p className="font-medium">
+        <p className="font-bold">
           {tooFast ? "Too fast to judge early or late" : "Fast notes: results are less reliable"}
         </p>
         <p className="text-muted-foreground">
@@ -48,9 +48,9 @@ const TIPS = [
 /** Advice for getting accurate timing results. */
 export function AccuracyTips() {
   return (
-    <details className="group rounded-lg border px-4 py-3 text-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
-        <Lightbulb className="size-4 text-amber-500" />
+    <details className="group rounded-[10px] bg-inset px-4 py-3 text-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        <Lightbulb className="size-4 text-signal" />
         Tips for accurate results
         <span className="ml-auto text-xs text-muted-foreground group-open:hidden">Show</span>
         <span className="ml-auto hidden text-xs text-muted-foreground group-open:inline">

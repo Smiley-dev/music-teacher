@@ -1,34 +1,23 @@
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ChoiceButtons } from "@/components/choice-buttons";
+import { OptionCheckbox } from "@/components/option-checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { OptionsPanel } from "@/features/practice/options-panel";
+import { OptionChecklist } from "@/features/practice/pitch/option-checklist";
 import { NOTE_VALUE_LABELS } from "@/features/practice/practice-labels";
 import { TempoField } from "@/features/practice/tempo-field";
 import {
+  type CustomMode,
   type Difficulty,
   MAX_BARS,
   MIN_BARS,
   NOTE_VALUES,
-  type NoteValue,
-  type CustomMode,
-  type ExerciseDraft,
   type RhythmPracticeSettings,
   SUPPORTED_BEATS_PER_BAR,
 } from "@/lib/engine";
-import { cn } from "@/lib/utils";
 import { useEngine } from "@/providers/audio-engine-context";
-
-import { RhythmEditor } from "./rhythm-editor";
 
 const CUSTOM_MODES: { id: CustomMode; label: string; description: string }[] = [
   { id: "random", label: "Random", description: "New rhythms from the lengths you select." },
@@ -50,14 +39,12 @@ const DIFFICULTIES: { id: Difficulty; label: string; description: string }[] = [
   },
 ];
 
-type RhythmSettingsCardProps = {
-  disabled: boolean;
-  /** The current exercise; shown by the editor for written rhythms. */
-  draft: ExerciseDraft | null;
-  draftError: string | null;
-};
+const TIME_SIGNATURES = SUPPORTED_BEATS_PER_BAR.map((b) => ({ id: String(b), label: `${b}/4` }));
 
-export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettingsCardProps) {
+/** Rhythm exercise options panel: tempo, time signature, length and
+ * difficulty (or custom lengths). A written rhythm is edited next to the
+ * score, see `RhythmEditor`. */
+export function RhythmSettingsCard({ disabled }: { disabled: boolean }) {
   const { settings, setRhythmSettings } = useEngine();
   const rhythm = settings.practice.rhythm;
   const [error, setError] = useState<string | null>(null);
@@ -71,13 +58,6 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
   /** Written rhythms set their own length; the bar count does not apply. */
   const writing = rhythm.difficulty === "custom" && rhythm.customMode === "written";
 
-  const toggleValue = (value: NoteValue, on: boolean) => {
-    const values = on
-      ? NOTE_VALUES.filter((v) => v === value || rhythm.custom.values.includes(v))
-      : rhythm.custom.values.filter((v) => v !== value);
-    update({ custom: { ...rhythm.custom, values } });
-  };
-
   const commitBars = () => {
     const n = Math.round(Number(barsText));
     if (Number.isFinite(n) && n >= MIN_BARS && n <= MAX_BARS) update({ bars: n });
@@ -85,136 +65,38 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Exercise</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label>Difficulty</Label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
-            {DIFFICULTIES.map((d) => (
-              <Button
-                key={d.id}
-                role="radio"
-                aria-checked={rhythm.difficulty === d.id}
-                variant={rhythm.difficulty === d.id ? "default" : "outline"}
-                disabled={disabled}
-                onClick={() => update({ difficulty: d.id })}
-              >
-                {d.label}
-              </Button>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {DIFFICULTIES.find((d) => d.id === rhythm.difficulty)?.description}
-          </p>
-        </div>
-
-        {rhythm.difficulty === "custom" && (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2" role="radiogroup" aria-label="Custom mode">
-              {CUSTOM_MODES.map((m) => (
-                <Button
-                  key={m.id}
-                  role="radio"
-                  size="sm"
-                  aria-checked={rhythm.customMode === m.id}
-                  variant={rhythm.customMode === m.id ? "secondary" : "ghost"}
-                  disabled={disabled}
-                  onClick={() => update({ customMode: m.id })}
-                >
-                  {m.label}
-                </Button>
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {CUSTOM_MODES.find((m) => m.id === rhythm.customMode)?.description}
-            </p>
-          </div>
-        )}
-
-        {rhythm.difficulty === "custom" && rhythm.customMode === "written" && (
-          <div className="rounded-lg border p-4">
-            <RhythmEditor
-              written={rhythm.written}
-              draft={draft}
-              error={draftError}
-              beatsPerBar={rhythm.timeSignature.beatsPerBar}
-              disabled={disabled}
-              onChange={(written) => update({ written })}
-            />
-          </div>
-        )}
-
-        {rhythm.difficulty === "custom" && rhythm.customMode === "random" && (
-          <fieldset className="flex flex-col gap-3 rounded-lg border p-4" disabled={disabled}>
-            <legend className="px-1 text-sm font-medium">Include</legend>
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              {NOTE_VALUES.map((value) => (
-                <CheckboxField
-                  key={value}
-                  id={`value-${value}`}
-                  label={NOTE_VALUE_LABELS[value]}
-                  checked={rhythm.custom.values.includes(value)}
-                  onChange={(on) => toggleValue(value, on)}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-3 border-t pt-3">
-              <CheckboxField
-                id="custom-dotted"
-                label="Dotted notes"
-                checked={rhythm.custom.dotted}
-                onChange={(dotted) => update({ custom: { ...rhythm.custom, dotted } })}
-              />
-              <CheckboxField
-                id="custom-rests"
-                label="Rests"
-                checked={rhythm.custom.rests}
-                onChange={(rests) => update({ custom: { ...rhythm.custom, rests } })}
-              />
-            </div>
-          </fieldset>
-        )}
-
-        <div className="grid gap-6 sm:grid-cols-[1fr_auto_auto]">
-          <TempoField
-            id="tempo"
-            bpm={rhythm.bpm}
-            onChange={(bpm) => update({ bpm })}
-            disabled={disabled}
-          />
-
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="time-signature">Time signature</Label>
-            <Select
-              value={String(rhythm.timeSignature.beatsPerBar)}
-              onValueChange={(v) => update({ timeSignature: { beatsPerBar: Number(v) } })}
-              disabled={disabled}
-            >
-              <SelectTrigger id="time-signature" className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_BEATS_PER_BAR.map((b) => (
-                  <SelectItem key={b} value={String(b)}>
-                    {b}/4
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {!writing && (
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="bars">Bars</Label>
+    <OptionsPanel
+      title="Exercise"
+      locked={disabled}
+      error={error}
+      instrument={false}
+      theory={{ topic: "rhythm", label: "Beats, bars and note values" }}
+    >
+      <div className="flex flex-col gap-4">
+        <TempoField
+          id="tempo"
+          bpm={rhythm.bpm}
+          onChange={(bpm) => update({ bpm })}
+          disabled={disabled}
+        />
+        <ChoiceButtons
+          label="Time signature"
+          options={TIME_SIGNATURES}
+          value={String(rhythm.timeSignature.beatsPerBar)}
+          disabled={disabled}
+          onChange={(b) => update({ timeSignature: { beatsPerBar: Number(b) } })}
+        />
+        {!writing && (
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="bars" className="font-bold">
+              Bars
+            </Label>
             <Input
               id="bars"
               type="number"
               min={MIN_BARS}
               max={MAX_BARS}
-              className="w-24"
+              className="w-24 bg-inset font-mono font-bold"
               value={barsText}
               disabled={disabled}
               onChange={(e) => setBarsText(e.currentTarget.value)}
@@ -222,31 +104,64 @@ export function RhythmSettingsCard({ disabled, draft, draftError }: RhythmSettin
               onKeyDown={(e) => e.key === "Enter" && commitBars()}
             />
           </div>
-          )}
-        </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-      </CardContent>
-    </Card>
-  );
-}
+        )}
+      </div>
 
-function CheckboxField({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className={cn("flex items-center gap-2")}>
-      <Checkbox id={id} checked={checked} onCheckedChange={(c) => onChange(c === true)} />
-      <Label htmlFor={id} className="font-normal">
-        {label}
-      </Label>
-    </div>
+      <div className="flex flex-col gap-2">
+        <ChoiceButtons
+          label="Difficulty"
+          options={DIFFICULTIES}
+          value={rhythm.difficulty}
+          disabled={disabled}
+          onChange={(difficulty) => update({ difficulty })}
+        />
+        <p className="text-xs text-muted-foreground">
+          {DIFFICULTIES.find((d) => d.id === rhythm.difficulty)?.description}
+        </p>
+      </div>
+
+      {rhythm.difficulty === "custom" && (
+        <div className="flex flex-col gap-2">
+          <ChoiceButtons
+            label="Custom rhythm"
+            options={CUSTOM_MODES}
+            value={rhythm.customMode}
+            disabled={disabled}
+            onChange={(customMode) => update({ customMode })}
+          />
+          <p className="text-xs text-muted-foreground">
+            {CUSTOM_MODES.find((m) => m.id === rhythm.customMode)?.description}
+          </p>
+        </div>
+      )}
+
+      {rhythm.difficulty === "custom" && rhythm.customMode === "random" && (
+        <div className="flex flex-col gap-3">
+          <OptionChecklist
+            legend="Include"
+            idPrefix="value"
+            items={NOTE_VALUES}
+            label={(v) => NOTE_VALUE_LABELS[v]}
+            selected={rhythm.custom.values}
+            disabled={disabled}
+            onChange={(values) => update({ custom: { ...rhythm.custom, values } })}
+          />
+          <OptionCheckbox
+            id="custom-dotted"
+            label="Dotted notes"
+            checked={rhythm.custom.dotted}
+            disabled={disabled}
+            onChange={(dotted) => update({ custom: { ...rhythm.custom, dotted } })}
+          />
+          <OptionCheckbox
+            id="custom-rests"
+            label="Rests"
+            checked={rhythm.custom.rests}
+            disabled={disabled}
+            onChange={(rests) => update({ custom: { ...rhythm.custom, rests } })}
+          />
+        </div>
+      )}
+    </OptionsPanel>
   );
 }

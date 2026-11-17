@@ -41,7 +41,7 @@ export function ChoiceButtons<T extends string>({
               disabled={disabled}
               onClick={() => onChange(o.id)}
               className={cn(
-                "min-h-[34px] rounded-[7px] px-2 uppercase transition-colors",
+                "min-h-[34px] rounded-[7px] px-1 uppercase transition-colors",
                 "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-60",
                 selected
                   ? "bg-primary text-primary-foreground"
