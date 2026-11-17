@@ -131,8 +131,8 @@ export function ReadingTheory() {
         <InTheApp>
           <p>
             A good order for each new melody: <strong>Listen</strong> to hear how it goes,{" "}
-            <strong>Play at my own pace</strong> to get the notes right (the next note waits for
-            you), then <strong>Play with metronome</strong>, which judges timing and pitch together.
+            <strong>At my own pace</strong> to get the notes right (the next note waits for
+            you), then <strong>With metronome</strong>, which judges timing and pitch together.
           </p>
         </InTheApp>
       </TheoryCard>

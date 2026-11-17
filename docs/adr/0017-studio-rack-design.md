@@ -40,8 +40,19 @@ and the instrument select (ADR 0015).
   readout, a 41-mark strobe scale in place of the gauge, vertical LED level
   meters with peak hold, and the waveform on an inset display. `LevelMeter`
   (Settings) becomes a row of lamps with a CLIP lamp.
-- Pages other than the Tuner keep their layouts for now; they get the new
-  colours, type, cards and keys through the tokens.
+- **Pages** follow the design's layouts, built from shared parts in
+  `src/components/rack.tsx` (`Panel`, `PanelLabel`, `Display`, `Readout`,
+  `Lamp`, `StatusStrip`, `Tip`, `SplitLayout`):
+  - Practice: options panel (`features/practice/options-panel.tsx`) beside
+    the exercise display; options are lit keys and ON/OFF switches
+    (`OptionChecklist`, `ChoiceButtons`, `OptionCheckbox`).
+  - Settings: numbered panels, gain and latency large on displays.
+  - Theory: panels with the Practice links as keys, examples and tables on
+    displays, "In the app" as an amber strip, explorers outlined in amber.
+  - Engine status banners: a coloured icon tile and the state in small caps.
+- Not taken from the design: which calibration clicks were heard (the
+  engine does not report it; the dialog shows which have played), and
+  choosing a key on the circle of fifths (a new feature, not a restyle).
 
 ## Alternatives considered
 
@@ -56,10 +67,7 @@ and the instrument select (ADR 0015).
 
 ## Consequences
 
-- Rebuilding each Practice and Theory page to the design's two-column
-  layouts (options beside the display) is separate follow-up work; the
-  tokens already apply there.
 - A new status colour needs a shade defined in both themes in `index.css`.
 - The `data-slot` rules are unlayered CSS and beat utility classes on the
-  properties they set (button height and padding, card border). A page that
-  needs a different size should add a variant here, not a class.
+  properties they set (button minimum height and padding, card border). A
+  page that needs a different size should add a variant there, not a class.

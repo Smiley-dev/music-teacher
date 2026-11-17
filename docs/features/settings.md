@@ -1,6 +1,7 @@
 # Settings
 
-Three cards: input device, input volume, instrument calibration. All values
+Three numbered panels (ADR 0017): input device and input volume side by
+side, instrument calibration under them (the latency large on a display). All values
 are persisted by the backend (ADR 0004) and restored at startup.
 
 ## Input device

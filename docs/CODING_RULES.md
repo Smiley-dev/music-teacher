@@ -76,7 +76,9 @@ Timing that matters (calibration, later Practice) uses the audio clock: cpal
   defined per theme in `src/index.css` (ADR 0017). Displays use `bg-inset`,
   the lit amber is `text-signal`, labels on panels `.rack-label`, numbers and
   keys `font-mono`. The look of shadcn primitives is set in `index.css` by
-  `data-slot`, not by editing `components/ui`.
+  `data-slot`, not by editing `components/ui`. Pages are built from the
+  rack parts in `components/rack.tsx`; a Practice page puts its options in
+  `OptionsPanel` beside the exercise (`SplitLayout`).
 - Types that mirror Rust live in `src/lib/engine.ts` and must match the Rust
   definitions field for field. Change both in the same commit.
 - `strict` TypeScript; no `any`. Handle every variant of a status union.
@@ -128,7 +130,9 @@ errors. Tell the user what to do, not only what failed.
 3. Music logic (generation, judging) goes in a Rust crate (like
    `crates/rhythm`); timed playback goes in an engine session
    (`src-tauri/src/engine/`), never in UI timers.
-4. Document it in `docs/features/practice.md`.
+4. Lay the page out like the others (ADR 0017): `SplitLayout` with the
+   options in `OptionsPanel` and the exercise in a `Panel`.
+5. Document it in `docs/features/practice.md`.
 
 A pitch exercise (play the right notes, ADR 0011) needs no new session: add
 a generator in `crates/theory`, a `PitchExerciseKind`/`PitchExercise`

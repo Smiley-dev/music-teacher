@@ -17,7 +17,7 @@ Shows the note being played on the selected input, live.
   comes from, or of the loudest channel when no note is detected, and a
   **level meter** per channel (vertical lamps with peak hold and a CLIP lamp).
 - The engine status (opening, reconnecting, no devices, permission denied)
-  above the cards when the input is not running.
+  above the panels when the input is not running.
 
 ## How it decides
 

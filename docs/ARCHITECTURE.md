@@ -95,6 +95,8 @@ src/
     reading/           Sight reading: options, VexFlow melody score (+ tab staff),
                        listen/play
     tempo-field.tsx    Tempo control shared by rhythm and reading
+    options-panel.tsx  Options panel of every page (locked while running,
+                       Theory link)
     instrument-note.tsx  Which instrument (and range) a page is written for
     pitch/             Shared by pitch exercises: session card, VexFlow staff,
                        option checklist, usePitchSettings
@@ -107,7 +109,9 @@ src/
                        per page, VexFlow example renderer, explorers (interval,
                        scale, chord), Listen button, keyboard and circle-of-
                        fifths diagrams
-  components/          Shared: level meter, waveform canvas, engine status banner,
+  components/          Shared: rack parts (panel, display, read-out, lamp,
+                       split layout; ADR 0017), level meter, waveform
+                       canvas, engine status banner,
                        calibration panel/card/dialog (Settings + Practice),
                        theme toggle + useTheme, instrument select (top bar,
                        ADR 0015), input status lamp, choice buttons, option checkbox

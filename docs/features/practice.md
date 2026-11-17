@@ -9,6 +9,25 @@ shown (remembered across restarts). More are added through the
 ideas are listed in [exercise-catalog.md](exercise-catalog.md). The theory
 behind each is in the Theory section ([theory.md](theory.md)).
 
+## Layout (ADR 0017)
+
+Every page has two panels side by side (stacked on narrow windows):
+
+- **Options** (left on Rhythm and Reading, right on the pitch exercises):
+  "OPTIONS · SAVED", or "LOCKED WHILE RUNNING" in amber while the exercise
+  runs. It starts with which instrument the page is written for (not on
+  Rhythm), then the options separated by dashed lines: lit keys for
+  several choices (with ALL / NONE), a row of keys for one choice, and
+  ON / OFF switches. It ends with a link to the Theory topic behind the
+  exercise.
+- **The exercise**: what is being played in mono caps, the notation on an
+  inset display, live read-outs (bar and beat, on time, early/late,
+  missed, right and wrong pitch, solved, first try, skipped, wrong) and
+  big transport keys (Start amber, Stop red). The outcome of the last
+  note is a coloured strip ("CORRECT!", "Not quite: that was B♭4").
+
+Results after a session (timing, notes) appear as panels under both.
+
 ## Rhythm
 
 Play along with a generated rhythm. Only note **lengths** matter; pitch is
@@ -181,8 +200,10 @@ previous results.
 ## Pitch exercises (ADR 0011)
 
 In these exercises *which* note you play matters, not when. Each page has its
-options and a **Read and play**-style card; they share how tasks are shown,
-judged and scored.
+options panel and an exercise display; they share how tasks are shown,
+judged and scored. Before starting, the display names the exercise large
+("READ AND PLAY", "BUILD THE INTERVAL"); while running, the task
+("MAJOR 3RD ↑"), the note heard and the score.
 
 ### Instrument (saved, chosen in the top bar)
 
@@ -417,7 +438,7 @@ Plays the melody at its pitches (soft tones) after 4 count-in clicks, with
 the metronome, at the chosen tempo; the note being played is highlighted.
 It is a rhythm session in `melody` mode.
 
-### Play at my own pace
+### At my own pace
 
 No metronome: play the notes in order, as slowly as you like. The next note
 is blue; once it has been heard steadily it turns green and the following
@@ -428,7 +449,7 @@ The status line shows the note number, the note being heard and the wrong
 notes. At the end: the number of notes, the time taken and the wrong notes.
 Pitch must be exact (octave included), as written for the instrument.
 
-### Play with metronome
+### With metronome
 
 4 count-in clicks, then play along with the metronome at the chosen tempo.
 It is a rhythm session in practice mode, so **timing** is judged exactly as
@@ -451,7 +472,7 @@ note. Live counters show both. The latency line and the fast-notes warning
 from rhythm practice are shown before starting.
 
 After the last bar: the rhythm practice timing analysis (accuracy, notes
-played, average offset, consistency, chart, tips) and a **Notes** card:
+played, average offset, consistency, chart, tips) and a **Notes** panel beside it:
 share of right notes, right / wrong / unclear counts, the wrong notes by bar
 ("Bar 2: F♯4 instead of C5", up to 8), and tips (play it at your own pace
 first; let notes ring, play louder or slower when many are unclear).
